@@ -8,7 +8,7 @@ Develop functional increments on descriptive branches, preserve user work and sa
 
 Priorities: driving foundation, functioning circuit, physical rival AI, progressively replace simulated career events with real track results, then deeper mechanical systems. A simulated result must always be labelled as such.
 
-## Architecture in 0.9
+## Architecture through 0.10
 
 | Module | Responsibility |
 | --- | --- |
@@ -28,6 +28,7 @@ Priorities: driving foundation, functioning circuit, physical rival AI, progress
 | `lap_records.gd` | Best valid lap per persistent car and circuit; validation and serialization |
 | `economy.gd`, `tuning.gd` | Market, workshop, persistent mechanical state, fractional measured distance, wear and parts |
 | `save_store.gd` | Validates decoded candidates, restores integral JSON numbers and writes via temporary-file replacement |
+| `control_settings.gd` | Configurable physical keyboard bindings, fixed arrows, controller deadzones and normalized analog inputs; separate atomic preferences file |
 | `main.gd` | Garage, market, workshop, career, tuning and save/load interface |
 
 The research source and pinned commit are in REFERENCES.md. The new AI and race rules are original implementations, not ports of GT4's controller. Original research files remain unchanged.
@@ -66,4 +67,12 @@ This feature branch depends on the pending 0.8 and 0.8.1 increments; `main` rema
 
 ## Remaining work
 
-Human driving and graphical feedback; configurable input and controller support; additional original circuits; broader physical career events; AI defending and more robust recovery in arbitrary crowded scenarios; realistic collision response/damage, tires, heat and engine torque; autosave with recovery. Preserve successful physical race tests and transaction guarantees when expanding these systems.
+Human driving, graphical feedback and testing with physical controllers; additional original circuits; broader physical career events; AI defending and more robust recovery in arbitrary crowded scenarios; realistic collision response/damage, tires, heat and engine torque; autosave with recovery. Preserve successful physical race tests and transaction guarantees when expanding these systems.
+
+## Version 0.10 and distribution
+
+The settings menu rebinds seven keyboard actions without duplicate keys, leaves arrows and Escape available, and persists preferences separately from game progress. New Game preserves them. `vehicle_actor.gd` accepts brake strength while the physics API retains the existing boolean parameter for AI/backward compatibility. Controller B is reverse, not `ui_cancel` in the driving scene; driving inputs are consumed before focused buttons can act on them. Removing/rebinding a held action releases it to prevent stuck throttle.
+
+Local download links from the chat were not accessible to the user. Release packages are now published on dedicated `downloads/vVERSION` branches, separate from main and development history. The branch README contains ordinary HTTPS download links. `tools/publish_downloads.py` verifies checksums, rejects files beyond GitHub's Git limit and refuses to overwrite a different existing release. Release updates are new version branches, not forced pushes. Normal Git push supplies publication when the Releases API is unavailable. Verify each published link by downloading it and comparing its SHA-256 before reporting it accessible. Distribution branches are not merged into main.
+
+Run the existing strict suite for controls and driving regression. The input tests cover physical key events, focus safety, pause/recovery, preferences files and normalized controller samples. They do not establish hardware compatibility or Windows execution.

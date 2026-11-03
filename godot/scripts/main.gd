@@ -5,6 +5,7 @@ const Career = preload("res://scripts/career.gd")
 const Tuning = preload("res://scripts/tuning.gd")
 const Rivals = preload("res://scripts/rivals.gd")
 const SaveStore = preload("res://scripts/save_store.gd")
+const ControlSettings = preload("res://scripts/control_settings.gd")
 const SAVE_PATH := "user://evolution_save_v1.json"
 var game: EvolutionEconomy
 var career: EvolutionCareer
@@ -12,6 +13,9 @@ var current_tab := "mercado"
 var content: VBoxContainer
 var funds: Label
 var notice: Label
+var pending_binding := ""
+var deadzone_label: Label
+var controls_path: String = ControlSettings.FILE_PATH
 
 func _ready() -> void:
     game = GameSession.game
@@ -50,7 +54,7 @@ func _build_interface() -> void:
     margin.add_child(root)
     var header := HBoxContainer.new()
     root.add_child(header)
-    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.9", 27))
+    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.10", 27))
     var spacer := Control.new()
     spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     header.add_child(spacer)
@@ -63,6 +67,7 @@ func _build_interface() -> void:
         tabs.add_child(_button(entry["title"], _change_tab.bind(entry["key"])))
     tabs.add_child(_button("MODO CARRERA", _change_tab.bind("carrera")))
     tabs.add_child(_button("TUNING", _change_tab.bind("tuning")))
+    tabs.add_child(_button("AJUSTES", _change_tab.bind("ajustes")))
     var scroll := ScrollContainer.new()
     scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
     root.add_child(scroll)
@@ -80,6 +85,7 @@ func _build_interface() -> void:
     actions.add_child(_button("NUEVA PARTIDA", _reset))
 
 func _change_tab(next: String) -> void:
+    pending_binding = ""
     current_tab = next
     _render()
 
@@ -95,6 +101,7 @@ func _render() -> void:
         "historial": _history()
         "carrera": _career()
         "tuning": _tuning()
+        "ajustes": _settings()
 
 func _market() -> void:
     content.add_child(_label("MERCADO DE USADOS", 22))
@@ -306,4 +313,66 @@ func _reset() -> void:
     game = GameSession.game
     career = GameSession.career
     notice.text = "Nueva partida iniciada."
+    _render()
+
+func _settings() -> void:
+    content.add_child(_label("CONTROLES", 22))
+    content.add_child(_label("Elegí una acción y presioná una letra, número o Espacio. Esc cancela. Las flechas siempre funcionan.", 14))
+    for name in GameSession.controls.DEFAULT_KEYS:
+        var row := HBoxContainer.new()
+        content.add_child(row)
+        var title := _label(GameSession.controls.TITLES[name])
+        title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        row.add_child(title)
+        row.add_child(_button(GameSession.controls.key_label(name), _request_binding.bind(name)))
+    content.add_child(_label("MANDO · Stick/cruceta: dirección · RT/R2: acelerar · LT/L2: freno
+B/Círculo: reversa · X/Cuadrado: recuperar · Inicio: pausa · Esc o botón en pantalla: garaje", 14))
+    deadzone_label = _label("Zona muerta del mando (%.0f%%)" % (GameSession.controls.deadzone * 100.0), 16)
+    content.add_child(deadzone_label)
+    var slider := HSlider.new()
+    slider.min_value = 0.10
+    slider.max_value = 0.40
+    slider.step = 0.01
+    slider.value = GameSession.controls.deadzone
+    slider.value_changed.connect(_set_deadzone)
+    content.add_child(slider)
+    content.add_child(_button("RESTAURAR CONTROLES", _restore_controls))
+    content.add_child(_label("Los ajustes se guardan automáticamente, separados de la partida. Se usa el primer mando conectado.", 14))
+
+func _request_binding(name: String) -> void:
+    pending_binding = name
+    notice.text = "Nueva tecla para %s. Esc cancela." % str(GameSession.controls.TITLES[name]).to_lower()
+
+func _input(event: InputEvent) -> void:
+    if pending_binding.is_empty() or not (event is InputEventKey) or not event.pressed or event.echo:
+        return
+    get_viewport().set_input_as_handled()
+    if event.physical_keycode == KEY_ESCAPE:
+        pending_binding = ""
+        notice.text = "Cambio de tecla cancelado."
+        return
+    if event.ctrl_pressed or event.alt_pressed or event.meta_pressed or event.shift_pressed:
+        notice.text = "Usá una tecla sola, sin modificadores. Esc cancela."
+        return
+    var issue := GameSession.controls.bind(pending_binding, event.physical_keycode)
+    if not issue.is_empty():
+        notice.text = issue
+        return
+    pending_binding = ""
+    _save_controls()
+    _render()
+
+func _save_controls() -> void:
+    notice.text = "Controles guardados." if GameSession.controls.save_file(controls_path) == OK else "Controles aplicados en esta sesión; no se pudo guardar la configuración."
+
+func _set_deadzone(value: float) -> void:
+    GameSession.controls.deadzone = value
+    if is_instance_valid(deadzone_label):
+        deadzone_label.text = "Zona muerta del mando (%.0f%%)" % (value * 100.0)
+    _save_controls()
+
+func _restore_controls() -> void:
+    pending_binding = ""
+    GameSession.controls.restore_defaults()
+    _save_controls()
     _render()

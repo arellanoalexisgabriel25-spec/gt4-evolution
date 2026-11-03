@@ -28,10 +28,10 @@ func _run_test() -> void:
         return
     _check(scene.name == "Driving", "driving scene active")
     var start: Vector3 = scene.car.global_position
-    Input.action_press("ui_up")
+    Input.action_press("evo_accelerate")
     for i in range(90):
         await physics_frame
-    Input.action_release("ui_up")
+    Input.action_release("evo_accelerate")
     _check(scene.speed_mps > 0.0, "acceleration changes speed")
     _check(scene.car.global_position.distance_to(start) > 1.0, "car moves under throttle")
     _check(scene.distance_m > 1.0, "odometer measures distance")

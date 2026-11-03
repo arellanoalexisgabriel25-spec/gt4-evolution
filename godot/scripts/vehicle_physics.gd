@@ -33,7 +33,7 @@ func forward() -> Vector2:
 func signed_speed() -> float:
     return velocity.dot(forward())
 
-func step(delta: float, requested_throttle: float, requested_steering: float, brake: bool, on_road: bool = true) -> void:
+func step(delta: float, requested_throttle: float, requested_steering: float, brake: bool, on_road: bool = true, brake_strength: float = 1.0) -> void:
     if delta <= 0.0:
         return
     throttle = move_toward(throttle, clampf(requested_throttle, -1.0, 1.0), config.input_response * delta)
@@ -44,7 +44,7 @@ func step(delta: float, requested_throttle: float, requested_steering: float, br
     var lateral := velocity.dot(right)
     var before := longitudinal
     if brake:
-        longitudinal = move_toward(longitudinal, 0.0, config.braking * delta)
+        longitudinal = move_toward(longitudinal, 0.0, config.braking * clampf(brake_strength, 0.0, 1.0) * delta)
     elif throttle > 0.01:
         if longitudinal < -0.5:
             longitudinal = move_toward(longitudinal, 0.0, config.braking * throttle * delta)

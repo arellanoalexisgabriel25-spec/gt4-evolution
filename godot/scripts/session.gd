@@ -2,7 +2,9 @@ extends Node
 
 const Economy = preload("res://scripts/economy.gd")
 const Career = preload("res://scripts/career.gd")
-const VERSION := "0.9"
+const VERSION := "0.10"
+const ControlSettings = preload("res://scripts/control_settings.gd")
+var controls = ControlSettings.new()
 
 var game: EvolutionEconomy
 var career: EvolutionCareer
@@ -15,6 +17,9 @@ var active_race
 func _ready() -> void:
     get_window().title = "GT4 Evolution · " + VERSION
     reset()
+    if not controls.load_file():
+        controls.restore_defaults()
+        last_notice = "No se pudo leer la configuración de controles. Se usan los valores por defecto."
 
 func reset() -> void:
     game = Economy.new()

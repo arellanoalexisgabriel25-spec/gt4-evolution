@@ -60,7 +60,8 @@ func _mesh(size: Vector3, location: Vector3, value: Color) -> void:
     visual.add_child(mesh)
 
 func drive(delta: float, controls: Dictionary, road: bool) -> void:
-    physics.step(delta, float(controls.get("throttle", 0.0)), float(controls.get("steer", 0.0)), bool(controls.get("brake", false)), road)
+    var brake := clampf(float(controls.get("brake", 0.0)), 0.0, 1.0)
+    physics.step(delta, float(controls.get("throttle", 0.0)), float(controls.get("steer", 0.0)), brake > 0.0, road, brake)
     rotation.y = physics.heading
     var previous := global_position
     velocity.x = physics.velocity.x

@@ -8,6 +8,7 @@ const Driver = preload("res://scripts/rival_driver.gd")
 const Race = preload("res://scripts/race_session.gd")
 const Rivals = preload("res://scripts/rivals.gd")
 const Trial = preload("res://scripts/time_trial.gd")
+const ControlSettings = preload("res://scripts/control_settings.gd")
 const Handling = preload("res://scripts/handling.gd")
 
 var circuit = Layout.new()
@@ -116,7 +117,7 @@ func _build_hud() -> void:
     race_readout = Label.new()
     layout.add_child(race_readout)
     var help := Label.new()
-    help.text = "W / ↑ acelerar · S / ↓ frenar · A/D girar\nESPACIO freno · R recuperar · P pausa\nESC vuelve al garaje · Puertas amarillas en orden"
+    help.text = GameSession.controls.help_text() + "\nPuertas amarillas en orden"
     layout.add_child(help)
     var back := Button.new()
     back.text = "VOLVER AL GARAJE"
@@ -126,14 +127,7 @@ func _build_hud() -> void:
 func _player_controls() -> Dictionary:
     if input_provider.is_valid():
         return input_provider.call()
-    var forward := Input.is_physical_key_pressed(KEY_W) or Input.is_action_pressed("ui_up")
-    var reverse := Input.is_physical_key_pressed(KEY_S) or Input.is_action_pressed("ui_down")
-    var steer := 0.0
-    if Input.is_physical_key_pressed(KEY_A) or Input.is_action_pressed("ui_left"):
-        steer -= 1.0
-    if Input.is_physical_key_pressed(KEY_D) or Input.is_action_pressed("ui_right"):
-        steer += 1.0
-    return {"throttle":(1.0 if forward else 0.0) - (1.0 if reverse else 0.0), "steer":steer, "brake":Input.is_physical_key_pressed(KEY_SPACE)}
+    return GameSession.controls.read_controls()
 
 func _physics_process(delta: float) -> void:
     if not enabled or leaving:
@@ -239,15 +233,30 @@ func _refresh_hud() -> void:
             status += "\n%d. %s · %s" % [row["position"], row["name"], detail]
         race_readout.text = status
 
-func _unhandled_input(event: InputEvent) -> void:
-    if event is InputEventKey and event.pressed and not event.echo:
-        if event.physical_keycode == KEY_R and enabled:
-            _reset_car()
-        elif event.physical_keycode == KEY_P and enabled:
-            paused = not paused
-    if event.is_action_pressed("ui_cancel"):
+func _input(event: InputEvent) -> void:
+    if not enabled or leaving:
+        return
+    if event is InputEventKey and event.echo:
+        return
+    var pad_pressed: bool = event is InputEventJoypadButton and event.pressed
+    if event.is_action_pressed(ControlSettings.action("recover")) or (pad_pressed and event.button_index == JOY_BUTTON_X):
+        _reset_car()
+        get_viewport().set_input_as_handled()
+    elif event.is_action_pressed(ControlSettings.action("pause")) or (pad_pressed and event.button_index == JOY_BUTTON_START):
+        paused = not paused
+        get_viewport().set_input_as_handled()
+    elif event is InputEventKey and event.pressed and event.physical_keycode == KEY_ESCAPE:
+        # ui_cancel also maps to controller B, which is reverse while driving.
         get_viewport().set_input_as_handled()
         _back_to_garage()
+    elif event is InputEventJoypadButton or event is InputEventJoypadMotion:
+        get_viewport().set_input_as_handled()
+    else:
+        for name in ControlSettings.DEFAULT_KEYS:
+            if event.is_action(ControlSettings.action(name)):
+                # Driving inputs must not activate a focused garage-return button.
+                get_viewport().set_input_as_handled()
+                break
 
 func _back_to_garage() -> void:
     if leaving:

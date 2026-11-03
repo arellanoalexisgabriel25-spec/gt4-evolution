@@ -6,9 +6,9 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.9"
+VERSION = "0.10"
 ENGINE = "Godot_v4.6.3-stable_win64.exe"
-README = """GT4 EVOLUTION — PROTOTIPO 0.9
+README = """GT4 EVOLUTION — PROTOTIPO 0.10
 
 Extraé TODO el ZIP antes de abrir el juego.
 Windows 10/11 de 64 bits: doble clic en JUGAR.cmd. El primer inicio importa
@@ -25,6 +25,10 @@ Los demás eventos y la prueba de 10 km siguen siendo simulados.
 W/flecha arriba: acelerar. S/abajo: frenar y reversa. A/D o flechas: girar.
 ESPACIO: frenar. R: recuperar (tres segundos de detención en carrera).
 P: pausar a todos. ESC: volver al garaje / abandonar la carrera.
+AJUSTES permite cambiar teclas y la zona muerta del mando. Las flechas quedan
+siempre disponibles. Los controles se guardan automáticamente, separados de la partida.
+Mando: stick/cruceta gira, RT/R2 acelera, LT/L2 frena proporcionalmente,
+B/Círculo reversa, X/Cuadrado recupera e Inicio pausa. Se usa el primer mando conectado.
 Cruzá las ocho puertas en orden. Salir del asfalto invalida la vuelta actual.
 Se guardan mejores tiempos por auto y toda la distancia recorrida, incluso
 menos de 1 km. Volvé al garaje y presioná GUARDAR; el guardado es manual.

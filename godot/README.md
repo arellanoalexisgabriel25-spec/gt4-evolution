@@ -1,4 +1,4 @@
-# GT4 Evolution · v0.9
+# GT4 Evolution · v0.10
 
 Prototipo independiente de automovilismo en Godot 4.6.3: mercado de diez autos usados, inspecciones, taller, tuning, carrera profesional y conducción arcade 3D. La investigación de GT4 se consulta como referencia; no se incluyen su ejecutable, modelos, texturas ni circuitos comerciales.
 
@@ -26,6 +26,10 @@ El resto de los eventos de carrera continúa siendo **simulado**, indicado en su
 | Recuperar el auto en la salida | R |
 | Pausar/reanudar todos los participantes y relojes | P |
 | Volver al garaje; abandonar si hay carrera en curso | Esc |
+
+En **AJUSTES** podés reasignar las siete acciones a letras, números o Espacio. Las flechas siguen disponibles; Esc conserva su función de salida/cancelación. Se rechazan teclas duplicadas y combinaciones con modificadores. Restaurar controles recupera la configuración original. Estos ajustes se guardan automáticamente y no se pierden al iniciar una partida nueva; el progreso del juego sigue guardándose manualmente.
+
+Con un mando compatible: stick izquierdo o cruceta para girar, RT/R2 para acelerar, LT/L2 para frenar proporcionalmente, B/Círculo para reversa, X/Cuadrado para recuperar e Inicio para pausar. Se usa el primer mando conectado; permite conexión/desconexión durante la sesión. La zona muerta es ajustable entre 10% y 40%. En esta versión, volver al garaje requiere Esc o el botón en pantalla. La validación usa eventos y muestras simuladas de mando; no se ha probado con hardware físico.
 
 La recuperación conserva las vueltas ya completadas y la distancia realmente recorrida, pero invalida la vuelta en curso. En carrera añade tres segundos de detención mientras los rivales siguen. Salir del asfalto invalida la vuelta: hay que llegar de nuevo a meta para iniciar un intento válido, o recuperar con R. Todas las vueltas requieren ocho controles de paso en orden y sentido correcto.
 
