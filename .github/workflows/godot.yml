@@ -35,5 +35,7 @@ jobs:
         run: ./godot-bin --headless --path godot --script res://tests/test_rivals.gd
       - name: Smoke test driving scene
         run: ./godot-bin --headless --path godot res://scenes/driving.tscn --quit-after 5
+      - name: Test driving input and session persistence
+        run: ./godot-bin --headless --path godot --script res://tests/test_driving.gd
       - name: Load main scene
         run: ./godot-bin --headless --path godot --quit-after 5
