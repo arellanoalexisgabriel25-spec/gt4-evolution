@@ -31,5 +31,7 @@ jobs:
         run: ./godot-bin --headless --path godot --script res://tests/test_career.gd
       - name: Test tuning compatibility and wear
         run: ./godot-bin --headless --path godot --script res://tests/test_tuning.gd
+      - name: Test rival profiles and persistence
+        run: ./godot-bin --headless --path godot --script res://tests/test_rivals.gd
       - name: Load main scene
         run: ./godot-bin --headless --path godot --quit-after 5
