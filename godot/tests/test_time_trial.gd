@@ -40,6 +40,17 @@ func _initialize() -> void:
     trial.reset(Vector3(12, 0, -16), track)
     walk(trial, Vector3(12, 0, -24))
     check(trial.next_gate == 1, "Passing outside gate width cannot collect checkpoint")
+    var teleported = Trial.new()
+    teleported.reset(Vector3.ZERO, track)
+    teleported.advance(Vector3(0, 0, -24), 0.1)
+    walk(teleported, Vector3(0, 0, -16))
+    for target in [Vector3(0, 0, -22), Vector3(22, 0, -20), Vector3(20, 0, 2), Vector3(-2, 0, 0)]:
+        walk(teleported, target)
+    check(teleported.completed_laps == 0 and teleported.best_time == 0.0, "Teleport invalidates the entire lap, not just the next checkpoint")
+    check(teleported.valid, "Crossing the finish starts a new valid attempt")
+    for target in [Vector3(0, 0, -22), Vector3(22, 0, -20), Vector3(20, 0, 2), Vector3(-2, 0, 0)]:
+        walk(teleported, target)
+    check(teleported.completed_laps == 1, "A complete subsequent lap can count again")
     if not failed:
         print("PASS: %d time trial assertions" % checks)
     quit(1 if failed else 0)

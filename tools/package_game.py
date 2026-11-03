@@ -1,31 +1,42 @@
 """Package the standalone prototype, optionally with a verified Windows Godot runtime."""
 import argparse
 import hashlib
+import re
 from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.8.1"
+VERSION = "0.9"
 ENGINE = "Godot_v4.6.3-stable_win64.exe"
-README = """GT4 EVOLUTION — PROTOTIPO 0.8.1
+README = """GT4 EVOLUTION — PROTOTIPO 0.9
 
 Extraé TODO el ZIP antes de abrir el juego.
 Windows 10/11 de 64 bits: doble clic en JUGAR.cmd. El primer inicio importa
 el proyecto; puede tardar unos segundos. No requiere instalar Godot aparte.
 Si descargaste el ZIP de código, abrí juego/project.godot con Godot 4.6.3.
 
-Para probar: comprá un auto en MERCADO, abrí GARAJE y elegí CONDUCIR 3D.
-W/flecha arriba: acelerar. S/abajo: frenar y reversa. A/D o flechas: girar.
-ESPACIO: frenar. R: volver a la salida e invalidar la vuelta actual.
-ESC: volver al garaje. Atravesá las ocho puertas en orden para completar vueltas.
-GUARDAR y CARGAR, en el menú principal, conservan economía y carrera.
-Los tiempos de contrarreloj duran esta visita al circuito; no se guardan.
+Para practicar: comprá un auto en CONCESIONARIO, abrí GARAJE y elegí
+CONTRARRELOJ 3D o CARRERA LIBRE 3D. La carrera libre no cobra ni da premios.
+Para competir con progreso: MODO CARRERA -> Copa de Debutantes -> CORRER 3D.
+La inscripción cuesta 120 Cr. Abandonar consume la inscripción y no da premio.
+Son dos vueltas contra Nico y Claire; la llegada real paga 700/400/200 Cr.
+Los demás eventos y la prueba de 10 km siguen siendo simulados.
 
-Incluye mercado, inspecciones, reparaciones, tuning, carrera simulada,
-rivales simulados y circuito arcade 3D con cronómetro y controles de paso.
-No incluye IA de conducción ni modelos, pistas o física originales de GT4.
+W/flecha arriba: acelerar. S/abajo: frenar y reversa. A/D o flechas: girar.
+ESPACIO: frenar. R: recuperar (tres segundos de detención en carrera).
+P: pausar a todos. ESC: volver al garaje / abandonar la carrera.
+Cruzá las ocho puertas en orden. Salir del asfalto invalida la vuelta actual.
+Se guardan mejores tiempos por auto y toda la distancia recorrida, incluso
+menos de 1 km. Volvé al garaje y presioná GUARDAR; el guardado es manual.
+CARGAR recupera la partida anterior. Las partidas viejas siguen siendo compatibles.
+
+Incluye rivales físicos, barreras con colisión, ritmo y adelantamientos básicos,
+cronómetro, posiciones, resultado real de Debutantes, economía y desgaste.
+La conducción y los vehículos geométricos son provisionales. No hay daños por
+impacto, sonidos de motor ni física completa de neumáticos/embrague.
 Se consultó gt4-decomp como referencia para RPM y cambios secuenciales.
-No se han incluido recursos del juego comercial. Ver juego/REFERENCES.md.
+La IA y el circuito son implementaciones originales. No se han incluido
+recursos del juego comercial. Ver juego/REFERENCES.md y juego/README.md.
 
 Validación: Godot 4.6.3 en Linux, pruebas automatizadas sin interfaz gráfica.
 El paquete Windows no ha sido ejecutado en Windows en este entorno.
@@ -73,6 +84,9 @@ def main():
     parser.add_argument("--checksums", type=Path)
     parser.add_argument("--engine-license", type=Path)
     args = parser.parse_args()
+    session_version = re.search(r'^const VERSION := "([^"]+)"', (ROOT / "godot/scripts/session.gd").read_text(), re.MULTILINE)
+    if session_version is None or session_version.group(1) != VERSION:
+        raise ValueError("Game and package versions differ")
     args.output.mkdir(parents=True, exist_ok=True)
     if args.windows_engine:
         if not args.checksums:

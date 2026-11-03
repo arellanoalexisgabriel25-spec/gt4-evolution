@@ -1,76 +1,58 @@
-# GT4 Evolution — Godot 4
+# GT4 Evolution · v0.9
 
-Prototipo independiente de gestión de autos. La documentación de GT4 sirve como referencia, no se incluye el ejecutable ni recursos del juego original.
+Prototipo independiente de automovilismo en Godot 4.6.3: mercado de diez autos usados, inspecciones, taller, tuning, carrera profesional y conducción arcade 3D. La investigación de GT4 se consulta como referencia; no se incluyen su ejecutable, modelos, texturas ni circuitos comerciales.
 
-## Jugar
-Abrí `project.godot` con **Godot 4.4** y ejecutá la escena principal (F5). Contiene mercado de 10 vehículos, compra y venta, taller, desgaste, inspecciones, defectos reparables, valoración por estado y kilometraje, registro de créditos y guardado.
+## Probar el juego
 
-## Pruebas
+En el paquete Windows, extraé **todo** el ZIP y abrí `JUGAR.cmd`. No requiere instalar Godot. El primer arranque importa el proyecto; si falla, `DIAGNOSTICO.cmd` genera registros. El ejecutable Windows todavía requiere prueba en ese sistema; la validación automatizada se realiza en Linux.
+
+Con el proyecto fuente, abrí `project.godot` en Godot 4.6.3 y presioná F5.
+
+1. Comprá un auto usado en CONCESIONARIO. Podés pagar una inspección para conocer desgaste y defectos ocultos.
+2. En GARAJE, elegí CONTRARRELOJ 3D para practicar, o CARRERA LIBRE 3D para correr dos vueltas contra Nico Vega y Claire Moreau sin inscripción ni premios.
+3. En MODO CARRERA, la **Copa de Debutantes** ahora se disputa en pista. Cuesta 120 Cr.; el resultado real paga 700 / 400 / 200 Cr. según la llegada. Abandonar consume la inscripción y no otorga progreso. El premio solo se cobra una vez.
+4. Regresá al garaje y presioná GUARDAR para conservar créditos, desgaste, carrera, rivalidades y mejores vueltas. CARGAR recupera la partida. El guardado sigue siendo manual.
+
+El resto de los eventos de carrera continúa siendo **simulado**, indicado en sus botones. No se presentan como carreras 3D. La prueba de 10 km del garaje también es una simulación.
+
+## Controles
+
+| Acción | Teclas |
+| --- | --- |
+| Acelerar | W o ↑ |
+| Frenar; marcha atrás al detenerse | S o ↓ |
+| Dirección | A/D o ←/→ |
+| Freno sin pedir marcha atrás | Espacio |
+| Recuperar el auto en la salida | R |
+| Pausar/reanudar todos los participantes y relojes | P |
+| Volver al garaje; abandonar si hay carrera en curso | Esc |
+
+La recuperación conserva las vueltas ya completadas y la distancia realmente recorrida, pero invalida la vuelta en curso. En carrera añade tres segundos de detención mientras los rivales siguen. Salir del asfalto invalida la vuelta: hay que llegar de nuevo a meta para iniciar un intento válido, o recuperar con R. Todas las vueltas requieren ocho controles de paso en orden y sentido correcto.
+
+## Qué incluye esta versión
+
+- Circuito del club original y cerrado, con curvas suaves, asfalto, escapatorias, carteles y barreras con colisión.
+- Vehículos físicos que comparten el controlador del jugador, con aceleración progresiva, adherencia lateral limitada, derrape recuperable y respuesta diferenciada por tracción, desgaste y mejoras.
+- Transmisión configurable, RPM, marchas automáticas y cámara de seguimiento suavizada.
+- IA reproducible que anticipa curvas, regula acelerador/freno, intenta adelantar por un carril libre y frena ante tráfico próximo. Habilidad, agresividad y consistencia cambian el ritmo y las pequeñas desviaciones de trayectoria. Es una primera IA de conducción; no un sistema avanzado de competición.
+- Cuenta regresiva, posiciones en vivo, llegada real, resultados y abandonos. Los autos que llegan dejan de obstaculizar a quienes siguen compitiendo.
+- Integración de Debutantes con inscripciones, premios únicos, reputación, licencias y memoria de enfrentamientos.
+- Mejores vueltas por unidad de vehículo, guardadas con la carrera.
+- Distancia fraccionaria persistente y desgaste también en recorridos menores a un kilómetro, incluso al abandonar.
+- Carga JSON corregida y escritura mediante archivo temporal para conservar la partida anterior si el guardado falla. Partidas anteriores sin los campos opcionales nuevos siguen siendo compatibles; los eventos ya completados no vuelven a pagar.
+
+## Límites actuales
+
+La conducción es un modelo arcade provisional, no la física original de GT4. Los vehículos son geométricos; no hay modelos comerciales, sonido de motor, daños por impacto, simulación completa de neumáticos o embrague, ni circuitos adicionales. Las colisiones usan cuerpos de personaje, sin intercambio realista de impulsos. El desgaste se liquida al volver al garaje; no hay averías nuevas durante una vuelta. La IA usa seguimiento de trayectoria y selección simple de carril, con recuperación explícita si queda bloqueada. El guardado y la presentación gráfica deben seguir probándose en equipos reales.
+
+## Desarrollo y pruebas
+
+Desde la raíz del repositorio:
+
 ```sh
-godot --headless --path godot --editor --quit
-godot --headless --path godot --script res://tests/test_economy.gd
-godot --headless --path godot --script res://tests/test_inspection.gd
-godot --headless --path godot --script res://tests/test_market_restoration.gd
-godot --headless --path godot --script res://tests/test_career.gd
-godot --headless --path godot --script res://tests/test_tuning.gd
-godot --headless --path godot --script res://tests/test_rivals.gd
-```
-Hay una pista 3D de prueba con gráficos geométricos y conducción arcade elemental; no reproduce la física de GT4 ni implementa IA de conducción. Los vehículos y precios son datos provisionales para probar la economía.
-
-## Diseño
-- Realismo equilibrado
-- Economía muy exigente
-- Carrera profesional estructurada: 5 eventos de simulación, licencias R/B/A, reputación y premios únicos
-- Precios de mercado basados en condición, kilometraje y fallas (prototipo determinista)
-- Tuning inicial: cinco mejoras, compatibilidad por salud, bonus de simulación y desgaste adicional
-- Perfiles de pilotos rivales y clasificación simulada (v0.6); IA de conducción real pendiente
-
-Código en `scripts/economy.gd`; interfaz en `scripts/main.gd`.
-
-## Mercado y restauración v0.3
-Los 10 vehículos de prueba usan un generador determinista. Algunas unidades contienen defectos latentes en motor o frenos: esos defectos no se muestran antes de pagar una inspección (200 Cr.). Tras comprar el vehículo, el taller aplica un recargo de 900 Cr. para reparar el componente afectado, además del coste del desgaste habitual. Una reparación exitosa elimina el defecto.
-
-El valor base de un vehículo se ajusta por kilometraje, condición mecánica y defectos. La reventa incluye descuentos adicionales y no asegura ganancias por restauración. **Estas cifras son parámetros de diseño, no precios reales.**
-
-Las partidas anteriores sin el campo opcional `faults` siguen siendo compatibles. Se mantiene el esquema 1 de guardado; el contenido cargado se valida antes de aplicar cambios.
-
-## Carrera profesional v0.4
-La nueva pestaña **MODO CARRERA** ofrece cinco eventos simulados y desbloqueos basados en resultados: dos eventos de iniciación desbloquean licencia B, dos eventos regionales desbloquean A y finalmente se accede a la copa nacional. Los eventos requieren vehículo propio, condición segura e inscripción pagada; la simulación consume kilometraje y produce desgaste. Los premios de cada evento solo pueden cobrarse una vez para evitar duplicación de créditos. **Aún no hay carreras 3D ni rivales controlados por IA.**
-
-La partida se guarda con un contenedor v2 que combina economía y carrera; el cargador acepta también partidas antiguas con el estado económico v1. La carga construye estados temporales para no sustituir la partida actual si alguno es inválido.
-
-## Tuning v0.5
-La pestaña **TUNING** ofrece ECU, escape, suspensión, frenos y neumáticos. Cada mejora cuesta créditos y solo puede instalarse una vez; el componente correspondiente debe tener salud de al menos 40/100. Las mejoras aumentan la puntuación de simulación de carrera. ECU y escape aumentan el desgaste del motor. El tuning instalado se guarda por vehículo y se valida al cargar la partida, sin cambiar el formato v1 de la economía.
-
-No hay modificaciones físicas de potencia, curva de par ni neumáticos renderizados hasta introducir una simulación de conducción; los bonos son reglas provisionales de balance económico y carrera.
-
-## Rivales v0.6
-Cuatro rivales con perfiles de habilidad, agresividad y consistencia compiten en eventos simulados. Cada campeonato enfrenta al jugador con dos contrincantes; la posición depende de la condición del vehículo, las mejoras y los valores del perfil rival. El historial de enfrentamientos y el resultado por evento se conservan en la partida. No existe comportamiento autónomo en pista todavía. Los resultados son reproducibles, sin aleatoriedad oculta.
-
-## Conducción 3D v0.7
-La nueva opción **CONDUCIR 3D** aparece en el garaje al poseer un vehículo apto. Abre un circuito de prueba recto con un vehículo geométrico controlable mediante W/↑ (acelerar), S/↓ (frenar/reversa) y A/D o flechas (dirección); ESC o el botón VOLVER regresa al garaje sin perder la economía y carrera de la sesión. Los kilómetros enteros recorridos se transfieren al historial y al desgaste al volver; recorridos inferiores a un kilómetro no se acumulan de momento.
-
-Esta es una **demostración de control y escena 3D**, no un simulador físico, ni un port del motor de GT4. No incluye rivales conducibles, circuitos reales, colisiones con otros vehículos ni representación de modelos de marcas comerciales. La conducción de prueba no otorga premios de carrera.
-
-## Contrarreloj 3D v0.8
-El garaje abre ahora un circuito cerrado original con ocho controles de paso y barreras con colisión. Las vueltas solo cuentan al atravesar todos los controles en orden y en el sentido indicado por el trazado. El HUD muestra la vuelta, los controles superados, el tiempo actual y la mejor vuelta de esta visita al circuito. Reiniciar con R invalida la vuelta actual y conserva la distancia recorrida y los resultados completados; no otorga créditos.
-
-El estado del motor, los frenos y los neumáticos afecta a la conducción arcade. ECU y escape mejoran aceleración y velocidad máxima; frenos, neumáticos y suspensión mejoran frenada y respuesta de giro. Salir del asfalto limita la velocidad. ESPACIO frena sin pedir marcha atrás. Estas reglas son parámetros propios del prototipo: no proceden de la física original de GT4. Las carreras de la pestaña carrera siguen siendo simulaciones.
-
-Pruebas adicionales:
-```sh
-godot --headless --path godot --script res://tests/test_time_trial.gd
-godot --headless --path godot --script res://tests/test_handling.gd
-godot --headless --path godot --script res://tests/test_driving.gd
+bash tools/test_game.sh
 ```
 
-El proyecto completo se validó con Godot 4.6.3 en Linux sin interfaz gráfica. El paquete Windows incluye el motor oficial con su SHA-512 comprobado; su ejecución en Windows requiere prueba en ese sistema.
+El runner importa el proyecto, comprueba todos los scripts con los autoloads activos, ejecuta cada suite con límite de tiempo y verifica el arranque. Usa directorios de datos temporales para no tocar partidas del jugador y rechaza errores del motor o scripts, aunque el proceso termine con código cero.
 
-La física arcade ahora está separada del montaje de escena: entradas progresivas, agarre lateral limitado, derrape recuperable, transferencia longitudinal simplificada y diferencias entre tracción delantera, trasera e integral. Dos recursos configurables definen las bases de los vehículos. La cámara sigue al auto con suavizado independiente; el HUD muestra RPM y marchas automáticas. El motor, frenos y neumáticos desgastados, y las mejoras instaladas, afectan al controlador.
-
-Para ejecutar toda la validación: `bash tools/test_game.sh`. Arquitectura, limitaciones y prioridades de continuación en [DEVELOPMENT.md](DEVELOPMENT.md).
-
-## Transmisión v0.8.1
-Las RPM se calculan ahora a partir de velocidad, radio de rueda, relación de marcha y diferencial, con ralentí y límite configurables. Los cambios automáticos son secuenciales y tienen umbrales separados de subida/bajada e intervalo mínimo para evitar oscilaciones. La marcha atrás tiene su propia relación. Son parámetros provisionales del prototipo; la aceleración todavía usa el modelo arcade anterior, sin simulación completa de embrague o par motor.
-
-Se inspeccionó el repositorio completo de investigación de GT4 y se registraron las fuentes concretas y sus límites en [REFERENCES.md](REFERENCES.md). No se importaron recursos comerciales. Validación de este incremento: 11 suites y 190 aserciones aprobadas con Godot 4.6.3 en Linux headless; Windows requiere prueba en ese sistema.
+La validación incluye carreras completas con colisiones y controles de IA, pagos y abandonos, intento de premio duplicado, carga/escritura de JSON real, compatibilidad de partidas y récords. Arquitectura y decisiones: [DEVELOPMENT.md](DEVELOPMENT.md). Fuentes de investigación y límites: [REFERENCES.md](REFERENCES.md).
