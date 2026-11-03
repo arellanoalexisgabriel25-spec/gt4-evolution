@@ -21,7 +21,38 @@ func seed_demo() -> void:
         var health: Dictionary = {}
         for component in WEIGHTS:
             health[component] = float(rng.randi_range(40, 95))
-        cars.append({"id": i + 1, "model": MODELS[i], "km": rng.randi_range(60000, 260000), "health": health, "owner": "seller", "listed": true, "inspected": false, "price": 3000 + 950 * (i + 1) + rng.randi_range(0, 10) * 100, "history": []})
+        var km := rng.randi_range(60000, 260000)
+        var faults: Dictionary = {}
+        if i % 3 == 0:
+            faults["motor" if i % 2 == 0 else "frenos"] = true
+        var price := calculate_market_price(i, km, health, faults)
+        cars.append({"id": i + 1, "model": MODELS[i], "km": km, "health": health, "faults": faults, "owner": "seller", "listed": true, "inspected": false, "price": price, "history": []})
+
+# Reference value, mileage, mechanical health and known structural defects determine asking prices.
+# These tuning coefficients are deliberately game-balance values, not real-world appraisals.
+func calculate_market_price(index: int, km: int, health: Dictionary, faults: Dictionary) -> int:
+    var base := 4400.0 + 1300.0 * float(index + 1)
+    var weighted := 0.0
+    for component in WEIGHTS:
+        weighted += float(health.get(component, 0.0)) * float(WEIGHTS[component])
+    var state_factor := 0.40 + clampf(weighted / 100.0, 0.0, 1.0) * 0.75
+    var mileage_factor := clampf(1.20 - float(km) / 400000.0, 0.60, 1.10)
+    var faults_factor := 0.82 if not faults.is_empty() else 1.0
+    return maxi(900, roundi(base * state_factor * mileage_factor * faults_factor / 50.0) * 50)
+
+func inspection_summary(car: Dictionary) -> String:
+    if not bool(car.get("inspected", false)):
+        return "Estado mecánico no verificado."
+    var defects: Dictionary = car.get("faults", {})
+    if defects.is_empty():
+        return "Inspección: sin averías ocultas detectadas."
+    var components: Array[String] = []
+    for component in defects:
+        if bool(defects[component]):
+            components.append(str(component))
+    if components.is_empty():
+        return "Inspección: sin averías ocultas detectadas."
+    return "Averías detectadas: " + ", ".join(components)
 
 func find_car(id: int) -> Dictionary:
     for car in cars:
@@ -37,7 +68,8 @@ func condition(car: Dictionary) -> float:
 
 func eligible(car: Dictionary) -> bool:
     var h: Dictionary = car["health"]
-    return float(h["frenos"]) >= 40.0 and float(h["neumaticos"]) >= 40.0 and float(h["motor"]) >= 20.0
+    var faults: Dictionary = car.get("faults", {})
+    return float(h["frenos"]) >= 40.0 and float(h["neumaticos"]) >= 40.0 and float(h["motor"]) >= 20.0 and not bool(faults.get("frenos", false)) and not bool(faults.get("motor", false))
 
 func _record(car: Dictionary, event: String, amount: int) -> void:
     var item := {"car_id": int(car["id"]), "event": event, "amount": amount}
@@ -56,7 +88,7 @@ func inspect(id: int) -> String:
     balance -= INSPECTION_COST
     car["inspected"] = true
     _record(car, "inspeccion", -INSPECTION_COST)
-    return "Inspección completada: condición %.1f/100. Revisá el estado de los componentes." % condition(car)
+    return "Inspección completada: condición %.1f/100. %s" % [condition(car), inspection_summary(car)]
 
 func buy(id: int) -> String:
     var car := find_car(id)
@@ -76,10 +108,12 @@ func repair_quote(id: int, component: String) -> int:
     if car.is_empty() or not WEIGHTS.has(component):
         return -1
     var amount := minf(25.0, 100.0 - float(car["health"][component]))
-    if amount <= 0.0:
-        return 0
     var rate := {"motor": 65.0, "transmision": 55.0, "suspension": 38.0, "frenos": 32.0, "neumaticos": 28.0, "chasis": 60.0, "electrico": 25.0}
-    return maxi(100, ceili(amount * float(rate[component])))
+    var defects: Dictionary = car.get("faults", {})
+    var surcharge := 900 if bool(defects.get(component, false)) else 0
+    if amount <= 0.0 and surcharge == 0:
+        return 0
+    return maxi(100, ceili(amount * float(rate[component])) + surcharge)
 
 func repair(id: int, component: String) -> String:
     var car := find_car(id)
@@ -93,6 +127,8 @@ func repair(id: int, component: String) -> String:
     var old := float(car["health"][component])
     balance -= price
     car["health"][component] = minf(100.0, old + 25.0)
+    if car.has("faults"):
+        car["faults"].erase(component)
     _record(car, "reparacion:" + component, -price)
     return "Reparación de %s completada por %d Cr." % [component, price]
 
@@ -115,7 +151,10 @@ func resale_quote(id: int) -> int:
     if car.is_empty():
         return 0
     var quality := clampf(condition(car) / 100.0, 0.15, 1.0)
-    return maxi(0, floori(float(car["price"]) * 0.85 * (0.5 + quality * 0.5)))
+    var faults: Dictionary = car.get("faults", {})
+    var defects_factor := 0.78 if not faults.is_empty() else 1.0
+    var mileage_factor := clampf(1.0 - maxf(0.0, float(car["km"]) - 120000.0) / 600000.0, 0.65, 1.0)
+    return maxi(0, floori(float(car["price"]) * 0.85 * (0.5 + quality * 0.5) * defects_factor * mileage_factor))
 
 func sell(id: int) -> String:
     var car := find_car(id)
@@ -147,6 +186,11 @@ func from_dict(data: Dictionary) -> bool:
             return false
         if typeof(car.get("history")) != TYPE_ARRAY or typeof(car.get("health")) != TYPE_DICTIONARY:
             return false
+        if typeof(car.get("faults", {})) != TYPE_DICTIONARY:
+            return false
+        for component in car.get("faults", {}):
+            if not WEIGHTS.has(component) or typeof(car["faults"][component]) != TYPE_BOOL:
+                return false
         if (car["owner"] == "seller") != bool(car.get("listed", false)):
             return false
         for component in WEIGHTS:
