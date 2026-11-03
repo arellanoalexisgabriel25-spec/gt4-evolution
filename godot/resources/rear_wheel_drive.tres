@@ -9,3 +9,4 @@ acceleration = 15.0
 top_speed = 38.0
 grip = 1.0
 steering_angle = 0.58
+front_weight_bias = 0.50

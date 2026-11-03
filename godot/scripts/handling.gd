@@ -9,6 +9,7 @@ static func configuration(vehicle: Dictionary):
     var config = (FWD if front else RWD).duplicate()
     if model.contains("Impreza") or model.contains("Skyline"):
         config.drivetrain = "AWD"
+        config.front_weight_bias = 0.55
     var values := parameters(vehicle)
     config.acceleration *= float(values["acceleration"]) / 15.0
     config.top_speed *= float(values["top_speed"]) / 38.0

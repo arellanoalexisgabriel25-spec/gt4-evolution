@@ -1,4 +1,4 @@
-# GT4 Evolution · v0.10
+# GT4 Evolution · v0.11
 
 Prototipo independiente de automovilismo en Godot 4.6.3: mercado de diez autos usados, inspecciones, taller, tuning, carrera profesional y conducción arcade 3D. La investigación de GT4 se consulta como referencia; no se incluyen su ejecutable, modelos, texturas ni circuitos comerciales.
 
@@ -37,7 +37,9 @@ La recuperación conserva las vueltas ya completadas y la distancia realmente re
 
 - Circuito del club original y cerrado, con curvas suaves, asfalto, escapatorias, carteles y barreras con colisión.
 - Vehículos físicos que comparten el controlador del jugador, con aceleración progresiva, adherencia lateral limitada, derrape recuperable y respuesta diferenciada por tracción, desgaste y mejoras.
-- Transmisión configurable, RPM, marchas automáticas y cámara de seguimiento suavizada.
+- Transmisión configurable, RPM, curva de par normalizada y pérdida progresiva de empuje cerca de la velocidad máxima.
+- Transferencia de carga entre ejes, frenado limitado por neumáticos y giro limitado por agarre. Delantera, trasera e integral conservan respuestas diferentes.
+- Cámara con retardo de orientación, distancia y campo visual que cambian con la velocidad, incluso al derrapar.
 - IA reproducible que anticipa curvas, regula acelerador/freno, intenta adelantar por un carril libre y frena ante tráfico próximo. Habilidad, agresividad y consistencia cambian el ritmo y las pequeñas desviaciones de trayectoria. Es una primera IA de conducción; no un sistema avanzado de competición.
 - Cuenta regresiva, posiciones en vivo, llegada real, resultados y abandonos. Los autos que llegan dejan de obstaculizar a quienes siguen compitiendo.
 - Integración de Debutantes con inscripciones, premios únicos, reputación, licencias y memoria de enfrentamientos.
@@ -60,3 +62,8 @@ bash tools/test_game.sh
 El runner importa el proyecto, comprueba todos los scripts con los autoloads activos, ejecuta cada suite con límite de tiempo y verifica el arranque. Usa directorios de datos temporales para no tocar partidas del jugador y rechaza errores del motor o scripts, aunque el proceso termine con código cero.
 
 La validación incluye carreras completas con colisiones y controles de IA, pagos y abandonos, intento de premio duplicado, carga/escritura de JSON real, compatibilidad de partidas y récords. Arquitectura y decisiones: [DEVELOPMENT.md](DEVELOPMENT.md). Fuentes de investigación y límites: [REFERENCES.md](REFERENCES.md).
+
+## Integración v0.11
+Se integraron las modificaciones de dinámica y cámara aportadas en `files.zip`, preservando controles, carrera y partidas. Se añadió `speed()` al controlador, requerido por la nueva prueba, y se usa la velocidad total en el plano para que la cámara responda también durante un derrape lateral. El límite de frenado por neumáticos se aplica al freno y a los pedales de cambio de sentido; el frenado con S/B ya no se trata como propulsión sobre el eje motriz.
+
+Los parámetros siguen siendo de balance arcade, no medidas extraídas de GT4. La validación se realiza con Godot 4.6.3, incluyendo carreras completas y la nueva suite de dinámica; el ajuste visual y la sensación de conducción necesitan prueba en el equipo del jugador.

@@ -6,9 +6,9 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.10"
+VERSION = "0.11"
 ENGINE = "Godot_v4.6.3-stable_win64.exe"
-README = """GT4 EVOLUTION — PROTOTIPO 0.10
+README = """GT4 EVOLUTION — PROTOTIPO 0.11
 
 Extraé TODO el ZIP antes de abrir el juego.
 Windows 10/11 de 64 bits: doble clic en JUGAR.cmd. El primer inicio importa
@@ -36,7 +36,10 @@ CARGAR recupera la partida anterior. Las partidas viejas siguen siendo compatibl
 
 Incluye rivales físicos, barreras con colisión, ritmo y adelantamientos básicos,
 cronómetro, posiciones, resultado real de Debutantes, economía y desgaste.
-La conducción y los vehículos geométricos son provisionales. No hay daños por
+La aceleración sigue una curva de par por RPM, la carga afecta al agarre de
+cada eje y el frenado está limitado por neumáticos, también al pedir reversa.
+La cámara suaviza los giros y adapta distancia y campo visual a la velocidad.
+La conducción y los vehículos geométricos siguen siendo provisionales. No hay daños por
 impacto, sonidos de motor ni física completa de neumáticos/embrague.
 Se consultó gt4-decomp como referencia para RPM y cambios secuenciales.
 La IA y el circuito son implementaciones originales. No se han incluido
