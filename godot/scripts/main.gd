@@ -2,6 +2,7 @@ extends Control
 
 const Economy = preload("res://scripts/economy.gd")
 const Career = preload("res://scripts/career.gd")
+const Tuning = preload("res://scripts/tuning.gd")
 const SAVE_PATH := "user://evolution_save_v1.json"
 var game: EvolutionEconomy
 var career: EvolutionCareer
@@ -45,7 +46,7 @@ func _build_interface() -> void:
     margin.add_child(root)
     var header := HBoxContainer.new()
     root.add_child(header)
-    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.4", 27))
+    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.5", 27))
     var spacer := Control.new()
     spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     header.add_child(spacer)
@@ -57,6 +58,7 @@ func _build_interface() -> void:
     for entry in [{"key":"mercado","title":"CONCESIONARIO"}, {"key":"garaje","title":"GARAJE"}, {"key":"taller","title":"TALLER"}, {"key":"historial","title":"MOVIMIENTOS"}]:
         tabs.add_child(_button(entry["title"], _change_tab.bind(entry["key"])))
     tabs.add_child(_button("MODO CARRERA", _change_tab.bind("carrera")))
+    tabs.add_child(_button("TUNING", _change_tab.bind("tuning")))
     var scroll := ScrollContainer.new()
     scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
     root.add_child(scroll)
@@ -88,6 +90,7 @@ func _render() -> void:
         "taller": _workshop()
         "historial": _history()
         "carrera": _career()
+        "tuning": _tuning()
 
 func _market() -> void:
     content.add_child(_label("MERCADO DE USADOS", 22))
@@ -153,6 +156,30 @@ func _history() -> void:
     content.add_child(_label("MOVIMIENTOS ECONÓMICOS", 22))
     for entry in game.ledger:
         content.add_child(_label("Auto #%d · %s · %+d Cr." % [entry["car_id"], entry["event"], entry["amount"]], 16))
+
+func _tuning() -> void:
+    content.add_child(_label("TUNING Y PREPARACIÓN", 22))
+    content.add_child(_label("Las mejoras influyen en carreras simuladas. Motor más potente = más desgaste.", 14))
+    var shop = Tuning.new()
+    for car in game.cars:
+        if car["owner"] != "player":
+            continue
+        content.add_child(_label("%s · bonificación +%.1f" % [car["model"], shop.performance_bonus(car)], 18))
+        for part in Tuning.PARTS:
+            var row := HBoxContainer.new()
+            content.add_child(row)
+            var description := _label("%s · +%.1f · %d Cr." % [part["name"], part["gain"], part["price"]], 15)
+            description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+            row.add_child(description)
+            var part_id: String = part["id"]
+            var issue := shop.can_install(game, int(car["id"]), part_id)
+            var button := _button("INSTALADA" if shop.has_part(car, part_id) else "COMPRAR", _install_part.bind(int(car["id"]), part_id))
+            button.disabled = not issue.is_empty()
+            row.add_child(button)
+
+func _install_part(car_id: int, part_id: String) -> void:
+    notice.text = Tuning.new().install(game, car_id, part_id)
+    _render()
 
 func _career() -> void:
     content.add_child(_label("CARRERA PROFESIONAL · LICENCIA %s" % career.license, 22))

@@ -1,6 +1,8 @@
 extends RefCounted
 class_name EvolutionCareer
 
+const Tuning = preload("res://scripts/tuning.gd")
+
 # Competition is an explicitly simulated result until the driving module exists.
 # Each event pays only once. Licenses depend on achievements, not cash.
 const EVENTS := [
@@ -47,7 +49,7 @@ func simulate_event(game, event_id: String, vehicle_id: int) -> String:
     var event := event_by_id(event_id)
     var car: Dictionary = game.find_car(vehicle_id)
     # Snapshot BEFORE wear so event performance is evaluated at the starting condition.
-    var initial_condition := float(game.condition(car))
+    var initial_condition := float(game.condition(car)) + Tuning.new().performance_bonus(car)
     var position := 3
     if initial_condition >= float(event["target"]):
         position = 1
