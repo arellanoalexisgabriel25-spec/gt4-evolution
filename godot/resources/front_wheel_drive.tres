@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/vehicle_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+drivetrain = "FWD"
+acceleration = 12.5
+top_speed = 35.0
+grip = 0.96
+steering_angle = 0.55

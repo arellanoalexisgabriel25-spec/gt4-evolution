@@ -46,7 +46,7 @@ func _build_interface() -> void:
     margin.add_child(root)
     var header := HBoxContainer.new()
     root.add_child(header)
-    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.7", 27))
+    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.8", 27))
     var spacer := Control.new()
     spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     header.add_child(spacer)
@@ -186,7 +186,7 @@ func _install_part(car_id: int, part_id: String) -> void:
 
 func _career() -> void:
     content.add_child(_label("CARRERA PROFESIONAL · LICENCIA %s" % career.license, 22))
-    content.add_child(_label("Reputación: %d · Las carreras son simulaciones hasta disponer de conducción 3D." % career.reputation, 15))
+    content.add_child(_label("Reputación: %d · Eventos de carrera simulados · Contrarreloj 3D disponible en el garaje." % career.reputation, 15))
     var owned: Array[Dictionary] = []
     for car in game.cars:
         if car["owner"] == "player":

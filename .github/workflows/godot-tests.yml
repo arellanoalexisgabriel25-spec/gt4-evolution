@@ -1,0 +1,28 @@
+name: Godot prototype
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install verified Godot 4.6.3
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=https://github.com/godotengine/godot/releases/download/4.6.3-stable
+          archive=Godot_v4.6.3-stable_linux.x86_64.zip
+          curl --fail --location --retry 3 "$base/$archive" -o "$RUNNER_TEMP/$archive"
+          curl --fail --location --retry 3 "$base/SHA512-SUMS.txt" -o "$RUNNER_TEMP/SHA512-SUMS.txt"
+          cd "$RUNNER_TEMP"
+          grep "  $archive$" SHA512-SUMS.txt > godot.sha512
+          sha512sum --check godot.sha512
+          unzip "$archive" -d godot-engine
+          chmod +x godot-engine/Godot_v4.6.3-stable_linux.x86_64
+          echo "GODOT_BIN=$RUNNER_TEMP/godot-engine/Godot_v4.6.3-stable_linux.x86_64" >> "$GITHUB_ENV"
+      - name: Import, test, and smoke startup
+        run: bash tools/test_game.sh
