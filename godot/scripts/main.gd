@@ -3,6 +3,7 @@ extends Control
 const Economy = preload("res://scripts/economy.gd")
 const Career = preload("res://scripts/career.gd")
 const Tuning = preload("res://scripts/tuning.gd")
+const Rivals = preload("res://scripts/rivals.gd")
 const SAVE_PATH := "user://evolution_save_v1.json"
 var game: EvolutionEconomy
 var career: EvolutionCareer
@@ -46,7 +47,7 @@ func _build_interface() -> void:
     margin.add_child(root)
     var header := HBoxContainer.new()
     root.add_child(header)
-    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.5", 27))
+    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.6", 27))
     var spacer := Control.new()
     spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     header.add_child(spacer)
@@ -188,6 +189,11 @@ func _career() -> void:
     for car in game.cars:
         if car["owner"] == "player":
             owned.append(car)
+    content.add_child(_label("PILOTOS RIVALES", 18))
+    for driver in Rivals.DRIVERS:
+        var record: Dictionary = career.rivalries.get(driver["id"], {"encounters":0,"victories":0,"defeats":0})
+        content.add_child(_label("%s · habilidad %.0f · enfrentamientos %d · victorias %d" % [driver["name"],driver["skill"],record["encounters"],record["victories"]], 14))
+    content.add_child(_label("CAMPEONATOS", 18))
     for event in Career.EVENTS:
         var event_id: String = event["id"]
         var summary := "%s · Licencia %s · %d Cr. de inscripción · %d km" % [event["name"],event["license"],event["fee"],event["distance"]]
