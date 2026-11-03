@@ -13,9 +13,8 @@ var funds: Label
 var notice: Label
 
 func _ready() -> void:
-    game = Economy.new()
-    game.seed_demo()
-    career = Career.new()
+    game = GameSession.game
+    career = GameSession.career
     _build_interface()
     _render()
 
@@ -47,7 +46,7 @@ func _build_interface() -> void:
     margin.add_child(root)
     var header := HBoxContainer.new()
     root.add_child(header)
-    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.6", 27))
+    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.7", 27))
     var spacer := Control.new()
     spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     header.add_child(spacer)
@@ -130,6 +129,9 @@ func _garage() -> void:
         var drive_button := _button("PRUEBA 10 KM", _drive.bind(int(car["id"])))
         drive_button.disabled = not game.eligible(car)
         line.add_child(drive_button)
+        var drive_3d := _button("CONDUCIR 3D", _drive_3d.bind(int(car["id"])))
+        drive_3d.disabled = not game.eligible(car)
+        line.add_child(drive_3d)
         line.add_child(_button("VENDER %d Cr." % game.resale_quote(int(car["id"])), _sell.bind(int(car["id"]))))
     if not found:
         content.add_child(_label("No tenés vehículos. Visitá el concesionario."))
@@ -232,6 +234,12 @@ func _repair(id: int, component: String) -> void:
     notice.text = game.repair(id, component)
     _render()
 
+func _drive_3d(id: int) -> void:
+    if not GameSession.choose_vehicle(id):
+        notice.text = "El auto no está disponible o requiere reparación."
+        return
+    get_tree().change_scene_to_file("res://scenes/driving.tscn")
+
 func _drive(id: int) -> void:
     notice.text = game.drive(id, 10)
     _render()
@@ -266,11 +274,14 @@ func _load() -> void:
         return
     game = candidate_game
     career = candidate_career
+    GameSession.game = game
+    GameSession.career = career
     notice.text = "Partida recuperada."
     _render()
 
 func _reset() -> void:
-    game.seed_demo()
-    career = Career.new()
+    GameSession.reset()
+    game = GameSession.game
+    career = GameSession.career
     notice.text = "Nueva partida iniciada."
     _render()
