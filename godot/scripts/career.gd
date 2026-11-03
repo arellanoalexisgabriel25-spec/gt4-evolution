@@ -2,6 +2,7 @@ extends RefCounted
 class_name EvolutionCareer
 
 const Tuning = preload("res://scripts/tuning.gd")
+const Rivals = preload("res://scripts/rivals.gd")
 
 # Competition is an explicitly simulated result until the driving module exists.
 # Each event pays only once. Licenses depend on achievements, not cash.
@@ -18,6 +19,7 @@ var license: String = "R"
 var reputation: int = 0
 var completed: Array[String] = []
 var results: Array[Dictionary] = []
+var rivalries: Dictionary = {}
 
 func event_by_id(event_id: String) -> Dictionary:
     for event in EVENTS:
@@ -50,11 +52,10 @@ func simulate_event(game, event_id: String, vehicle_id: int) -> String:
     var car: Dictionary = game.find_car(vehicle_id)
     # Snapshot BEFORE wear so event performance is evaluated at the starting condition.
     var initial_condition := float(game.condition(car)) + Tuning.new().performance_bonus(car)
-    var position := 3
-    if initial_condition >= float(event["target"]):
-        position = 1
-    elif initial_condition >= float(event["target"]) - 13.0:
-        position = 2
+    var field_result: Dictionary = Rivals.new().classify(initial_condition, event_id)
+    if field_result.is_empty():
+        return "No hay rivales configurados para esta prueba."
+    var position: int = field_result["position"]
     var fee := int(event["fee"])
     var reward := int(event["rewards"][position - 1])
     # This call must succeed because the same car/eligibility constraints were checked above.
@@ -68,7 +69,16 @@ func simulate_event(game, event_id: String, vehicle_id: int) -> String:
     game._record(car, "carrera:" + event_id, net)
     completed.append(event_id)
     reputation += 4 if position == 1 else (3 if position == 2 else 2)
-    results.append({"id":event_id,"vehicle_id":vehicle_id,"position":position,"fee":fee,"reward":reward,"net":net})
+    results.append({"id":event_id,"vehicle_id":vehicle_id,"position":position,"fee":fee,"reward":reward,"net":net,"opponents":field_result["opponents"].duplicate(true)})
+    for opponent in field_result["opponents"]:
+        var rival_id: String = opponent["id"]
+        var previous: Dictionary = rivalries.get(rival_id, {"encounters":0,"victories":0,"defeats":0})
+        previous["encounters"] = int(previous["encounters"]) + 1
+        if initial_condition > float(opponent["score"]):
+            previous["victories"] = int(previous["victories"]) + 1
+        else:
+            previous["defeats"] = int(previous["defeats"]) + 1
+        rivalries[rival_id] = previous
     _promote()
     return "%s · Puesto %d · Premio %d Cr. · Neto %+d Cr. · Licencia %s" % [event["name"], position, reward, net, license]
 
@@ -79,7 +89,7 @@ func _promote() -> void:
         license = "A"
 
 func to_dict() -> Dictionary:
-    return {"schema_version":1, "license":license, "reputation":reputation, "completed":completed.duplicate(), "results":results.duplicate(true)}
+    return {"schema_version":1, "license":license, "reputation":reputation, "completed":completed.duplicate(), "results":results.duplicate(true), "rivalries":rivalries.duplicate(true)}
 
 func from_dict(data: Dictionary) -> bool:
     if data.get("schema_version") != 1 or not LICENSE_LEVELS.has(data.get("license", "")):
@@ -108,6 +118,16 @@ func from_dict(data: Dictionary) -> bool:
         return false
     if data["license"] == "A" and (not seen.has("debut") or not seen.has("local") or not seen.has("regional") or not seen.has("endurance")):
         return false
+    if typeof(data.get("rivalries", {})) != TYPE_DICTIONARY:
+        return false
+    for rival_id in data.get("rivalries", {}):
+        if Rivals.new().driver_by_id(str(rival_id)).is_empty():
+            return false
+        var r = data["rivalries"][rival_id]
+        if typeof(r) != TYPE_DICTIONARY or typeof(r.get("encounters")) != TYPE_INT or typeof(r.get("victories")) != TYPE_INT or typeof(r.get("defeats")) != TYPE_INT:
+            return false
+        if int(r["encounters"]) < 0 or int(r["victories"]) < 0 or int(r["defeats"]) < 0 or int(r["encounters"]) != int(r["victories"]) + int(r["defeats"]):
+            return false
     license = str(data["license"])
     reputation = int(data["reputation"])
     completed.clear()
@@ -116,4 +136,5 @@ func from_dict(data: Dictionary) -> bool:
     results.clear()
     for result in data["results"]:
         results.append(result.duplicate(true))
+    rivalries = data.get("rivalries", {}).duplicate(true)
     return true
