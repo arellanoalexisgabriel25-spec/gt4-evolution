@@ -46,7 +46,7 @@ func _build_interface() -> void:
     margin.add_child(root)
     var header := HBoxContainer.new()
     root.add_child(header)
-    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.8", 27))
+    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.8.1", 27))
     var spacer := Control.new()
     spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     header.add_child(spacer)

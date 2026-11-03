@@ -5,9 +5,9 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.8"
+VERSION = "0.8.1"
 ENGINE = "Godot_v4.6.3-stable_win64.exe"
-README = """GT4 EVOLUTION — PROTOTIPO 0.8
+README = """GT4 EVOLUTION — PROTOTIPO 0.8.1
 
 Extraé TODO el ZIP antes de abrir el juego.
 Windows 10/11 de 64 bits: doble clic en JUGAR.cmd. El primer inicio importa
@@ -24,8 +24,8 @@ Los tiempos de contrarreloj duran esta visita al circuito; no se guardan.
 Incluye mercado, inspecciones, reparaciones, tuning, carrera simulada,
 rivales simulados y circuito arcade 3D con cronómetro y controles de paso.
 No incluye IA de conducción ni modelos, pistas o física originales de GT4.
-No se encontraron los archivos originales mencionados en la conversación
-en el entorno de esta versión. No se han incluido recursos del juego comercial.
+Se consultó gt4-decomp como referencia para RPM y cambios secuenciales.
+No se han incluido recursos del juego comercial. Ver juego/REFERENCES.md.
 
 Validación: Godot 4.6.3 en Linux, pruebas automatizadas sin interfaz gráfica.
 El paquete Windows no ha sido ejecutado en Windows en este entorno.

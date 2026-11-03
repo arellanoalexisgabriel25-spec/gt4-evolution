@@ -38,3 +38,7 @@ The strict runner imports the project, requires a PASS from every test script, r
 ## Next increment
 
 Validate complete driving laps and collision recovery under reproducible navigation scenarios, refine the handling with player feedback, then implement waypoint-following physical rivals with curve anticipation and collision avoidance. Preserve simulated career events until real race completion and reward accounting are covered by integration tests.
+
+## Version 0.8.1
+
+Added independent configurable transmission telemetry and sequential automatic shifting after inspection of the supplied gt4-decomp repository. See REFERENCES.md for exact source paths and boundaries. The strict runner passed 11 suites / 190 assertions. Existing save schemas are unchanged. This branch depends on the pending version 0.8 feature branch; main is not merged or reset.

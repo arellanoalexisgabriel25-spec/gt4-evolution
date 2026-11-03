@@ -4,6 +4,8 @@ extends RefCounted
 # Lateral correction is limited by available tire acceleration; excess demand
 # retains sideways velocity instead of immediately rotating the velocity vector.
 const Config = preload("res://scripts/vehicle_config.gd")
+const Transmission = preload("res://scripts/transmission.gd")
+var transmission = Transmission.new()
 var config = Config.new()
 var velocity := Vector2.ZERO
 var heading := 0.0
@@ -23,6 +25,7 @@ func reset(angle: float = 0.0) -> void:
     slip = 0.0
     gear = 1
     rpm = 900.0
+    transmission.reset()
 
 func forward() -> Vector2:
     return Vector2(-sin(heading), -cos(heading))
@@ -77,9 +80,6 @@ func step(delta: float, requested_throttle: float, requested_steering: float, br
     var yaw_rate: float = -longitudinal / maxf(config.wheelbase, 0.5) * tan(wheel_angle) * steer_scale
     heading = wrapf(heading + clampf(yaw_rate, -1.6, 1.6) * delta, -PI, PI)
     slip = absf(velocity.dot(Vector2(-forward().y, forward().x)))
-    if longitudinal < -0.5:
-        gear = -1
-        rpm = minf(6500.0, 1000.0 + absf(longitudinal) * 450.0)
-    else:
-        gear = clampi(int(maxf(longitudinal, 0.0) / 9.0) + 1, 1, 5)
-        rpm = clampf(1100.0 + fmod(maxf(longitudinal, 0.0), 9.0) * 510.0 + absf(throttle) * 500.0, 900.0, 7000.0)
+    transmission.update(delta, signed_speed(), config)
+    gear = transmission.gear
+    rpm = transmission.rpm

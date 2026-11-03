@@ -69,3 +69,8 @@ El proyecto completo se validó con Godot 4.6.3 en Linux sin interfaz gráfica. 
 La física arcade ahora está separada del montaje de escena: entradas progresivas, agarre lateral limitado, derrape recuperable, transferencia longitudinal simplificada y diferencias entre tracción delantera, trasera e integral. Dos recursos configurables definen las bases de los vehículos. La cámara sigue al auto con suavizado independiente; el HUD muestra RPM y marchas automáticas. El motor, frenos y neumáticos desgastados, y las mejoras instaladas, afectan al controlador.
 
 Para ejecutar toda la validación: `bash tools/test_game.sh`. Arquitectura, limitaciones y prioridades de continuación en [DEVELOPMENT.md](DEVELOPMENT.md).
+
+## Transmisión v0.8.1
+Las RPM se calculan ahora a partir de velocidad, radio de rueda, relación de marcha y diferencial, con ralentí y límite configurables. Los cambios automáticos son secuenciales y tienen umbrales separados de subida/bajada e intervalo mínimo para evitar oscilaciones. La marcha atrás tiene su propia relación. Son parámetros provisionales del prototipo; la aceleración todavía usa el modelo arcade anterior, sin simulación completa de embrague o par motor.
+
+Se inspeccionó el repositorio completo de investigación de GT4 y se registraron las fuentes concretas y sus límites en [REFERENCES.md](REFERENCES.md). No se importaron recursos comerciales. Validación de este incremento: 11 suites y 190 aserciones aprobadas con Godot 4.6.3 en Linux headless; Windows requiere prueba en ese sistema.

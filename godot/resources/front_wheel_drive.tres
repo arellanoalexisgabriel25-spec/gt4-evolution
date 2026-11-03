@@ -9,3 +9,5 @@ acceleration = 12.5
 top_speed = 35.0
 grip = 0.96
 steering_angle = 0.55
+gear_ratios = PackedFloat32Array(3.25, 2.05, 1.45, 1.10, 0.85)
+final_drive = 4.25
