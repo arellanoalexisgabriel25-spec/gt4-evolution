@@ -13,6 +13,7 @@ godot --headless --path godot --script res://tests/test_inspection.gd
 godot --headless --path godot --script res://tests/test_market_restoration.gd
 godot --headless --path godot --script res://tests/test_career.gd
 godot --headless --path godot --script res://tests/test_tuning.gd
+godot --headless --path godot --script res://tests/test_rivals.gd
 ```
 No hay conducción 3D, física de GT4 ni IA avanzada en esta primera versión. Los vehículos y precios son datos provisionales para probar la economía.
 
@@ -22,7 +23,7 @@ No hay conducción 3D, física de GT4 ni IA avanzada en esta primera versión. L
 - Carrera profesional estructurada: 5 eventos de simulación, licencias R/B/A, reputación y premios únicos
 - Precios de mercado basados en condición, kilometraje y fallas (prototipo determinista)
 - Tuning inicial: cinco mejoras, compatibilidad por salud, bonus de simulación y desgaste adicional
-- IA de rivales (pendiente)
+- Perfiles de pilotos rivales y clasificación simulada (v0.6); IA de conducción real pendiente
 
 Código en `scripts/economy.gd`; interfaz en `scripts/main.gd`.
 
@@ -42,3 +43,6 @@ La partida se guarda con un contenedor v2 que combina economía y carrera; el ca
 La pestaña **TUNING** ofrece ECU, escape, suspensión, frenos y neumáticos. Cada mejora cuesta créditos y solo puede instalarse una vez; el componente correspondiente debe tener salud de al menos 40/100. Las mejoras aumentan la puntuación de simulación de carrera. ECU y escape aumentan el desgaste del motor. El tuning instalado se guarda por vehículo y se valida al cargar la partida, sin cambiar el formato v1 de la economía.
 
 No hay modificaciones físicas de potencia, curva de par ni neumáticos renderizados hasta introducir una simulación de conducción; los bonos son reglas provisionales de balance económico y carrera.
+
+## Rivales v0.6
+Cuatro rivales con perfiles de habilidad, agresividad y consistencia compiten en eventos simulados. Cada campeonato enfrenta al jugador con dos contrincantes; la posición depende de la condición del vehículo, las mejoras y los valores del perfil rival. El historial de enfrentamientos y el resultado por evento se conservan en la partida. No existe comportamiento autónomo en pista todavía. Los resultados son reproducibles, sin aleatoriedad oculta.
