@@ -1,6 +1,8 @@
 extends RefCounted
 class_name EvolutionEconomy
 
+const Tuning = preload("res://scripts/tuning.gd")
+
 const SCHEMA_VERSION := 1
 const START_BALANCE := 12000
 const MODELS := ["Mazda MX-5 NA", "Honda Civic EK", "Toyota Corolla Levin AE86", "Nissan Silvia S13", "Toyota MR2 SW20", "Honda Prelude", "Mitsubishi FTO", "Mazda RX-7 FC", "Subaru Impreza GC8", "Nissan Skyline R32"]
@@ -26,7 +28,7 @@ func seed_demo() -> void:
         if i % 3 == 2:
             faults["motor" if i % 2 == 0 else "frenos"] = true
         var price := calculate_market_price(i, km, health, faults)
-        cars.append({"id": i + 1, "model": MODELS[i], "km": km, "health": health, "faults": faults, "owner": "seller", "listed": true, "inspected": false, "price": price, "history": []})
+        cars.append({"id": i + 1, "model": MODELS[i], "km": km, "health": health, "faults": faults, "owner": "seller", "listed": true, "inspected": false, "price": price, "upgrades": [], "history": []})
 
 # Reference value, mileage, mechanical health and known structural defects determine asking prices.
 # These tuning coefficients are deliberately game-balance values, not real-world appraisals.
@@ -141,8 +143,10 @@ func drive(id: int, km: int, severity: float = 2.0) -> String:
     if not eligible(car):
         return "Vehículo no apto: revisá frenos, neumáticos y motor."
     car["km"] = int(car["km"]) + km
+    var tuning = Tuning.new()
     for component in WEAR:
-        car["health"][component] = snappedf(maxf(0.0, float(car["health"][component]) - float(WEAR[component]) * km * severity), 0.0001)
+        var multiplier := tuning.engine_wear_multiplier(car) if component == "motor" else 1.0
+        car["health"][component] = snappedf(maxf(0.0, float(car["health"][component]) - float(WEAR[component]) * km * severity * multiplier), 0.0001)
     car["history"].append({"event": "prueba", "km": km})
     return "Prueba de %d km completada." % km
 
@@ -186,6 +190,14 @@ func from_dict(data: Dictionary) -> bool:
             return false
         if typeof(car.get("history")) != TYPE_ARRAY or typeof(car.get("health")) != TYPE_DICTIONARY:
             return false
+        if typeof(car.get("upgrades", [])) != TYPE_ARRAY:
+            return false
+        var known_upgrades := {}
+        var tuning = Tuning.new()
+        for part_id in car.get("upgrades", []):
+            if typeof(part_id) != TYPE_STRING or tuning.part_by_id(part_id).is_empty() or known_upgrades.has(part_id):
+                return false
+            known_upgrades[part_id] = true
         if typeof(car.get("faults", {})) != TYPE_DICTIONARY:
             return false
         for component in car.get("faults", {}):
