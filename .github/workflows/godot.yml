@@ -23,5 +23,7 @@ jobs:
         run: ./godot-bin --headless --path godot --editor --quit
       - name: Run economy tests
         run: ./godot-bin --headless --path godot --script res://tests/test_economy.gd
+      - name: Run inspection tests
+        run: ./godot-bin --headless --path godot --script res://tests/test_inspection.gd
       - name: Load main scene
         run: ./godot-bin --headless --path godot --quit-after 5
