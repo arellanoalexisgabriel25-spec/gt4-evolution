@@ -11,13 +11,14 @@ godot --headless --path godot --editor --quit
 godot --headless --path godot --script res://tests/test_economy.gd
 godot --headless --path godot --script res://tests/test_inspection.gd
 godot --headless --path godot --script res://tests/test_market_restoration.gd
+godot --headless --path godot --script res://tests/test_career.gd
 ```
 No hay conducción 3D, física de GT4 ni IA avanzada en esta primera versión. Los vehículos y precios son datos provisionales para probar la economía.
 
 ## Diseño
 - Realismo equilibrado
 - Economía muy exigente
-- Carrera profesional estructurada (pendiente)
+- Carrera profesional estructurada: 5 eventos de simulación, licencias R/B/A, reputación y premios únicos
 - Precios de mercado basados en condición, kilometraje y fallas (prototipo determinista)
 - Tuning profundo (pendiente)
 - IA de rivales (pendiente)
@@ -30,3 +31,8 @@ Los 10 vehículos de prueba usan un generador determinista. Algunas unidades con
 El valor base de un vehículo se ajusta por kilometraje, condición mecánica y defectos. La reventa incluye descuentos adicionales y no asegura ganancias por restauración. **Estas cifras son parámetros de diseño, no precios reales.**
 
 Las partidas anteriores sin el campo opcional `faults` siguen siendo compatibles. Se mantiene el esquema 1 de guardado; el contenido cargado se valida antes de aplicar cambios.
+
+## Carrera profesional v0.4
+La nueva pestaña **MODO CARRERA** ofrece cinco eventos simulados y desbloqueos basados en resultados: dos eventos de iniciación desbloquean licencia B, dos eventos regionales desbloquean A y finalmente se accede a la copa nacional. Los eventos requieren vehículo propio, condición segura e inscripción pagada; la simulación consume kilometraje y produce desgaste. Los premios de cada evento solo pueden cobrarse una vez para evitar duplicación de créditos. **Aún no hay carreras 3D ni rivales controlados por IA.**
+
+La partida se guarda con un contenedor v2 que combina economía y carrera; el cargador acepta también partidas antiguas con el estado económico v1. La carga construye estados temporales para no sustituir la partida actual si alguno es inválido.

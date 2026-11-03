@@ -1,8 +1,10 @@
 extends Control
 
 const Economy = preload("res://scripts/economy.gd")
+const Career = preload("res://scripts/career.gd")
 const SAVE_PATH := "user://evolution_save_v1.json"
 var game: EvolutionEconomy
+var career: EvolutionCareer
 var current_tab := "mercado"
 var content: VBoxContainer
 var funds: Label
@@ -11,6 +13,7 @@ var notice: Label
 func _ready() -> void:
     game = Economy.new()
     game.seed_demo()
+    career = Career.new()
     _build_interface()
     _render()
 
@@ -42,7 +45,7 @@ func _build_interface() -> void:
     margin.add_child(root)
     var header := HBoxContainer.new()
     root.add_child(header)
-    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.3", 27))
+    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.4", 27))
     var spacer := Control.new()
     spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     header.add_child(spacer)
@@ -53,6 +56,7 @@ func _build_interface() -> void:
     root.add_child(tabs)
     for entry in [{"key":"mercado","title":"CONCESIONARIO"}, {"key":"garaje","title":"GARAJE"}, {"key":"taller","title":"TALLER"}, {"key":"historial","title":"MOVIMIENTOS"}]:
         tabs.add_child(_button(entry["title"], _change_tab.bind(entry["key"])))
+    tabs.add_child(_button("MODO CARRERA", _change_tab.bind("carrera")))
     var scroll := ScrollContainer.new()
     scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
     root.add_child(scroll)
@@ -83,6 +87,7 @@ func _render() -> void:
         "garaje": _garage()
         "taller": _workshop()
         "historial": _history()
+        "carrera": _career()
 
 func _market() -> void:
     content.add_child(_label("MERCADO DE USADOS", 22))
@@ -149,6 +154,35 @@ func _history() -> void:
     for entry in game.ledger:
         content.add_child(_label("Auto #%d · %s · %+d Cr." % [entry["car_id"], entry["event"], entry["amount"]], 16))
 
+func _career() -> void:
+    content.add_child(_label("CARRERA PROFESIONAL · LICENCIA %s" % career.license, 22))
+    content.add_child(_label("Reputación: %d · Las carreras son simulaciones hasta disponer de conducción 3D." % career.reputation, 15))
+    var owned: Array[Dictionary] = []
+    for car in game.cars:
+        if car["owner"] == "player":
+            owned.append(car)
+    for event in Career.EVENTS:
+        var event_id: String = event["id"]
+        var summary := "%s · Licencia %s · %d Cr. de inscripción · %d km" % [event["name"],event["license"],event["fee"],event["distance"]]
+        content.add_child(_label(summary, 17))
+        if career.completed.has(event_id):
+            content.add_child(_label("  COMPLETADO · premio único cobrado", 14))
+            continue
+        if owned.is_empty():
+            content.add_child(_label("  Necesitás comprar un vehículo para inscribirte.", 14))
+        for car in owned:
+            var car_id := int(car["id"])
+            var problem := career.can_enter(game, event_id, car_id)
+            var button := _button("SIMULAR con %s" % car["model"], _race.bind(event_id, car_id))
+            button.disabled = not problem.is_empty()
+            content.add_child(button)
+            if not problem.is_empty():
+                content.add_child(_label("  " + problem, 13))
+
+func _race(event_id: String, car_id: int) -> void:
+    notice.text = career.simulate_event(game, event_id, car_id)
+    _render()
+
 func _inspect(id: int) -> void:
     notice.text = game.inspect(id)
     _render()
@@ -174,7 +208,7 @@ func _save() -> void:
     if file == null:
         notice.text = "Error al guardar."
         return
-    file.store_string(JSON.stringify(game.to_dict()))
+    file.store_string(JSON.stringify({"save_version":2,"economy":game.to_dict(),"career":career.to_dict()}))
     file.close()
     notice.text = "Partida guardada."
 
@@ -187,13 +221,23 @@ func _load() -> void:
         notice.text = "Error al cargar."
         return
     var parsed = JSON.parse_string(file.get_as_text())
-    if typeof(parsed) != TYPE_DICTIONARY or not game.from_dict(parsed):
+    if typeof(parsed) != TYPE_DICTIONARY:
+        notice.text = "Partida inválida."
+        return
+    var economy_data: Dictionary = parsed.get("economy", parsed)
+    var career_data: Dictionary = parsed.get("career", Career.new().to_dict())
+    var candidate_game: EvolutionEconomy = Economy.new()
+    var candidate_career: EvolutionCareer = Career.new()
+    if not candidate_game.from_dict(economy_data) or not candidate_career.from_dict(career_data):
         notice.text = "Partida inválida, no se realizaron cambios."
         return
+    game = candidate_game
+    career = candidate_career
     notice.text = "Partida recuperada."
     _render()
 
 func _reset() -> void:
     game.seed_demo()
+    career = Career.new()
     notice.text = "Nueva partida iniciada."
     _render()

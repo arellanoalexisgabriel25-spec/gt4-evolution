@@ -27,5 +27,7 @@ jobs:
         run: ./godot-bin --headless --path godot --script res://tests/test_inspection.gd
       - name: Test market values and restoration
         run: ./godot-bin --headless --path godot --script res://tests/test_market_restoration.gd
+      - name: Test structured career progression
+        run: ./godot-bin --headless --path godot --script res://tests/test_career.gd
       - name: Load main scene
         run: ./godot-bin --headless --path godot --quit-after 5
