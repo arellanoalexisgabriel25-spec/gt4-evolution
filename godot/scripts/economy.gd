@@ -21,7 +21,7 @@ func seed_demo() -> void:
         var health: Dictionary = {}
         for component in WEIGHTS:
             health[component] = float(rng.randi_range(40, 95))
-        cars.append({"id": i + 1, "model": MODELS[i], "km": rng.randi_range(60000, 260000), "health": health, "owner": "seller", "listed": true, "price": 3000 + 950 * (i + 1) + rng.randi_range(0, 10) * 100, "history": []})
+        cars.append({"id": i + 1, "model": MODELS[i], "km": rng.randi_range(60000, 260000), "health": health, "owner": "seller", "listed": true, "inspected": false, "price": 3000 + 950 * (i + 1) + rng.randi_range(0, 10) * 100, "history": []})
 
 func find_car(id: int) -> Dictionary:
     for car in cars:
@@ -43,6 +43,20 @@ func _record(car: Dictionary, event: String, amount: int) -> void:
     var item := {"car_id": int(car["id"]), "event": event, "amount": amount}
     ledger.append(item.duplicate(true))
     car["history"].append(item.duplicate(true))
+
+func inspect(id: int) -> String:
+    var car := find_car(id)
+    if car.is_empty() or car["owner"] != "seller" or not car["listed"]:
+        return "Oferta no disponible."
+    if bool(car.get("inspected", false)):
+        return "Este vehículo ya fue inspeccionado."
+    const INSPECTION_COST := 200
+    if balance < INSPECTION_COST:
+        return "Créditos insuficientes para la inspección."
+    balance -= INSPECTION_COST
+    car["inspected"] = true
+    _record(car, "inspeccion", -INSPECTION_COST)
+    return "Inspección completada: condición %.1f/100. Revisá el estado de los componentes." % condition(car)
 
 func buy(id: int) -> String:
     var car := find_car(id)
