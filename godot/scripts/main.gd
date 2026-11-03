@@ -4,6 +4,7 @@ const Economy = preload("res://scripts/economy.gd")
 const Career = preload("res://scripts/career.gd")
 const Tuning = preload("res://scripts/tuning.gd")
 const Rivals = preload("res://scripts/rivals.gd")
+const SaveStore = preload("res://scripts/save_store.gd")
 const SAVE_PATH := "user://evolution_save_v1.json"
 var game: EvolutionEconomy
 var career: EvolutionCareer
@@ -17,6 +18,9 @@ func _ready() -> void:
     career = GameSession.career
     _build_interface()
     _render()
+    if not GameSession.last_notice.is_empty():
+        notice.text = GameSession.last_notice
+        GameSession.last_notice = ""
 
 func _label(value: String, size: int = 17) -> Label:
     var label := Label.new()
@@ -46,7 +50,7 @@ func _build_interface() -> void:
     margin.add_child(root)
     var header := HBoxContainer.new()
     root.add_child(header)
-    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.7", 27))
+    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.9", 27))
     var spacer := Control.new()
     spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     header.add_child(spacer)
@@ -115,24 +119,38 @@ func _market() -> void:
 
 func _garage() -> void:
     content.add_child(_label("MI GARAJE", 22))
+    content.add_child(_label("Práctica: contrarreloj · Carrera libre: dos rivales, sin inscripción ni premios", 14))
     var found := false
     for car in game.cars:
         if car["owner"] != "player":
             continue
         found = true
-        var line := HBoxContainer.new()
-        content.add_child(line)
+        var card := PanelContainer.new()
+        content.add_child(card)
+        var layout := VBoxContainer.new()
+        layout.add_theme_constant_override("separation", 8)
+        card.add_child(layout)
         var state := "APTO" if game.eligible(car) else "NECESITA REPARACIÓN"
-        var info := _label("%s · %d km · %.1f/100 · %s" % [car["model"], car["km"], game.condition(car), state], 15)
-        info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-        line.add_child(info)
-        var drive_button := _button("PRUEBA 10 KM", _drive.bind(int(car["id"])))
+        var remainder := float(car.get("distance_remainder_m", 0.0))
+        var info := _label("%s · %.2f km · %.1f/100 · %s" % [car["model"], float(car["km"]) + remainder / 1000.0, game.condition(car), state], 17)
+        info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+        layout.add_child(info)
+        var best := career.lap_records.get_best(int(car["id"]))
+        if best > 0.0:
+            layout.add_child(_label("Mejor vuelta al club: %.2f s" % best, 15))
+        var actions := HFlowContainer.new()
+        actions.add_theme_constant_override("h_separation", 8)
+        layout.add_child(actions)
+        var drive_button := _button("PRUEBA SIMULADA 10 KM", _drive.bind(int(car["id"])))
         drive_button.disabled = not game.eligible(car)
-        line.add_child(drive_button)
-        var drive_3d := _button("CONDUCIR 3D", _drive_3d.bind(int(car["id"])))
+        actions.add_child(drive_button)
+        var drive_3d := _button("CONTRARRELOJ 3D", _drive_3d.bind(int(car["id"])))
         drive_3d.disabled = not game.eligible(car)
-        line.add_child(drive_3d)
-        line.add_child(_button("VENDER %d Cr." % game.resale_quote(int(car["id"])), _sell.bind(int(car["id"]))))
+        actions.add_child(drive_3d)
+        var race_3d := _button("CARRERA LIBRE 3D", _race_3d.bind(int(car["id"])))
+        race_3d.disabled = not game.eligible(car)
+        actions.add_child(race_3d)
+        actions.add_child(_button("VENDER %d Cr." % game.resale_quote(int(car["id"])), _sell.bind(int(car["id"]))))
     if not found:
         content.add_child(_label("No tenés vehículos. Visitá el concesionario."))
 
@@ -162,7 +180,7 @@ func _history() -> void:
 
 func _tuning() -> void:
     content.add_child(_label("TUNING Y PREPARACIÓN", 22))
-    content.add_child(_label("Las mejoras influyen en carreras simuladas. Motor más potente = más desgaste.", 14))
+    content.add_child(_label("Las mejoras influyen en el manejo 3D y en las simulaciones. Más potencia aumenta el desgaste.", 14))
     var shop = Tuning.new()
     for car in game.cars:
         if car["owner"] != "player":
@@ -186,7 +204,7 @@ func _install_part(car_id: int, part_id: String) -> void:
 
 func _career() -> void:
     content.add_child(_label("CARRERA PROFESIONAL · LICENCIA %s" % career.license, 22))
-    content.add_child(_label("Reputación: %d · Las carreras son simulaciones hasta disponer de conducción 3D." % career.reputation, 15))
+    content.add_child(_label("Reputación: %d · Debutantes: carrera 3D de 2 vueltas · Otros eventos: simulados." % career.reputation, 15))
     var owned: Array[Dictionary] = []
     for car in game.cars:
         if car["owner"] == "player":
@@ -198,8 +216,11 @@ func _career() -> void:
     content.add_child(_label("CAMPEONATOS", 18))
     for event in Career.EVENTS:
         var event_id: String = event["id"]
-        var summary := "%s · Licencia %s · %d Cr. de inscripción · %d km" % [event["name"],event["license"],event["fee"],event["distance"]]
+        var distance := "2 vueltas al circuito del club" if event_id == "debut" else "%d km simulados" % event["distance"]
+        var summary := "%s · Licencia %s · %d Cr. · %s" % [event["name"],event["license"],event["fee"],distance]
         content.add_child(_label(summary, 17))
+        if event_id == "debut":
+            content.add_child(_label("  Carrera 3D: abandonar consume la inscripción. Otros eventos siguen siendo simulados.", 13))
         if career.completed.has(event_id):
             content.add_child(_label("  COMPLETADO · premio único cobrado", 14))
             continue
@@ -208,13 +229,24 @@ func _career() -> void:
         for car in owned:
             var car_id := int(car["id"])
             var problem := career.can_enter(game, event_id, car_id)
-            var button := _button("SIMULAR con %s" % car["model"], _race.bind(event_id, car_id))
+            var title := "CORRER 3D con %s" if event_id == "debut" else "SIMULAR con %s"
+            var button := _button(title % car["model"], _race.bind(event_id, car_id))
             button.disabled = not problem.is_empty()
             content.add_child(button)
             if not problem.is_empty():
                 content.add_child(_label("  " + problem, 13))
 
 func _race(event_id: String, car_id: int) -> void:
+    if event_id == "debut":
+        var issue := GameSession.enter_track_event(event_id, car_id)
+        if not issue.is_empty():
+            notice.text = issue
+            return
+        var error := get_tree().change_scene_to_file("res://scenes/driving.tscn")
+        if error != OK:
+            GameSession.cancel_unstarted_entry()
+            notice.text = "No se pudo abrir la carrera; inscripción reembolsada."
+        return
     notice.text = career.simulate_event(game, event_id, car_id)
     _render()
 
@@ -235,7 +267,13 @@ func _repair(id: int, component: String) -> void:
     _render()
 
 func _drive_3d(id: int) -> void:
-    if not GameSession.choose_vehicle(id):
+    if not GameSession.start_driving(id):
+        notice.text = "El auto no está disponible o requiere reparación."
+        return
+    get_tree().change_scene_to_file("res://scenes/driving.tscn")
+
+func _race_3d(id: int) -> void:
+    if not GameSession.start_driving(id, "race"):
         notice.text = "El auto no está disponible o requiere reparación."
         return
     get_tree().change_scene_to_file("res://scenes/driving.tscn")
@@ -245,35 +283,19 @@ func _drive(id: int) -> void:
     _render()
 
 func _save() -> void:
-    var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-    if file == null:
-        notice.text = "Error al guardar."
-        return
-    file.store_string(JSON.stringify({"save_version":2,"economy":game.to_dict(),"career":career.to_dict()}))
-    file.close()
-    notice.text = "Partida guardada."
+    var error := SaveStore.save_file(SAVE_PATH, game, career)
+    notice.text = "Partida guardada." if error == OK else "No se pudo guardar; se conserva la partida anterior."
 
 func _load() -> void:
     if not FileAccess.file_exists(SAVE_PATH):
         notice.text = "No hay partida guardada."
         return
-    var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
-    if file == null:
-        notice.text = "Error al cargar."
+    var loaded: Dictionary = SaveStore.load_file(SAVE_PATH)
+    if not str(loaded.get("error", "")).is_empty():
+        notice.text = loaded["error"]
         return
-    var parsed = JSON.parse_string(file.get_as_text())
-    if typeof(parsed) != TYPE_DICTIONARY:
-        notice.text = "Partida inválida."
-        return
-    var economy_data: Dictionary = parsed.get("economy", parsed)
-    var career_data: Dictionary = parsed.get("career", Career.new().to_dict())
-    var candidate_game: EvolutionEconomy = Economy.new()
-    var candidate_career: EvolutionCareer = Career.new()
-    if not candidate_game.from_dict(economy_data) or not candidate_career.from_dict(career_data):
-        notice.text = "Partida inválida, no se realizaron cambios."
-        return
-    game = candidate_game
-    career = candidate_career
+    game = loaded["game"]
+    career = loaded["career"]
     GameSession.game = game
     GameSession.career = career
     notice.text = "Partida recuperada."

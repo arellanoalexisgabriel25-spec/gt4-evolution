@@ -3,8 +3,9 @@ class_name EvolutionCareer
 
 const Tuning = preload("res://scripts/tuning.gd")
 const Rivals = preload("res://scripts/rivals.gd")
+const LapRecords = preload("res://scripts/lap_records.gd")
 
-# Competition is an explicitly simulated result until the driving module exists.
+# Legacy event simulation and validated results from the physical race module.
 # Each event pays only once. Licenses depend on achievements, not cash.
 const EVENTS := [
     {"id":"debut", "name":"Copa de Debutantes", "license":"R", "fee":120, "distance":12, "target":62.0, "rewards":[700, 400, 200]},
@@ -20,6 +21,9 @@ var reputation: int = 0
 var completed: Array[String] = []
 var results: Array[Dictionary] = []
 var rivalries: Dictionary = {}
+var lap_records = LapRecords.new()
+var _track_entry: Dictionary = {}
+var _track_game
 
 func event_by_id(event_id: String) -> Dictionary:
     for event in EVENTS:
@@ -45,6 +49,8 @@ func can_enter(game, event_id: String, vehicle_id: int) -> String:
     return ""
 
 func simulate_event(game, event_id: String, vehicle_id: int) -> String:
+    if not _track_entry.is_empty():
+        return "Hay una carrera 3D en curso."
     var issue := can_enter(game, event_id, vehicle_id)
     if not issue.is_empty():
         return issue
@@ -67,20 +73,113 @@ func simulate_event(game, event_id: String, vehicle_id: int) -> String:
     game.balance += reward
     var net := reward - fee
     game._record(car, "carrera:" + event_id, net)
-    completed.append(event_id)
-    reputation += 4 if position == 1 else (3 if position == 2 else 2)
-    results.append({"id":event_id,"vehicle_id":vehicle_id,"position":position,"fee":fee,"reward":reward,"net":net,"opponents":field_result["opponents"].duplicate(true)})
+    var victories := {}
     for opponent in field_result["opponents"]:
-        var rival_id: String = opponent["id"]
+        victories[opponent["id"]] = initial_condition > float(opponent["score"])
+    _record_result({"id":event_id,"vehicle_id":vehicle_id,"position":position,"fee":fee,"reward":reward,"net":net,"opponents":field_result["opponents"].duplicate(true),"source":"simulated"}, victories)
+    return "%s · Puesto %d · Premio %d Cr. · Neto %+d Cr. · Licencia %s" % [event["name"], position, reward, net, license]
+
+# GameSession requests a paid admission before entering the scene. The career
+# owns that admission, so an unpaid or stale report can never award a prize.
+func has_pending_track_entry() -> bool:
+    return not _track_entry.is_empty()
+
+func begin_track_entry(game, event_id: String, vehicle_id: int) -> String:
+    if not _track_entry.is_empty():
+        return "Ya hay una inscripción de pista en curso."
+    if event_id != "debut":
+        return "Evento 3D no disponible."
+    var issue := can_enter(game, event_id, vehicle_id)
+    if not issue.is_empty():
+        return issue
+    var fee := int(event_by_id(event_id)["fee"])
+    _track_entry = {"id":event_id, "vehicle_id":vehicle_id, "fee":fee, "started":false}
+    _track_game = game
+    game.balance -= fee
+    game._record(game.find_car(vehicle_id), "inscripcion_3d:" + event_id, -fee)
+    return ""
+
+func mark_track_started() -> void:
+    if not _track_entry.is_empty():
+        _track_entry["started"] = true
+
+func cancel_track_entry(game, refund_unstarted: bool = false) -> void:
+    if _track_entry.is_empty() or game != _track_game:
+        return
+    if refund_unstarted:
+        if _track_entry["started"]:
+            return
+        var fee: int = _track_entry["fee"]
+        game.balance += fee
+        game._record(game.find_car(_track_entry["vehicle_id"]), "reembolso_3d:" + str(_track_entry["id"]), fee)
+    _track_entry = {}
+    _track_game = null
+
+func award_track_result(game, event_id: String, vehicle_id: int, report: Dictionary) -> Dictionary:
+    if _track_entry.is_empty() or _track_game != game or _track_entry["id"] != event_id or _track_entry["vehicle_id"] != vehicle_id or not _track_entry["started"]:
+        return {"ok":false, "message":"No hay inscripción de pista pagada y activa."}
+    if event_id != "debut" or completed.has(event_id):
+        return {"ok":false, "message":"Evento no disponible o premio ya cobrado."}
+    var car: Dictionary = game.find_car(vehicle_id)
+    if car.is_empty() or car.get("owner") != "player":
+        return {"ok":false, "message":"Vehículo de carrera no disponible."}
+    if report.get("laps") != 2 or typeof(report.get("standings")) != TYPE_ARRAY or report["standings"].size() != 3:
+        return {"ok":false, "message":"Resultado de pista incompleto."}
+    var expected := {"player":true}
+    for driver in Rivals.new().field_for_event(event_id):
+        expected[driver["id"]] = true
+    var player := {}
+    var opponents: Array[Dictionary] = []
+    var seen := {}
+    var victories := {}
+    var previous_finish := -1.0
+    var dnf_started := false
+    for i in range(3):
+        var row = report["standings"][i]
+        if typeof(row) != TYPE_DICTIONARY or not expected.has(row.get("id")) or seen.has(row.get("id")) or row.get("position") != i + 1 or typeof(row.get("dnf")) != TYPE_BOOL:
+            return {"ok":false, "message":"Clasificación de pista inválida."}
+        var time = row.get("time")
+        if typeof(time) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(time)):
+            return {"ok":false, "message":"Cronometraje inválido."}
+        if row["dnf"]:
+            dnf_started = true
+            if float(time) >= 0.0:
+                return {"ok":false, "message":"Abandono con tiempo de llegada inválido."}
+        elif dnf_started or float(time) <= 0.0 or row.get("laps") != 2 or float(time) < previous_finish:
+            return {"ok":false, "message":"Llegada de pista inválida."}
+        else:
+            previous_finish = float(time)
+        seen[row["id"]] = true
+        if row["id"] == "player":
+            player = row
+        else:
+            opponents.append(row.duplicate(true))
+    if bool(player["dnf"]):
+        return {"ok":false, "message":"Abandono: no hay premio ni progreso de licencia."}
+    var event := event_by_id(event_id)
+    var position: int = player["position"]
+    var reward: int = event["rewards"][position - 1]
+    game.balance += reward
+    game._record(car, "premio_3d:" + event_id, reward)
+    for opponent in opponents:
+        victories[opponent["id"]] = position < int(opponent["position"])
+    _record_result({"id":event_id,"vehicle_id":vehicle_id,"position":position,"fee":event["fee"],"reward":reward,"net":reward - int(event["fee"]),"opponents":opponents,"source":"track","laps":2,"time":player["time"]}, victories)
+    _track_entry = {}
+    _track_game = null
+    return {"ok":true, "message":"%s · Puesto %d · Premio %d Cr. · Licencia %s" % [event["name"], position, reward, license]}
+
+func _record_result(result: Dictionary, victories: Dictionary) -> void:
+    completed.append(str(result["id"]))
+    var position: int = result["position"]
+    reputation += 4 if position == 1 else (3 if position == 2 else 2)
+    results.append(result)
+    for rival_id in victories:
         var previous: Dictionary = rivalries.get(rival_id, {"encounters":0,"victories":0,"defeats":0})
         previous["encounters"] = int(previous["encounters"]) + 1
-        if initial_condition > float(opponent["score"]):
-            previous["victories"] = int(previous["victories"]) + 1
-        else:
-            previous["defeats"] = int(previous["defeats"]) + 1
+        var outcome := "victories" if victories[rival_id] else "defeats"
+        previous[outcome] = int(previous[outcome]) + 1
         rivalries[rival_id] = previous
     _promote()
-    return "%s · Puesto %d · Premio %d Cr. · Neto %+d Cr. · Licencia %s" % [event["name"], position, reward, net, license]
 
 func _promote() -> void:
     if license == "R" and completed.has("debut") and completed.has("local") and reputation >= 4:
@@ -89,9 +188,14 @@ func _promote() -> void:
         license = "A"
 
 func to_dict() -> Dictionary:
-    return {"schema_version":1, "license":license, "reputation":reputation, "completed":completed.duplicate(), "results":results.duplicate(true), "rivalries":rivalries.duplicate(true)}
+    return {"schema_version":1, "license":license, "reputation":reputation, "completed":completed.duplicate(), "results":results.duplicate(true), "rivalries":rivalries.duplicate(true), "lap_records":lap_records.to_dict()}
 
 func from_dict(data: Dictionary) -> bool:
+    if typeof(data.get("lap_records", {})) != TYPE_DICTIONARY:
+        return false
+    var candidate_records = LapRecords.new()
+    if not candidate_records.from_dict(data.get("lap_records", {})):
+        return false
     if data.get("schema_version") != 1 or not LICENSE_LEVELS.has(data.get("license", "")):
         return false
     if typeof(data.get("reputation")) != TYPE_INT or int(data["reputation"]) < 0 or typeof(data.get("completed")) != TYPE_ARRAY or typeof(data.get("results")) != TYPE_ARRAY:
@@ -137,4 +241,5 @@ func from_dict(data: Dictionary) -> bool:
     for result in data["results"]:
         results.append(result.duplicate(true))
     rivalries = data.get("rivalries", {}).duplicate(true)
+    lap_records = candidate_records
     return true

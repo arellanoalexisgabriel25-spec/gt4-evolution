@@ -35,6 +35,16 @@ func _run_test() -> void:
     _check(scene.speed_mps > 0.0, "acceleration changes speed")
     _check(scene.car.global_position.distance_to(start) > 1.0, "car moves under throttle")
     _check(scene.distance_m > 1.0, "odometer measures distance")
+    _check(scene.camera.target == scene.car and scene.camera.get_parent() == scene, "chase camera follows independently of car rotation")
+    _check(scene.camera.global_position.distance_to(scene.car.global_position) < 20.0, "chase camera stays near moving car")
+    _check(scene._on_road(Vector3(0, 0, 0)), "straight belongs to circuit")
+    _check(not scene._on_road(Vector3(42, 0, 0)), "infield is off road")
+    _check(scene.trial.elapsed > 0.0, "time trial clock advances during driving")
+    var driven: float = scene.distance_m
+    scene._reset_car()
+    _check(scene.speed_mps == 0.0, "recovery stops car")
+    _check(scene.trial.elapsed == 0.0 and scene.trial.next_gate == 1, "recovery restarts timed lap")
+    _check(scene.distance_m == driven, "recovery preserves actual driven distance")
     scene._back_to_garage()
     await process_frame
     await process_frame

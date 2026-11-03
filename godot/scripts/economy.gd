@@ -160,6 +160,25 @@ func resale_quote(id: int) -> int:
     var mileage_factor := clampf(1.0 - maxf(0.0, float(car["km"]) - 120000.0) / 600000.0, 0.65, 1.0)
     return maxi(0, floori(float(car["price"]) * 0.85 * (0.5 + quality * 0.5) * defects_factor * mileage_factor))
 
+# Settle measured 3D distance once per visit, including abandoned races. Optional
+# fractional metres keep old saves compatible and prevent free sub-km driving.
+func record_distance(id: int, meters: float, severity: float = 1.0) -> bool:
+    var car := find_car(id)
+    if car.is_empty() or car.get("owner") != "player" or not is_finite(meters) or meters < 0.0 or meters > 10000000.0 or not is_finite(severity) or severity < 0.5 or severity > 5.0:
+        return false
+    if meters == 0.0:
+        return true
+    var accumulated := float(car.get("distance_remainder_m", 0.0)) + meters
+    var whole := floori(accumulated / 1000.0)
+    car["km"] = int(car["km"]) + whole
+    car["distance_remainder_m"] = accumulated - whole * 1000.0
+    var tuning = Tuning.new()
+    for component in WEAR:
+        var multiplier := tuning.engine_wear_multiplier(car) if component == "motor" else 1.0
+        car["health"][component] = maxf(0.0, float(car["health"][component]) - float(WEAR[component]) * meters / 1000.0 * severity * multiplier)
+    car["history"].append({"event":"conduccion_3d", "meters":meters})
+    return true
+
 func sell(id: int) -> String:
     var car := find_car(id)
     if car.is_empty() or car["owner"] != "player":
@@ -184,6 +203,9 @@ func from_dict(data: Dictionary) -> bool:
             return false
         var id := int(car.get("id", 0))
         if id <= 0 or seen.has(id) or int(car.get("km", -1)) < 0 or int(car.get("price", -1)) < 0:
+            return false
+        var remainder = car.get("distance_remainder_m", 0.0)
+        if typeof(remainder) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(remainder)) or float(remainder) < 0.0 or float(remainder) >= 1000.0:
             return false
         seen[id] = true
         if not ["seller", "player", "sold"].has(car.get("owner", "")):
