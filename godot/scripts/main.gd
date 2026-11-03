@@ -92,9 +92,13 @@ func _market() -> void:
             continue
         var line := HBoxContainer.new()
         content.add_child(line)
-        var info := _label("%s · %d km · estado %.1f · %d Cr." % [car["model"], car["km"], game.condition(car), car["price"]], 16)
+        var status := ("Estado %.1f/100" % game.condition(car)) if bool(car.get("inspected", false)) else "Estado desconocido"
+        var info := _label("%s · %d km · %s · %d Cr." % [car["model"], car["km"], status, car["price"]], 16)
         info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         line.add_child(info)
+        var inspection_button := _button("INSPECCIONAR 200 Cr.", _inspect.bind(int(car["id"])))
+        inspection_button.disabled = bool(car.get("inspected", false)) or game.balance < 200
+        line.add_child(inspection_button)
         var b := _button("COMPRAR", _buy.bind(int(car["id"])))
         b.disabled = game.balance < int(car["price"])
         line.add_child(b)
@@ -140,6 +144,10 @@ func _history() -> void:
     content.add_child(_label("MOVIMIENTOS ECONÓMICOS", 22))
     for entry in game.ledger:
         content.add_child(_label("Auto #%d · %s · %+d Cr." % [entry["car_id"], entry["event"], entry["amount"]], 16))
+
+func _inspect(id: int) -> void:
+    notice.text = game.inspect(id)
+    _render()
 
 func _buy(id: int) -> void:
     notice.text = game.buy(id)
