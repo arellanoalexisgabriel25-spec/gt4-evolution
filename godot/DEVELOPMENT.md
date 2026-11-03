@@ -33,7 +33,7 @@ The strict runner imports the project, requires a PASS from every test script, r
 
 `.github/workflows/godot-tests.yml` installs the official engine after SHA-512 verification and uses the same runner. Remote CI must be checked separately; local results do not establish a GitHub Actions pass.
 
-`python3 tools/package_game.py --output /path/to/output` creates a source ZIP. To include the official Windows engine, provide `--windows-engine /path/to/Godot_v4.6.3-stable_win64.exe.zip --checksums /path/to/SHA512-SUMS.txt`. The script rejects a checksum mismatch. The portable launcher imports a fresh project before starting it; no cache from the developer machine is required.
+`python3 tools/package_game.py --output /path/to/output` creates a source ZIP. To include the official Windows engine, provide `--windows-engine /path/to/Godot_v4.6.3-stable_win64.exe.zip --checksums /path/to/SHA512-SUMS.txt --engine-license /path/to/Godot-LICENSE.txt`. Download these from the official Godot release and its tagged source repository. The script rejects a checksum mismatch and includes the engine license. The portable launcher imports a fresh project before starting it; no cache from the developer machine is required.
 
 ## Next increment
 
