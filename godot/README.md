@@ -15,7 +15,7 @@ godot --headless --path godot --script res://tests/test_career.gd
 godot --headless --path godot --script res://tests/test_tuning.gd
 godot --headless --path godot --script res://tests/test_rivals.gd
 ```
-No hay conducción 3D, física de GT4 ni IA avanzada en esta primera versión. Los vehículos y precios son datos provisionales para probar la economía.
+Hay una pista 3D de prueba con gráficos geométricos y conducción arcade elemental; no reproduce la física de GT4 ni implementa IA de conducción. Los vehículos y precios son datos provisionales para probar la economía.
 
 ## Diseño
 - Realismo equilibrado
@@ -46,3 +46,8 @@ No hay modificaciones físicas de potencia, curva de par ni neumáticos renderiz
 
 ## Rivales v0.6
 Cuatro rivales con perfiles de habilidad, agresividad y consistencia compiten en eventos simulados. Cada campeonato enfrenta al jugador con dos contrincantes; la posición depende de la condición del vehículo, las mejoras y los valores del perfil rival. El historial de enfrentamientos y el resultado por evento se conservan en la partida. No existe comportamiento autónomo en pista todavía. Los resultados son reproducibles, sin aleatoriedad oculta.
+
+## Conducción 3D v0.7
+La nueva opción **CONDUCIR 3D** aparece en el garaje al poseer un vehículo apto. Abre un circuito de prueba recto con un vehículo geométrico controlable mediante W/↑ (acelerar), S/↓ (frenar/reversa) y A/D o flechas (dirección); ESC o el botón VOLVER regresa al garaje sin perder la economía y carrera de la sesión. Los kilómetros enteros recorridos se transfieren al historial y al desgaste al volver; recorridos inferiores a un kilómetro no se acumulan de momento.
+
+Esta es una **demostración de control y escena 3D**, no un simulador físico, ni un port del motor de GT4. No incluye rivales conducibles, circuitos reales, colisiones con otros vehículos ni representación de modelos de marcas comerciales. La conducción de prueba no otorga premios de carrera.
