@@ -42,7 +42,7 @@ func _build_interface() -> void:
     margin.add_child(root)
     var header := HBoxContainer.new()
     root.add_child(header)
-    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.1", 27))
+    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.3", 27))
     var spacer := Control.new()
     spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     header.add_child(spacer)
@@ -86,7 +86,7 @@ func _render() -> void:
 
 func _market() -> void:
     content.add_child(_label("MERCADO DE USADOS", 22))
-    content.add_child(_label("Precios de prueba; inspecciones y precios variables llegarán después.", 14))
+    content.add_child(_label("Los precios reflejan kilometraje, desgaste y posibles averías. Inspeccioná antes de comprar.", 14))
     for car in game.cars:
         if car["owner"] != "seller":
             continue
@@ -102,6 +102,8 @@ func _market() -> void:
         var b := _button("COMPRAR", _buy.bind(int(car["id"])))
         b.disabled = game.balance < int(car["price"])
         line.add_child(b)
+        if bool(car.get("inspected", false)):
+            content.add_child(_label("  " + game.inspection_summary(car), 14))
 
 func _garage() -> void:
     content.add_child(_label("MI GARAJE", 22))
@@ -129,6 +131,8 @@ func _workshop() -> void:
         if car["owner"] != "player":
             continue
         content.add_child(_label("%s  ·  Estado %.1f" % [car["model"], game.condition(car)], 19))
+        var problems := game.inspection_summary({"inspected": true, "faults": car.get("faults", {})})
+        content.add_child(_label("Diagnóstico: " + problems, 14))
         for component in Economy.WEIGHTS:
             var line := HBoxContainer.new()
             content.add_child(line)
