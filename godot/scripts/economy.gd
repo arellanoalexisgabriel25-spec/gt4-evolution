@@ -23,7 +23,7 @@ func seed_demo() -> void:
             health[component] = float(rng.randi_range(40, 95))
         var km := rng.randi_range(60000, 260000)
         var faults: Dictionary = {}
-        if i % 3 == 0:
+        if i % 3 == 2:
             faults["motor" if i % 2 == 0 else "frenos"] = true
         var price := calculate_market_price(i, km, health, faults)
         cars.append({"id": i + 1, "model": MODELS[i], "km": km, "health": health, "faults": faults, "owner": "seller", "listed": true, "inspected": false, "price": price, "history": []})
