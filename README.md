@@ -1,9 +1,15 @@
-# GT4 Evolution 0.15 · Descargas
+# GT4 Evolution 0.16 · Descargas
 
-- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.15/GT4-Evolution-0.15-Windows.zip)
-- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.15/GT4-Evolution-0.15-Proyecto.zip)
+- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.16/GT4-Evolution-0.16-Windows.zip)
+- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.16/GT4-Evolution-0.16-Proyecto.zip)
 
 Extraé TODO el ZIP Windows y abrí **JUGAR.cmd**. El motor está incluido.
+**GARAJE → DUELO ¼ DE MILLA / SERIE** corre contra otro auto físico.
+Elegí piloto rival. Gana la primera llegada válida por reacción + ET.
+Serie conserva salud/equipamiento del garaje y excluye preparaciones; la práctica
+individual anterior sigue disponible. Sin inscripción ni premios; récords de serie separados.
+Las métricas son estimaciones de desarrollo, aún sin calibración de fabricante;
+la red bloqueó la referencia argentina y fabricantes, por lo que no se afirman categorías oficiales.
 Los autos insignia son 147 Vivace, Uno Fire 3 puertas y Gol Power 3 puertas.
 El Gol usa el modelo texturizado aportado. Los otros dos modelos adjuntos aún
 requieren acceso; sus carrocerías siguen provisionales, con configuraciones propias.
@@ -27,16 +33,28 @@ para registrar fallos de arranque. Windows y los mandos físicos requieren
 prueba en esos equipos; la validación automatizada se realiza en Linux.
 Las licencias se incluyen. No se distribuyen recursos comerciales de GT4.
 
-Código: [8e3da1a](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/8e3da1a039558e5350eeb9ca551a290903f095c5).
+Código: [2763456](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/2763456dd9db600b4f63bdeb46937d9e27e3d9d3).
 Esta rama contiene únicamente distribución y no se integra en main.
 Los archivos .sha256 permiten verificar los ZIP.
 
-## Presentación 0.15
+## Presentación 0.16
 
 Capturas reales del juego en Linux con OpenGL por software. No son renders conceptuales.
 
 Tab / RB cambia entre seguimiento, cercana, capó y paragolpes; Shift / Y permite mirar atrás.
 AJUSTES conserva la cámara inicial y permite suavizar la dirección del teclado.
+
+### Dos autos de serie / Semáforo común
+
+![Dos autos de serie / Semáforo común](captura-25-duel-staging.png)
+
+### Carrera física contra un rival
+
+![Carrera física contra un rival](captura-26-duel-driving.png)
+
+### Resultado por reacción más ET
+
+![Resultado por reacción más ET](captura-27-duel-result.png)
 
 ### Gol Power / Modelo aportado
 
