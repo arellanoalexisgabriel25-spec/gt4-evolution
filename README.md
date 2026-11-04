@@ -1,21 +1,24 @@
-# GT4 Evolution 0.16 · Descargas
+# GT4 Evolution 0.17 · Descargas
 
-- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.16/GT4-Evolution-0.16-Windows.zip)
-- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.16/GT4-Evolution-0.16-Proyecto.zip)
+- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.17/GT4-Evolution-0.17-Windows.zip)
+- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.17/GT4-Evolution-0.17-Proyecto.zip)
 
 Extraé TODO el ZIP Windows y abrí **JUGAR.cmd**. El motor está incluido.
-**GARAJE → DUELO ¼ DE MILLA / SERIE** corre contra otro auto físico.
-Elegí piloto rival. Gana la primera llegada válida por reacción + ET.
-Serie conserva salud/equipamiento del garaje y excluye preparaciones; la práctica
-individual anterior sigue disponible. Sin inscripción ni premios; récords de serie separados.
-Las métricas son estimaciones de desarrollo, aún sin calibración de fabricante;
-la red bloqueó la referencia argentina y fabricantes, por lo que no se afirman categorías oficiales.
-Los autos insignia son 147 Vivace, Uno Fire 3 puertas y Gol Power 3 puertas.
-El Gol usa el modelo texturizado aportado. Los otros dos modelos adjuntos aún
-requieren acceso; sus carrocerías siguen provisionales, con configuraciones propias.
-En Inicio podés elegir 147 / UNO / GOL; en el garaje, VER MODELO cambia la vista.
-El taller ofrece calle, deportivos o slick. Los impactos en el ¼ de milla dejan
-daño mecánico persistente y reducen rendimiento. Recuperar no repara el auto.
+**GARAJE → DUELO ¼ DE MILLA / FÁBRICA** corre contra otro auto físico.
+Elegí piloto y clase (Clase 1: piso ET 18,00 s) o LIBRE, sin piso.
+Clases de ¼ según el art. 21 del texto aportado; caída por ET bajo el piso.
+La reacción cuenta para llegar primero. Un falso individual concede al rival
+la excepción del art. 12 aunque su ET caiga. Exhibición sin inscripción ni premios.
+Fábrica conserva salud del garaje y excluye preparaciones; «serie» oficial tiene
+otro alcance. La práctica individual y sus marcas anteriores siguen disponibles.
+147 Vivace y Uno Fire usan derivados optimizados de los nuevos modelos aportados,
+con texturas conservadas y ruedas animadas. El Uno suministrado tiene cinco puertas,
+referencia visual provisional de la variante de tres puertas del catálogo.
+El Gol conserva el modelo aportado original. Las métricas físicas todavía son
+estimaciones pendientes de fuentes de fabricante. Ver STOCK-SOURCES.md.
+En Inicio podés elegir 147 / UNO / GOL; en garaje, VER MODELO cambia la vista.
+El taller ofrece calle, deportivos o slick. Los impactos dejan daño mecánico
+persistente; recuperar no repara. Ver RELEASE-0.17.md y REGULATIONS-REFERENCE.md.
 
 Comprá un auto y abrí **GARAJE → ¼ DE MILLA / MANUAL**. Mantené C, tocá E
 para primera, iniciá el árbol con Enter y esperá el verde. Regulá W para las RPM,
@@ -33,20 +36,20 @@ para registrar fallos de arranque. Windows y los mandos físicos requieren
 prueba en esos equipos; la validación automatizada se realiza en Linux.
 Las licencias se incluyen. No se distribuyen recursos comerciales de GT4.
 
-Código: [2763456](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/2763456dd9db600b4f63bdeb46937d9e27e3d9d3).
+Código: [d28fd3e](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/d28fd3ecc8ab7061008dd40bddb040832526cd0d).
 Esta rama contiene únicamente distribución y no se integra en main.
 Los archivos .sha256 permiten verificar los ZIP.
 
-## Presentación 0.16
+## Presentación 0.17
 
 Capturas reales del juego en Linux con OpenGL por software. No son renders conceptuales.
 
 Tab / RB cambia entre seguimiento, cercana, capó y paragolpes; Shift / Y permite mirar atrás.
 AJUSTES conserva la cámara inicial y permite suavizar la dirección del teclado.
 
-### Dos autos de serie / Semáforo común
+### Dos autos de fábrica / Semáforo común
 
-![Dos autos de serie / Semáforo común](captura-25-duel-staging.png)
+![Dos autos de fábrica / Semáforo común](captura-25-duel-staging.png)
 
 ### Carrera física contra un rival
 
@@ -72,13 +75,13 @@ AJUSTES conserva la cámara inicial y permite suavizar la dirección del teclado
 
 ![Taller / Compuestos de neumáticos](captura-21-tire-workshop.png)
 
-### 147 Vivace / Carrocería provisional
+### 147 Vivace / Modelo aportado
 
-![147 Vivace / Carrocería provisional](captura-18-147-showroom.png)
+![147 Vivace / Modelo aportado](captura-18-147-showroom.png)
 
-### Uno Fire / Carrocería provisional
+### Uno Fire / Modelo aportado
 
-![Uno Fire / Carrocería provisional](captura-19-uno-showroom.png)
+![Uno Fire / Modelo aportado](captura-19-uno-showroom.png)
 
 ### Inicio y autos insignia
 
