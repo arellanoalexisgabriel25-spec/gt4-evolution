@@ -92,6 +92,10 @@ Las capturas aceleran el reloj y no sirven para comparar ET ni medir rendimiento
 - Correcciones: guardabarros que podían girar con las ruedas, pivotes que causaban
   oscilación visual, texto enfocado del menú, servicios recortados por la nueva
   presentación, cabecera de daños separada del desgaste y rechazo atómico de NaN.
+- La prueba del ZIP recién extraído detectó referencias a texturas PNG generadas
+  por la extracción predeterminada de Godot. Se fijó la importación del GLB para
+  conservar imágenes embebidas y se añadió PNG al filtro general de empaquetado.
+  Se quitaron únicamente las copias generadas; el GLB original permanece idéntico.
 
 ## Límites y continuación
 

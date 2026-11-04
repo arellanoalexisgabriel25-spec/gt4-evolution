@@ -15,6 +15,8 @@ la textura evita que los guardabarros pintados giren junto con los neumáticos.
 Los pivotes visuales se calculan desde la geometría separada. La colisión utiliza
 un volumen simple independiente. Las texturas ya contienen detalles y luces
 horneados; no se presenta el resultado como una carrocería con deformación física.
+La importación usa `Embed as Uncompressed`: las imágenes permanecen dentro de
+la escena importada. No requiere copias PNG externas generadas junto al GLB.
 
 El GLB no identifica autor ni licencia en sus metadatos, únicamente el exportador
 Blender/glTF. Se conserva como recurso aportado por el usuario, con los derechos

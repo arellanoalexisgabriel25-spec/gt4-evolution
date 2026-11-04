@@ -55,7 +55,7 @@ def main():
             if archive.testzip() is not None:
                 raise SystemExit(f"Corrupt package: {name}")
             for source in (ROOT / "godot").rglob("*"):
-                if not source.is_file() or ".godot" in source.parts or source.suffix not in {".gd", ".tscn", ".tres", ".godot", ".md", ".ttf", ".otf", ".txt", ".import", ".mp3", ".glb"}:
+                if not source.is_file() or ".godot" in source.parts or source.suffix not in {".gd", ".tscn", ".tres", ".godot", ".md", ".ttf", ".otf", ".txt", ".import", ".mp3", ".glb", ".png"}:
                     continue
                 key = "juego/" + source.relative_to(ROOT / "godot").as_posix()
                 if archive.read(key) != source.read_bytes():

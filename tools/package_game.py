@@ -145,7 +145,7 @@ def write_project(archive):
     for path in sorted((ROOT / "godot").rglob("*")):
         if not path.is_file() or ".godot" in path.parts:
             continue
-        if path.suffix not in {".gd", ".uid", ".tscn", ".tres", ".godot", ".md", ".ttf", ".otf", ".txt", ".import", ".mp3", ".glb"}:
+        if path.suffix not in {".gd", ".uid", ".tscn", ".tres", ".godot", ".md", ".ttf", ".otf", ".txt", ".import", ".mp3", ".glb", ".png"}:
             continue
         archive.write(path, Path("juego") / path.relative_to(ROOT / "godot"))
     archive.write(ROOT / "LICENSE", "LICENSE")

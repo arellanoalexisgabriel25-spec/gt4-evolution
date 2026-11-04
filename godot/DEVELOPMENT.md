@@ -261,5 +261,9 @@ The current graphical wrapper requires 24 images, adding the three showroom
 choices, tire workshop, supplied Gol staging/driving and an impact against the actual
 runoff barrier. It checks the supplied Gol's real manual launch. Source packaging and
 publication include and byte-compare `.glb` assets as well as the existing MP3/font.
+Pin `gltf/embedded_image_handling=3` on the supplied GLB: default extraction creates
+external PNG dependencies. Embedded uncompressed images preserve the original data
+inside the imported scene. Only the generated external duplicates were removed;
+the uploaded GLB is unchanged. Packaging also supports explicit `.png` assets.
 Use the current complete suite and fresh-package checks; historical release counts
 and the stored setup description are not evidence for this new source state.
