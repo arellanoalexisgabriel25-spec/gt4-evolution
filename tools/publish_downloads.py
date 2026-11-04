@@ -17,6 +17,7 @@ def git(*args, data=None):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--artifacts", type=Path, required=True)
+    parser.add_argument("--screenshots", type=Path, help="Directory of the ten checked 1280x720 presentation PNGs")
     parser.add_argument("--push", action="store_true")
     args = parser.parse_args()
     if git("status", "--porcelain"):
@@ -54,7 +55,7 @@ def main():
             if archive.testzip() is not None:
                 raise SystemExit(f"Corrupt package: {name}")
             for source in (ROOT / "godot").rglob("*"):
-                if not source.is_file() or ".godot" in source.parts or source.suffix not in {".gd", ".tscn", ".tres", ".godot", ".md"}:
+                if not source.is_file() or ".godot" in source.parts or source.suffix not in {".gd", ".tscn", ".tres", ".godot", ".md", ".ttf", ".otf", ".txt", ".import"}:
                     continue
                 key = "juego/" + source.relative_to(ROOT / "godot").as_posix()
                 if archive.read(key) != source.read_bytes():
@@ -79,6 +80,21 @@ Código: [{source_commit[:7]}](https://github.com/{identity}/commit/{source_comm
 Esta rama contiene únicamente distribución y no se integra en main.
 Los archivos .sha256 permiten verificar los ZIP.
 """
+    if args.screenshots:
+        shots = ["01-home", "02-dealer", "03-garage", "04-settings", "05-camera-0", "06-camera-1", "07-camera-2", "08-camera-3", "09-look-back", "10-race-grid"]
+        for shot in shots:
+            path = args.screenshots / (shot + ".png")
+            header = path.read_bytes()[:24]
+            if (path.stat().st_size > 5 * 1024 * 1024 or header[:8] != b"\x89PNG\r\n\x1a\n"
+                    or header[12:16] != b"IHDR" or header[16:24] != b"\x00\x00\x05\x00\x00\x00\x02\xd0"):
+                raise SystemExit(f"Invalid presentation capture (expected 1280x720 PNG): {shot}")
+            files.append(("captura-" + path.name, path))
+        readme += f"\n## Presentación {VERSION}\n\n"
+        readme += "Capturas reales del juego en Linux con OpenGL por software. No son renders conceptuales.\n\n"
+        readme += "Tab / RB cambia entre seguimiento, cercana, capó y paragolpes; Shift / Y permite mirar atrás.\n"
+        readme += "AJUSTES conserva la cámara inicial y permite suavizar la dirección del teclado.\n\n"
+        for title, shot in [("Inicio y mapa de servicios", "01-home"), ("Concesionario", "02-dealer"), ("Garaje", "03-garage"), ("Cámara de seguimiento y HUD", "05-camera-0"), ("Vista de capó", "07-camera-2"), ("Parrilla de carrera", "10-race-grid")]:
+            readme += f"### {title}\n\n![{title}](captura-{shot}.png)\n\n"
     blob = git("hash-object", "-w", "--stdin", data=readme.encode())
     rows = [f"100644 blob {blob}\tREADME.md\n"]
     for name, path in files:

@@ -49,6 +49,7 @@ func _run_test() -> void:
     await process_frame
     await process_frame
     _check(current_scene != null and current_scene.name == "Main", "return to garage")
+    _check(current_scene.current_tab == "garaje","Return opens the garage rather than resetting the new home navigation")
     _check(session.game.balance == previous_balance, "session credits preserved")
     _check(session.game.find_car(1)["owner"] == "player", "ownership preserved")
     _check(session.selected_vehicle == 0, "selection cleared")

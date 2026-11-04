@@ -37,6 +37,12 @@ func run() -> void:
     await process_frame
     await process_frame
     var scene = current_scene
+    key(KEY_TAB,true)
+    key(KEY_TAB,false)
+    check(scene.camera.mode == 1 and not scene.leaving,"Tab cycles the camera without changing driving scene")
+    pad(JOY_BUTTON_RIGHT_SHOULDER,true)
+    pad(JOY_BUTTON_RIGHT_SHOULDER,false)
+    check(scene.camera.mode == 2,"Controller shoulder cycles the same camera modes")
     var start: Vector3 = scene.car.position
     key(KEY_I, true)
     for i in range(60):
@@ -89,6 +95,16 @@ func run() -> void:
     check(menu.pending_binding.is_empty() and session.controls.keys["accelerate"] == KEY_K, "Escape cancels capture without changing the binding")
     menu._set_deadzone(0.3)
     check(session.controls.deadzone == 0.3 and menu.deadzone_label.text.contains("30%"), "Deadzone control updates saved preference and visible percentage")
+    menu._set_camera_mode(3)
+    menu._set_keyboard_steering(0.65)
+    check(menu.steering_label.text.contains("65%"),"Keyboard sensitivity shows its actual selected percentage")
+    var saved = load("res://scripts/control_settings.gd").new()
+    check(saved.load_file(path) and saved.camera_mode == 3 and saved.keyboard_steering == 0.65,"Camera and steering controls in the menu persist their actual preferences")
+    session.start_driving(1)
+    change_scene_to_file("res://scenes/driving.tscn")
+    await process_frame
+    await process_frame
+    check(current_scene.camera.mode == 3 and not current_scene.car.visual.visible,"The next garage session starts with the selected bumper view")
     DirAccess.remove_absolute(path)
     if not failed:
         print("PASS: %d control integration assertions" % checks)

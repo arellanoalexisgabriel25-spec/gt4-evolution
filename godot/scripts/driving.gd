@@ -1,5 +1,6 @@
 extends Node3D
 
+const Hud = preload("res://scripts/race_hud.gd")
 const Layout = preload("res://scripts/circuit_layout.gd")
 const CircuitView = preload("res://scripts/circuit_view.gd")
 const Actor = preload("res://scripts/vehicle_actor.gd")
@@ -25,6 +26,7 @@ var distance_m: float:
     get: return car.distance_m
 var readout: Label
 var race_readout: Label
+var hud
 var enabled := false
 var paused := false
 var leaving := false
@@ -51,6 +53,7 @@ func _ready() -> void:
     add_child(camera)
     camera.target = car
     camera.current = true
+    camera.mode = GameSession.controls.camera_mode
     camera.snap()
     if enabled and GameSession.driving_mode == "race":
         _start_race()
@@ -72,6 +75,10 @@ func _spawn(id: String, name_text: String, location: Vector3, color: Color):
     vehicle.driver_name = name_text
     vehicle.position = location
     vehicle.color = color
+    if id == "player":
+        vehicle.model_name = str(GameSession.game.find_car(GameSession.selected_vehicle).get("model", ""))
+    else:
+        vehicle.model_name = "Honda Civic" if id == "nico" else "Mazda MX-5"
     vehicle.collision_layer = 2
     vehicle.collision_mask = 3
     add_child(vehicle)
@@ -99,30 +106,17 @@ func _start_race() -> void:
 func _build_hud() -> void:
     var canvas := CanvasLayer.new()
     add_child(canvas)
-    var panel := PanelContainer.new()
-    panel.position = Vector2(22, 20)
-    panel.custom_minimum_size = Vector2(460, 0)
-    canvas.add_child(panel)
-    var layout := VBoxContainer.new()
-    layout.add_theme_constant_override("separation", 8)
-    panel.add_child(layout)
-    var heading := Label.new()
-    heading.text = "GT4 EVOLUTION · CONTRARRELOJ"
-    if race != null:
-        heading.text = "COPA DE DEBUTANTES · 2 VUELTAS" if career_event else "CARRERA LIBRE · 2 VUELTAS"
-    heading.add_theme_font_size_override("font_size", 20)
-    layout.add_child(heading)
-    readout = Label.new()
-    layout.add_child(readout)
-    race_readout = Label.new()
-    layout.add_child(race_readout)
-    var help := Label.new()
-    help.text = GameSession.controls.help_text() + "\nPuertas amarillas en orden"
-    layout.add_child(help)
-    var back := Button.new()
-    back.text = "VOLVER AL GARAJE"
-    back.pressed.connect(_back_to_garage)
-    layout.add_child(back)
+    hud = Hud.new()
+    canvas.add_child(hud)
+    hud.track_map.set_route(circuit.points)
+    hud.return_requested.connect(_back_to_garage)
+    hud.camera_requested.connect(_cycle_camera)
+    readout = hud.lap_details
+    race_readout = hud.ranking
+
+func _cycle_camera() -> void:
+    camera.cycle_mode()
+    GameSession.controls.camera_mode = camera.mode
 
 func _player_controls() -> Dictionary:
     if input_provider.is_valid():
@@ -132,6 +126,9 @@ func _player_controls() -> Dictionary:
 func _physics_process(delta: float) -> void:
     if not enabled or leaving:
         return
+    var look: Dictionary = GameSession.controls.camera_look()
+    camera.look_input = look["axis"]
+    camera.look_back = look["back"]
     if paused:
         _refresh_hud()
         return
@@ -212,26 +209,34 @@ func _on_road(position: Vector3) -> bool:
     return circuit.on_road(position)
 
 func _refresh_hud() -> void:
-    var displayed_lap: int = mini(trial.completed_laps + 1, race.laps) if race != null else trial.completed_laps + 1
-    readout.text = "%.0f km/h · %.0f m · Marcha %s · %.0f RPM\nVuelta %d%s · Control %d/8\nTiempo %.2f s · Mejor %s" % [physics.velocity.length() * 3.6, distance_m, "R" if physics.gear == -1 else str(physics.gear), physics.rpm, displayed_lap, "/%d" % race.laps if race != null else "", trial.passed_gates, trial.elapsed, "%.2f s" % trial.best_time if trial.best_time > 0.0 else "—"]
+    var displayed_lap: int = mini(trial.completed_laps + 1,race.laps) if race != null else trial.completed_laps + 1
+    var lap_text := "VUELTA %d%s" % [displayed_lap," / %d" % race.laps if race != null else ""]
+    var ranking_text := "CONTROL %d / 8" % trial.passed_gates
+    var status := ""
     if not trial.valid:
-        readout.text += "\nVUELTA INVÁLIDA · Volvé a meta o recuperá con R"
+        status = "VUELTA INVÁLIDA · Completá la vuelta o recuperá"
     if paused:
-        race_readout.text = "PAUSA · P para continuar"
+        status = "PAUSA"
     elif race != null:
-        var status: String = "SALIDA EN %d" % ceili(race.countdown) if race.phase == "countdown" else "Carrera · %.1f s" % race.elapsed
-        if race.phase == "finished":
-            status = outcome_text if career_event else "RESULTADO FINAL · Carrera libre sin premios"
+        if race.phase == "countdown":
+            status = "SALIDA EN %d" % ceili(race.countdown)
+        elif race.phase == "finished":
+            status = outcome_text if career_event else "CARRERA FINALIZADA"
         elif race.is_finished("player"):
-            status = "Llegaste · esperando a los demás (máximo 30 s)"
+            status = "LLEGADA · Esperando a los demás"
         elif float(race.entries["player"]["hold"]) > 0.0:
-            status = "RECUPERACIÓN · %.1f s" % race.entries["player"]["hold"]
+            status = "RECUPERANDO · %.1f s" % race.entries["player"]["hold"]
+        ranking_text = ""
         for row in race.standings():
-            var detail := "%.2f s" % row["time"] if row["time"] >= 0.0 else ("ABANDONO" if row["dnf"] else "vuelta %d" % (int(row["laps"]) + 1))
-            if float(row["hold"]) > 0.0:
-                detail = "recuperando %.1f s" % row["hold"]
-            status += "\n%d. %s · %s" % [row["position"], row["name"], detail]
-        race_readout.text = status
+            var detail := "%.2f s" % row["time"] if row["time"] >= 0.0 else ("DNF" if row["dnf"] else "V%d" % (int(row["laps"]) + 1))
+            ranking_text += "%d  %s   %s\n" % [row["position"],row["name"],detail]
+    var help := "TAB / RB: cámara · SHIFT / Y: mirar atrás"
+    if paused or physics.speed() < 1.0:
+        help = GameSession.controls.help_text() + "\nTAB / RB: cámara · SHIFT / Y: mirar atrás"
+    var positions := [car.global_position]
+    for opponent in opponents:
+        positions.append(opponent["actor"].global_position)
+    hud.update_telemetry({"speed":physics.speed()*3.6,"gear":physics.gear,"rpm":physics.rpm,"redline":physics.config.redline_rpm,"time":trial.elapsed,"best":trial.best_time,"camera":camera.MODES[camera.mode],"lap":lap_text,"ranking":ranking_text.strip_edges(),"status":status,"help":help,"positions":positions})
 
 func _input(event: InputEvent) -> void:
     if not enabled or leaving:
@@ -239,7 +244,10 @@ func _input(event: InputEvent) -> void:
     if event is InputEventKey and event.echo:
         return
     var pad_pressed: bool = event is InputEventJoypadButton and event.pressed
-    if event.is_action_pressed(ControlSettings.action("recover")) or (pad_pressed and event.button_index == JOY_BUTTON_X):
+    if (event is InputEventKey and event.pressed and event.physical_keycode == KEY_TAB) or (pad_pressed and event.button_index == JOY_BUTTON_RIGHT_SHOULDER):
+        _cycle_camera()
+        get_viewport().set_input_as_handled()
+    elif event.is_action_pressed(ControlSettings.action("recover")) or (pad_pressed and event.button_index == JOY_BUTTON_X):
         _reset_car()
         get_viewport().set_input_as_handled()
     elif event.is_action_pressed(ControlSettings.action("pause")) or (pad_pressed and event.button_index == JOY_BUTTON_START):
@@ -271,4 +279,5 @@ func _back_to_garage() -> void:
         GameSession.last_notice = "Conducción registrada: %.0f m. %s Guardá la partida para conservar los cambios." % [distance_m, summary]
     GameSession.selected_vehicle = 0
     GameSession.driving_mode = "practice"
+    GameSession.menu_tab = "garaje"
     get_tree().change_scene_to_file("res://scenes/main.tscn")

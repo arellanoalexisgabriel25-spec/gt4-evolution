@@ -2,7 +2,7 @@ extends Node
 
 const Economy = preload("res://scripts/economy.gd")
 const Career = preload("res://scripts/career.gd")
-const VERSION := "0.11"
+const VERSION := "0.12"
 const ControlSettings = preload("res://scripts/control_settings.gd")
 var controls = ControlSettings.new()
 
@@ -11,6 +11,7 @@ var career: EvolutionCareer
 var selected_vehicle: int = 0
 var driving_mode := "practice"
 var last_notice := ""
+var menu_tab := "inicio"
 var entry_ticket: Dictionary = {}
 var active_race
 
@@ -28,6 +29,7 @@ func reset() -> void:
     selected_vehicle = 0
     driving_mode = "practice"
     last_notice = ""
+    menu_tab = "inicio"
     entry_ticket = {}
     active_race = null
 

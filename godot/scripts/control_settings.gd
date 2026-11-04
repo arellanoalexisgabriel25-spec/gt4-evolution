@@ -6,6 +6,8 @@ const TITLES := {"accelerate":"Acelerar", "reverse":"Frenar / reversa", "left":"
 const FILE_PATH := "user://controls_v1.json"
 var keys: Dictionary = DEFAULT_KEYS.duplicate()
 var deadzone := 0.18
+var camera_mode := 0
+var keyboard_steering := 0.8
 
 static func action(name: String) -> String:
     return "evo_" + name
@@ -26,6 +28,8 @@ func bind(name: String, code: int) -> String:
 func restore_defaults() -> void:
     keys = DEFAULT_KEYS.duplicate()
     deadzone = 0.18
+    camera_mode = 0
+    keyboard_steering = 0.8
     apply()
 
 func apply() -> void:
@@ -54,7 +58,7 @@ static func pad_sample(steer: float, accelerator: float, brake: float, reverse: 
 
 func read_controls() -> Dictionary:
     var throttle := Input.get_action_strength(action("accelerate")) - Input.get_action_strength(action("reverse"))
-    var steer := Input.get_action_strength(action("right")) - Input.get_action_strength(action("left"))
+    var steer := (Input.get_action_strength(action("right")) - Input.get_action_strength(action("left"))) * keyboard_steering
     var brake := Input.get_action_strength(action("brake"))
     var pads := Input.get_connected_joypads()
     if not pads.is_empty():
@@ -68,11 +72,20 @@ func read_controls() -> Dictionary:
 func key_label(name: String) -> String:
     return "Espacio" if keys[name] == KEY_SPACE else OS.get_keycode_string(keys[name])
 
+func camera_look() -> Dictionary:
+    var look := Vector2.ZERO
+    var back := Input.is_physical_key_pressed(KEY_SHIFT)
+    var pads := Input.get_connected_joypads()
+    if not pads.is_empty():
+        look = Vector2(axis(Input.get_joy_axis(pads[0],JOY_AXIS_RIGHT_X),deadzone),axis(Input.get_joy_axis(pads[0],JOY_AXIS_RIGHT_Y),deadzone))
+        back = back or Input.is_joy_button_pressed(pads[0],JOY_BUTTON_Y)
+    return {"axis":look,"back":back}
+
 func help_text() -> String:
     return "%s/↑ acelerar · %s/↓ reversa · %s/%s girar\n%s freno · %s recuperar · %s pausa · Esc garaje\nMando: RT/LT acelerar/frenar · B reversa\nStick/cruceta girar · X recuperar · Inicio pausa" % [key_label("accelerate"),key_label("reverse"),key_label("left"),key_label("right"),key_label("brake"),key_label("recover"),key_label("pause")]
 
 func to_dict() -> Dictionary:
-    return {"version":1, "keys":keys.duplicate(), "deadzone":deadzone}
+    return {"version":1, "keys":keys.duplicate(), "deadzone":deadzone,"camera_mode":camera_mode,"keyboard_steering":keyboard_steering}
 
 func from_dict(data: Dictionary) -> bool:
     if data.get("version") != 1 or typeof(data.get("keys")) != TYPE_DICTIONARY or data["keys"].size() != DEFAULT_KEYS.size():
@@ -81,6 +94,12 @@ func from_dict(data: Dictionary) -> bool:
     if typeof(zone) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(zone)) or float(zone) < 0.1 or float(zone) > 0.4:
         return false
     var candidate := {}
+    var camera = data.get("camera_mode",0)
+    var steering = data.get("keyboard_steering",0.8)
+    if typeof(camera) not in [TYPE_INT,TYPE_FLOAT] or not is_finite(float(camera)) or float(camera)!=floorf(float(camera)) or int(camera)<0 or int(camera)>3:
+        return false
+    if typeof(steering) not in [TYPE_INT,TYPE_FLOAT] or not is_finite(float(steering)) or float(steering)<0.4 or float(steering)>1.0:
+        return false
     var seen := {}
     for name in DEFAULT_KEYS:
         var code = data["keys"].get(name)
@@ -90,6 +109,8 @@ func from_dict(data: Dictionary) -> bool:
         seen[int(code)] = true
     keys = candidate
     deadzone = float(zone)
+    camera_mode = int(camera)
+    keyboard_steering = float(steering)
     return true
 
 func save_file(path: String = FILE_PATH) -> Error:

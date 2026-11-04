@@ -6,9 +6,9 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.11"
+VERSION = "0.12"
 ENGINE = "Godot_v4.6.3-stable_win64.exe"
-README = """GT4 EVOLUTION — PROTOTIPO 0.11
+README = """GT4 EVOLUTION — PROTOTIPO 0.12
 
 Extraé TODO el ZIP antes de abrir el juego.
 Windows 10/11 de 64 bits: doble clic en JUGAR.cmd. El primer inicio importa
@@ -24,6 +24,8 @@ Los demás eventos y la prueba de 10 km siguen siendo simulados.
 
 W/flecha arriba: acelerar. S/abajo: frenar y reversa. A/D o flechas: girar.
 ESPACIO: frenar. R: recuperar (tres segundos de detención en carrera).
+TAB / RB: cambiar cámara. SHIFT / Y: mirar atrás. Stick derecho: mirar alrededor.
+AJUSTES permite elegir cámara inicial y suavizar la dirección del teclado.
 P: pausar a todos. ESC: volver al garaje / abandonar la carrera.
 AJUSTES permite cambiar teclas y la zona muerta del mando. Las flechas quedan
 siempre disponibles. Los controles se guardan automáticamente, separados de la partida.
@@ -38,17 +40,21 @@ Incluye rivales físicos, barreras con colisión, ritmo y adelantamientos básic
 cronómetro, posiciones, resultado real de Debutantes, economía y desgaste.
 La aceleración sigue una curva de par por RPM, la carga afecta al agarre de
 cada eje y el frenado está limitado por neumáticos, también al pedir reversa.
-La cámara suaviza los giros y adapta distancia y campo visual a la velocidad.
+Cuatro cámaras, mirada trasera y brazo de seguimiento con prevención de obstáculos.
+Menú con mapa de servicios, garaje 3D y HUD de carrera; gráficos propios.
+La dirección de teclado entra progresivamente y vuelve al centro con mayor rapidez.
 La conducción y los vehículos geométricos siguen siendo provisionales. No hay daños por
 impacto, sonidos de motor ni física completa de neumáticos/embrague.
 Se consultó gt4-decomp como referencia para RPM y cambios secuenciales.
 La IA y el circuito son implementaciones originales. No se han incluido
 recursos del juego comercial. Ver juego/REFERENCES.md y juego/README.md.
 
-Validación: Godot 4.6.3 en Linux, pruebas automatizadas sin interfaz gráfica.
+Validación: Godot 4.6.3 en Linux, pruebas headless y capturas reales con OpenGL por software.
+Las capturas no constituyen una prueba de rendimiento o compatibilidad con tu GPU.
 El paquete Windows no ha sido ejecutado en Windows en este entorno.
 Si no abre, ejecutá DIAGNOSTICO.cmd y compartí los archivos importacion.log y juego.log.
 Godot: https://godotengine.org/license/ (motor oficial, licencia MIT).
+Tipografía Barlow Condensed: licencia SIL OFL en juego/assets/fonts/OFL-Barlow.txt.
 Créditos y licencia del proyecto en LICENSE y README-proyecto.md.
 """
 LAUNCH = r'''@echo off
@@ -76,7 +82,7 @@ def write_project(archive):
     for path in sorted((ROOT / "godot").rglob("*")):
         if not path.is_file() or ".godot" in path.parts:
             continue
-        if path.suffix not in {".gd", ".uid", ".tscn", ".tres", ".godot", ".md"}:
+        if path.suffix not in {".gd", ".uid", ".tscn", ".tres", ".godot", ".md", ".ttf", ".otf", ".txt", ".import"}:
             continue
         archive.write(path, Path("juego") / path.relative_to(ROOT / "godot"))
     archive.write(ROOT / "LICENSE", "LICENSE")

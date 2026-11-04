@@ -67,7 +67,9 @@ func step(delta: float, requested_throttle: float, requested_steering: float, br
     if delta <= 0.0:
         return
     throttle = move_toward(throttle, clampf(requested_throttle, -1.0, 1.0), config.input_response * delta)
-    steering = move_toward(steering, clampf(requested_steering, -1.0, 1.0), config.input_response * delta)
+    var steering_goal := clampf(requested_steering,-1.0,1.0)
+    var steering_rate: float = config.centering_response if absf(steering_goal) < 0.01 else config.steering_response / (1.0 + speed()/60.0)
+    steering = move_toward(steering,steering_goal,steering_rate*delta)
     var direction := forward()
     var right := Vector2(-direction.y, direction.x)
     var longitudinal := velocity.dot(direction)

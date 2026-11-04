@@ -10,6 +10,8 @@ extends Resource
 @export var steering_angle: float = 0.58
 @export var wheelbase: float = 2.5
 @export var input_response: float = 3.0
+@export var steering_response: float = 4.5
+@export var centering_response: float = 6.0
 @export var lateral_response: float = 5.0
 @export var gear_ratios := PackedFloat32Array([3.10, 2.10, 1.50, 1.15, 0.90])
 @export var final_drive: float = 4.10

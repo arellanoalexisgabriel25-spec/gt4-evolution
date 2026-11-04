@@ -26,3 +26,11 @@ jobs:
           echo "GODOT_BIN=$RUNNER_TEMP/godot-engine/Godot_v4.6.3-stable_linux.x86_64" >> "$GITHUB_ENV"
       - name: Import, test, and smoke startup
         run: bash tools/test_game.sh
+      - name: Render menu and camera captures with software OpenGL
+        run: xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 bash tools/capture_presentation.sh "$RUNNER_TEMP/presentation"
+      - name: Upload presentation captures
+        uses: actions/upload-artifact@v4
+        with:
+          name: presentation-captures
+          path: ${{ runner.temp }}/presentation/*.png
+          if-no-files-found: error

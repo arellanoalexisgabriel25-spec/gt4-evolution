@@ -1,5 +1,9 @@
 extends Control
 
+const Style = preload("res://scripts/racing_theme.gd")
+const Preview = preload("res://scripts/car_preview.gd")
+const CityMap = preload("res://scripts/city_map.gd")
+
 const Economy = preload("res://scripts/economy.gd")
 const Career = preload("res://scripts/career.gd")
 const Tuning = preload("res://scripts/tuning.gd")
@@ -9,17 +13,23 @@ const ControlSettings = preload("res://scripts/control_settings.gd")
 const SAVE_PATH := "user://evolution_save_v1.json"
 var game: EvolutionEconomy
 var career: EvolutionCareer
-var current_tab := "mercado"
+var current_tab := "inicio"
+var nav_buttons: Dictionary = {}
+var page_title: Label
+var license_badge: Label
 var content: VBoxContainer
 var funds: Label
 var notice: Label
 var pending_binding := ""
 var deadzone_label: Label
+var steering_label: Label
 var controls_path: String = ControlSettings.FILE_PATH
 
 func _ready() -> void:
     game = GameSession.game
     career = GameSession.career
+    current_tab = GameSession.menu_tab
+    GameSession.menu_tab = "inicio"
     _build_interface()
     _render()
     if not GameSession.last_notice.is_empty():
@@ -29,7 +39,10 @@ func _ready() -> void:
 func _label(value: String, size: int = 17) -> Label:
     var label := Label.new()
     label.text = value
+    label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     label.add_theme_font_size_override("font_size", size)
+    if size >= 20:
+        label.add_theme_font_override("font",Style.FONT)
     return label
 
 func _button(value: String, action: Callable) -> Button:
@@ -40,49 +53,97 @@ func _button(value: String, action: Callable) -> Button:
     return button
 
 func _build_interface() -> void:
+    theme = Style.build()
     var bg := ColorRect.new()
-    bg.color = Color("#101823")
+    bg.color = Color("cbd3df")
     bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
     add_child(bg)
     var margin := MarginContainer.new()
     margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     for side in ["left", "right", "top", "bottom"]:
-        margin.add_theme_constant_override("margin_" + side, 24)
+        margin.add_theme_constant_override("margin_" + side, 22)
     add_child(margin)
     var root := VBoxContainer.new()
     root.add_theme_constant_override("separation", 12)
     margin.add_child(root)
-    var header := HBoxContainer.new()
+    var header := PanelContainer.new()
+    header.add_theme_stylebox_override("panel", Style.panel(Style.BLUE,14))
     root.add_child(header)
-    header.add_child(_label("GT4 EVOLUTION  /  PROTOTIPO 0.11", 27))
-    var spacer := Control.new()
-    spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    header.add_child(spacer)
-    funds = _label("", 22)
-    header.add_child(funds)
-    root.add_child(_label("Modo amateur · Mercado exigente · Vehículos persistentes", 14))
-    var tabs := HBoxContainer.new()
-    root.add_child(tabs)
-    for entry in [{"key":"mercado","title":"CONCESIONARIO"}, {"key":"garaje","title":"GARAJE"}, {"key":"taller","title":"TALLER"}, {"key":"historial","title":"MOVIMIENTOS"}]:
-        tabs.add_child(_button(entry["title"], _change_tab.bind(entry["key"])))
-    tabs.add_child(_button("MODO CARRERA", _change_tab.bind("carrera")))
-    tabs.add_child(_button("TUNING", _change_tab.bind("tuning")))
-    tabs.add_child(_button("AJUSTES", _change_tab.bind("ajustes")))
+    var header_row := HBoxContainer.new()
+    header.add_child(header_row)
+    var brand := _label("GT4  /  EVOLUTION", 34)
+    brand.add_theme_font_override("font",Style.FONT)
+    brand.add_theme_color_override("font_color",Color.WHITE)
+    brand.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    header_row.add_child(brand)
+    license_badge = _label("",18)
+    license_badge.add_theme_font_override("font",Style.FONT)
+    license_badge.add_theme_color_override("font_color",Color("b9cada"))
+    license_badge.custom_minimum_size.x = 200
+    header_row.add_child(license_badge)
+    funds = _label("",26)
+    funds.custom_minimum_size.x = 185
+    funds.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+    funds.add_theme_font_override("font",Style.FONT)
+    funds.add_theme_color_override("font_color",Color("f3dfae"))
+    header_row.add_child(funds)
+    var body := HBoxContainer.new()
+    body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    body.add_theme_constant_override("separation",16)
+    root.add_child(body)
+    var sidebar := VBoxContainer.new()
+    sidebar.custom_minimum_size.x = 190
+    sidebar.add_theme_constant_override("separation",7)
+    body.add_child(sidebar)
+    var mode := _label("EVOLUTION HOME",22)
+    mode.add_theme_font_override("font",Style.FONT)
+    sidebar.add_child(mode)
+    var subtitle := _label("TU CAMINO EN EL
+AUTOMOVILISMO",11)
+    subtitle.add_theme_color_override("font_color",Color("68798d"))
+    sidebar.add_child(subtitle)
+    for entry in [{"key":"inicio","title":"INICIO"},{"key":"garaje","title":"MI GARAJE"},{"key":"mercado","title":"CONCESIONARIO"},{"key":"carrera","title":"EVENTOS DE CARRERA"},{"key":"taller","title":"CENTRO DE SERVICIO"},{"key":"tuning","title":"TUNING SHOP"},{"key":"historial","title":"MOVIMIENTOS"},{"key":"ajustes","title":"AJUSTES"}]:
+        var button := _button(entry["title"],_change_tab.bind(entry["key"]))
+        button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+        button.custom_minimum_size.y = 36
+        sidebar.add_child(button)
+        nav_buttons[entry["key"]] = button
+    var version := _label("GT4 EVOLUTION
+VERSION " + GameSession.VERSION,11)
+    version.add_theme_color_override("font_color",Color("68798d"))
+    sidebar.add_child(version)
+    var workspace := PanelContainer.new()
+    workspace.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    body.add_child(workspace)
+    var page := VBoxContainer.new()
+    workspace.add_child(page)
+    page_title = _label("",25)
+    page_title.add_theme_font_override("font",Style.FONT)
+    page.add_child(page_title)
+    var line := ColorRect.new()
+    line.color = Style.RED
+    line.custom_minimum_size.y = 3
+    page.add_child(line)
     var scroll := ScrollContainer.new()
     scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-    root.add_child(scroll)
+    scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+    page.add_child(scroll)
     content = VBoxContainer.new()
     content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    content.add_theme_constant_override("separation", 9)
+    content.add_theme_constant_override("separation",12)
     scroll.add_child(content)
-    notice = _label("Empezá comprando un vehículo en el concesionario.", 15)
-    notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-    root.add_child(notice)
-    var actions := HBoxContainer.new()
-    root.add_child(actions)
-    actions.add_child(_button("GUARDAR", _save))
-    actions.add_child(_button("CARGAR", _load))
-    actions.add_child(_button("NUEVA PARTIDA", _reset))
+    var footer := PanelContainer.new()
+    root.add_child(footer)
+    var footer_row := HBoxContainer.new()
+    footer.add_child(footer_row)
+    notice = _label("Bienvenido. Visitá el concesionario para comprar tu primer auto.",13)
+    notice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    footer_row.add_child(notice)
+    for entry in [["GUARDAR",_save],["CARGAR",_load],["NUEVA PARTIDA",_reset]]:
+        var button := _button(entry[0],entry[1])
+        button.add_theme_font_size_override("font_size",16)
+        footer_row.add_child(button)
 
 func _change_tab(next: String) -> void:
     pending_binding = ""
@@ -90,11 +151,19 @@ func _change_tab(next: String) -> void:
     _render()
 
 func _render() -> void:
-    funds.text = "%d Cr." % game.balance
+    funds.text = "%s Cr." % str(game.balance)
+    license_badge.text = "GT MODE   /   LICENCIA " + career.license
+    var titles := {"inicio":"GT MODE / EVOLUTION HOME","mercado":"USED CAR DEALER / CONCESIONARIO","garaje":"MY GARAGE / COLECCIÓN","carrera":"RACE EVENTS / CARRERA","taller":"SERVICE CENTER / TALLER","tuning":"TUNING SHOP / PREPARACIÓN","historial":"ACCOUNT / MOVIMIENTOS","ajustes":"OPTIONS / AJUSTES"}
+    page_title.text = titles.get(current_tab, "GT MODE")
+    for key in nav_buttons:
+        var selected: bool = key == current_tab
+        nav_buttons[key].add_theme_stylebox_override("normal",Style.panel(Style.BLUE if selected else Color("e8edf3"),9))
+        nav_buttons[key].add_theme_color_override("font_color",Color.WHITE if selected else Style.BLUE)
     for item in content.get_children():
         content.remove_child(item)
         item.queue_free()
     match current_tab:
+        "inicio": _home()
         "mercado": _market()
         "garaje": _garage()
         "taller": _workshop()
@@ -103,30 +172,83 @@ func _render() -> void:
         "tuning": _tuning()
         "ajustes": _settings()
 
+func _home() -> void:
+    var hero := HBoxContainer.new()
+    hero.add_theme_constant_override("separation",16)
+    content.add_child(hero)
+    var owned: Dictionary = {}
+    for vehicle in game.cars:
+        if vehicle["owner"] == "player":
+            owned = vehicle
+            break
+    var featured: Dictionary = game.cars[0] if owned.is_empty() else owned
+    var preview = Preview.new()
+    preview.model_name = featured["model"]
+    preview.custom_minimum_size = Vector2(380,185)
+    preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    hero.add_child(preview)
+    var intro := VBoxContainer.new()
+    intro.custom_minimum_size.x = 220
+    intro.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    hero.add_child(intro)
+    intro.add_child(_label("THE DRIVE STARTS HERE",25))
+    intro.add_child(_label("Cada auto tiene una historia.
+Encontrá el tuyo y construí tu carrera.",14))
+    intro.add_child(_label(featured["model"],22))
+    intro.add_child(_label("Licencia %s  /  Reputación %d" % [career.license,career.reputation],14))
+    intro.add_child(_button("VISITAR EL CONCESIONARIO" if owned.is_empty() else "ENTRAR AL GARAJE",_change_tab.bind("mercado" if owned.is_empty() else "garaje")))
+    var map = CityMap.new()
+    map.destination_selected.connect(_change_tab)
+    content.add_child(map)
+
 func _market() -> void:
-    content.add_child(_label("MERCADO DE USADOS", 22))
-    content.add_child(_label("Los precios reflejan kilometraje, desgaste y posibles averías. Inspeccioná antes de comprar.", 14))
+    content.add_child(_label("USED CAR LINEUP",24))
+    content.add_child(_label("Inspeccioná antes de comprar. La condición oculta puede convertir una oferta en una restauración costosa.",13))
+    var grid := GridContainer.new()
+    grid.columns = 2 if size.x >= 1100 else 1
+    grid.add_theme_constant_override("h_separation",12)
+    grid.add_theme_constant_override("v_separation",12)
+    content.add_child(grid)
     for car in game.cars:
         if car["owner"] != "seller":
             continue
-        var line := HBoxContainer.new()
-        content.add_child(line)
-        var status := ("Estado %.1f/100" % game.condition(car)) if bool(car.get("inspected", false)) else "Estado desconocido"
-        var info := _label("%s · %d km · %s · %d Cr." % [car["model"], car["km"], status, car["price"]], 16)
-        info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-        line.add_child(info)
-        var inspection_button := _button("INSPECCIONAR 200 Cr.", _inspect.bind(int(car["id"])))
-        inspection_button.disabled = bool(car.get("inspected", false)) or game.balance < 200
-        line.add_child(inspection_button)
-        var b := _button("COMPRAR", _buy.bind(int(car["id"])))
-        b.disabled = game.balance < int(car["price"])
-        line.add_child(b)
-        if bool(car.get("inspected", false)):
-            content.add_child(_label("  " + game.inspection_summary(car), 14))
+        var panel := PanelContainer.new()
+        panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        panel.custom_minimum_size.x = 390 if grid.columns == 2 else 0
+        grid.add_child(panel)
+        var column := VBoxContainer.new()
+        panel.add_child(column)
+        column.add_child(_label(car["model"],24))
+        var status := "CONDICIÓN %.1f / 100" % game.condition(car) if bool(car.get("inspected",false)) else "CONDICIÓN SIN VERIFICAR"
+        column.add_child(_label("%s KM   /   %s" % [car["km"],status],12))
+        var price := _label("%d Cr." % car["price"],30)
+        price.add_theme_color_override("font_color",Style.RED)
+        column.add_child(price)
+        if bool(car.get("inspected",false)):
+            column.add_child(_label(game.inspection_summary(car),13))
+        var actions := HFlowContainer.new()
+        actions.add_theme_constant_override("h_separation",8)
+        column.add_child(actions)
+        var inspect_button := _button("INSPECCIÓN 200 Cr.",_inspect.bind(int(car["id"])))
+        inspect_button.disabled = bool(car.get("inspected",false)) or game.balance < 200
+        actions.add_child(inspect_button)
+        var buy := _button("COMPRAR",_buy.bind(int(car["id"])))
+        buy.disabled = game.balance < int(car["price"])
+        actions.add_child(buy)
 
 func _garage() -> void:
     content.add_child(_label("MI GARAJE", 22))
     content.add_child(_label("Práctica: contrarreloj · Carrera libre: dos rivales, sin inscripción ni premios", 14))
+    var selected: Dictionary = {}
+    for vehicle in game.cars:
+        if vehicle["owner"] == "player":
+            selected = vehicle
+            break
+    if not selected.is_empty():
+        var preview = Preview.new()
+        preview.model_name = selected["model"]
+        preview.custom_minimum_size = Vector2(0,240)
+        content.add_child(preview)
     var found := false
     for car in game.cars:
         if car["owner"] != "player":
@@ -316,15 +438,39 @@ func _reset() -> void:
     _render()
 
 func _settings() -> void:
-    content.add_child(_label("CONTROLES", 22))
-    content.add_child(_label("Elegí una acción y presioná una letra, número o Espacio. Esc cancela. Las flechas siempre funcionan.", 14))
+    content.add_child(_label("CÁMARA Y DIRECCIÓN",22))
+    var camera_choice := OptionButton.new()
+    camera_choice.add_theme_font_override("font",Style.FONT)
+    camera_choice.add_theme_font_size_override("font_size",20)
+    for title in ["CÁMARA: SEGUIMIENTO","CÁMARA: CERCANA","CÁMARA: CAPÓ","CÁMARA: PARAGOLPES"]:
+        camera_choice.add_item(title)
+    camera_choice.selected = GameSession.controls.camera_mode
+    camera_choice.item_selected.connect(_set_camera_mode)
+    content.add_child(camera_choice)
+    content.add_child(_label("Tab / RB: cambiar vista · Shift / Y: mirar atrás · Stick derecho: mirar alrededor.",14))
+    steering_label = _label("Dirección del teclado: %.0f%% · Reducila para entradas más suaves." % (GameSession.controls.keyboard_steering*100.0),14)
+    content.add_child(steering_label)
+    var steering_slider := HSlider.new()
+    steering_slider.min_value = 0.4
+    steering_slider.max_value = 1.0
+    steering_slider.step = 0.05
+    steering_slider.value = GameSession.controls.keyboard_steering
+    steering_slider.value_changed.connect(_set_keyboard_steering)
+    content.add_child(steering_slider)
+    content.add_child(_label("CONTROLES",22))
+    content.add_child(_label("Elegí una acción y presioná una letra, número o Espacio. Esc cancela. Las flechas siempre funcionan.",14))
+    var bindings := GridContainer.new()
+    bindings.columns = 2
+    bindings.add_theme_constant_override("h_separation",30)
+    content.add_child(bindings)
     for name in GameSession.controls.DEFAULT_KEYS:
         var row := HBoxContainer.new()
-        content.add_child(row)
+        row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        bindings.add_child(row)
         var title := _label(GameSession.controls.TITLES[name])
         title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         row.add_child(title)
-        row.add_child(_button(GameSession.controls.key_label(name), _request_binding.bind(name)))
+        row.add_child(_button(GameSession.controls.key_label(name),_request_binding.bind(name)))
     content.add_child(_label("MANDO · Stick/cruceta: dirección · RT/R2: acelerar · LT/L2: freno
 B/Círculo: reversa · X/Cuadrado: recuperar · Inicio: pausa · Esc o botón en pantalla: garaje", 14))
     deadzone_label = _label("Zona muerta del mando (%.0f%%)" % (GameSession.controls.deadzone * 100.0), 16)
@@ -376,3 +522,13 @@ func _restore_controls() -> void:
     GameSession.controls.restore_defaults()
     _save_controls()
     _render()
+
+func _set_camera_mode(value: int) -> void:
+    GameSession.controls.camera_mode = value
+    _save_controls()
+
+func _set_keyboard_steering(value: float) -> void:
+    GameSession.controls.keyboard_steering = value
+    if is_instance_valid(steering_label):
+        steering_label.text = "Dirección del teclado: %.0f%% · Reducila para entradas más suaves." % (value*100.0)
+    _save_controls()

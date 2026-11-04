@@ -1,4 +1,4 @@
-# GT4 Evolution · v0.11
+# GT4 Evolution · v0.12
 
 Prototipo independiente de automovilismo en Godot 4.6.3: mercado de diez autos usados, inspecciones, taller, tuning, carrera profesional y conducción arcade 3D. La investigación de GT4 se consulta como referencia; no se incluyen su ejecutable, modelos, texturas ni circuitos comerciales.
 
@@ -25,11 +25,15 @@ El resto de los eventos de carrera continúa siendo **simulado**, indicado en su
 | Freno sin pedir marcha atrás | Espacio |
 | Recuperar el auto en la salida | R |
 | Pausar/reanudar todos los participantes y relojes | P |
+| Cambiar entre seguimiento, cercana, capó y paragolpes | Tab |
+| Mirar atrás mientras se mantiene presionada | Shift |
 | Volver al garaje; abandonar si hay carrera en curso | Esc |
 
 En **AJUSTES** podés reasignar las siete acciones a letras, números o Espacio. Las flechas siguen disponibles; Esc conserva su función de salida/cancelación. Se rechazan teclas duplicadas y combinaciones con modificadores. Restaurar controles recupera la configuración original. Estos ajustes se guardan automáticamente y no se pierden al iniciar una partida nueva; el progreso del juego sigue guardándose manualmente.
 
 Con un mando compatible: stick izquierdo o cruceta para girar, RT/R2 para acelerar, LT/L2 para frenar proporcionalmente, B/Círculo para reversa, X/Cuadrado para recuperar e Inicio para pausar. Se usa el primer mando conectado; permite conexión/desconexión durante la sesión. La zona muerta es ajustable entre 10% y 40%. En esta versión, volver al garaje requiere Esc o el botón en pantalla. La validación usa eventos y muestras simuladas de mando; no se ha probado con hardware físico.
+
+RB/R1 cambia de cámara, Y/Triángulo permite mirar atrás y el stick derecho mueve la vista. En AJUSTES se guardan la cámara inicial y la intensidad de dirección del teclado (40–100%, por defecto 80%); el mando conserva su rango completo. La entrada de dirección se vuelve más gradual a alta velocidad y el volante recupera el centro con mayor rapidez al soltarlo.
 
 La recuperación conserva las vueltas ya completadas y la distancia realmente recorrida, pero invalida la vuelta en curso. En carrera añade tres segundos de detención mientras los rivales siguen. Salir del asfalto invalida la vuelta: hay que llegar de nuevo a meta para iniciar un intento válido, o recuperar con R. Todas las vueltas requieren ocho controles de paso en orden y sentido correcto.
 
@@ -39,7 +43,9 @@ La recuperación conserva las vueltas ya completadas y la distancia realmente re
 - Vehículos físicos que comparten el controlador del jugador, con aceleración progresiva, adherencia lateral limitada, derrape recuperable y respuesta diferenciada por tracción, desgaste y mejoras.
 - Transmisión configurable, RPM, curva de par normalizada y pérdida progresiva de empuje cerca de la velocidad máxima.
 - Transferencia de carga entre ejes, frenado limitado por neumáticos y giro limitado por agarre. Delantera, trasera e integral conservan respuestas diferentes.
-- Cámara con retardo de orientación, distancia y campo visual que cambian con la velocidad, incluso al derrapar.
+- Cuatro cámaras con retardo de orientación, distancia y campo visual que cambian con la velocidad, incluso al derrapar. El seguimiento conserva la distancia al trasladarse rápido y acorta su brazo ante paredes. Capó y paragolpes tienen planos de recorte cercanos; paragolpes oculta la carrocería propia.
+- Inicio con mapa original de servicios, paneles plateados y azules, tipografía Barlow Condensed con licencia OFL y presentación 3D giratoria del auto. Concesionario en tarjetas, navegación lateral y garaje conservan las transacciones existentes.
+- HUD compacto de velocidad, RPM, marcha, cronómetro, mejor vuelta, posiciones y cámara; minimapa del trazado real con jugador y rivales; ayuda extensa al detenerse o pausar. Autos procedurales con cristales, faros, ruedas animadas, dirección y movimiento de carrocería. Pista con cielo, sombras, materiales, tribuna y paisaje originales.
 - IA reproducible que anticipa curvas, regula acelerador/freno, intenta adelantar por un carril libre y frena ante tráfico próximo. Habilidad, agresividad y consistencia cambian el ritmo y las pequeñas desviaciones de trayectoria. Es una primera IA de conducción; no un sistema avanzado de competición.
 - Cuenta regresiva, posiciones en vivo, llegada real, resultados y abandonos. Los autos que llegan dejan de obstaculizar a quienes siguen compitiendo.
 - Integración de Debutantes con inscripciones, premios únicos, reputación, licencias y memoria de enfrentamientos.
@@ -49,7 +55,7 @@ La recuperación conserva las vueltas ya completadas y la distancia realmente re
 
 ## Límites actuales
 
-La conducción es un modelo arcade provisional, no la física original de GT4. Los vehículos son geométricos; no hay modelos comerciales, sonido de motor, daños por impacto, simulación completa de neumáticos o embrague, ni circuitos adicionales. Las colisiones usan cuerpos de personaje, sin intercambio realista de impulsos. El desgaste se liquida al volver al garaje; no hay averías nuevas durante una vuelta. La IA usa seguimiento de trayectoria y selección simple de carril, con recuperación explícita si queda bloqueada. El guardado y la presentación gráfica deben seguir probándose en equipos reales.
+La conducción es un modelo arcade provisional, no la física original de GT4. Los vehículos son geométricos; no hay modelos comerciales, sonido de motor, daños por impacto, simulación completa de neumáticos o embrague, ni circuitos adicionales. Las colisiones usan cuerpos de personaje, sin intercambio realista de impulsos. El desgaste se liquida al volver al garaje; no hay averías nuevas durante una vuelta. La IA usa seguimiento de trayectoria y selección simple de carril, con recuperación explícita si queda bloqueada. Se revisaron capturas reales a 1280×720 con Mesa/llvmpipe en Linux; faltan conducción humana, Windows, mando físico y mediciones de rendimiento en GPU real.
 
 ## Desarrollo y pruebas
 
@@ -66,4 +72,17 @@ La validación incluye carreras completas con colisiones y controles de IA, pago
 ## Integración v0.11
 Se integraron las modificaciones de dinámica y cámara aportadas en `files.zip`, preservando controles, carrera y partidas. Se añadió `speed()` al controlador, requerido por la nueva prueba, y se usa la velocidad total en el plano para que la cámara responda también durante un derrape lateral. El límite de frenado por neumáticos se aplica al freno y a los pedales de cambio de sentido; el frenado con S/B ya no se trata como propulsión sobre el eje motriz.
 
-Los parámetros siguen siendo de balance arcade, no medidas extraídas de GT4. La validación se realiza con Godot 4.6.3, incluyendo carreras completas y la nueva suite de dinámica; el ajuste visual y la sensación de conducción necesitan prueba en el equipo del jugador.
+Los parámetros siguen siendo de balance arcade, no medidas extraídas de GT4. La validación se realiza con Godot 4.6.3, incluyendo carreras completas y la suite de dinámica; la sensación de conducción necesita prueba humana.
+
+## Presentación v0.12
+
+La estética toma como referencia los menús clásicos de automovilismo, usando gráficos y geometría originales. Las preferencias anteriores y las partidas siguen siendo compatibles. Regresar de la pista abre directamente el garaje y recuerda guardar; no cambia las reglas de premios ni el guardado manual.
+
+Las nuevas pruebas cubren las cuatro vistas, mirada trasera, seguimiento a velocidad y obstáculos físicos, dirección, preferencias antiguas/nuevas, navegación y transacciones desde el menú, disposición del mapa y telemetría del HUD. Para producir diez capturas reproducibles en un entorno con pantalla OpenGL:
+
+```sh
+LIBGL_ALWAYS_SOFTWARE=1 bash tools/capture_presentation.sh /ruta/absoluta/capturas
+# En Linux sin escritorio, anteponer: xvfb-run -a env
+```
+
+Ejecutá el comando desde la raíz del repositorio. Los datos se aíslan en un directorio temporal. Las capturas muestran los menús, las cuatro cámaras en el mismo instante realmente conducido, mirada trasera y la parrilla con rivales; no prueban rendimiento. GitHub Actions publica las imágenes como artefacto cuando finaliza la comprobación gráfica.

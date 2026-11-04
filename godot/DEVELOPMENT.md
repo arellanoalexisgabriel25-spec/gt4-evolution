@@ -8,7 +8,7 @@ Develop functional increments on descriptive branches, preserve user work and sa
 
 Priorities: driving foundation, functioning circuit, physical rival AI, progressively replace simulated career events with real track results, then deeper mechanical systems. A simulated result must always be labelled as such.
 
-## Architecture through 0.10
+## Architecture through 0.12
 
 | Module | Responsibility |
 | --- | --- |
@@ -16,7 +16,9 @@ Priorities: driving foundation, functioning circuit, physical rival AI, progress
 | `transmission.gd` | Ratio-based RPM and sequential automatic shifting; not a torque/clutch simulation |
 | `handling.gd` | Garage condition and installed parts translated into vehicle parameters |
 | `vehicle_actor.gd` | Character body, collision, original provisional visual, measured distance and normalized controls |
-| `chase_camera.gd` | Independent smoothed following camera |
+| `chase_camera.gd` | Four independent views, damped heading/relative arm, rear/orbit input and wall avoidance |
+| `car_visual.gd`, `car_preview.gd` | Original procedural vehicle bodywork/animation and isolated turntable viewport |
+| `racing_theme.gd`, `city_map.gd`, `race_hud.gd`, `track_map.gd` | Shared visual style, navigable home, race telemetry and actual world-position minimap |
 | `circuit_layout.gd` | Original 456.7 m club oval, route sampling/projection, eight gates and their tangents |
 | `circuit_view.gd` | Builds render geometry and collision barriers from the same layout used by timing and AI |
 | `rival_driver.gd` | Pure control policy: pursuit target, curve speed, traffic braking, passing lane and deterministic profile variation; never moves the vehicle directly |
@@ -47,7 +49,7 @@ Use Godot 4.6.3, then run `bash tools/test_game.sh` from the repository root. Th
 
 The suite covers existing economy, career, inspections, tuning and transmission, plus real two-lap races with the same physical controller and collision world, overtaking, traffic decisions, checkpoint shortcuts, recovery, race timeout, fee/refund/award transactions, stale callbacks, fractional wear/distance, real JSON files, legacy saves and personal records. Local results do not establish a GitHub Actions pass. See the release report for counts and execution results.
 
-The source package is validated after fresh extraction. Windows includes the official Godot runtime verified against upstream SHA-512 and its license; Windows execution and graphical appearance remain untested in this cloud environment. No claim of GUI performance or complete GT4 physics is made.
+The source package is validated after fresh extraction. Windows includes the official Godot runtime verified against upstream SHA-512 and its license. Version 0.12 is also rendered at 1280×720 with OpenGL/Mesa llvmpipe on a local Xvfb display; actual screenshots are reviewed for menu layout, lighting, HUD and camera views. Windows execution, physical controllers and GPU performance remain untested. No claim of complete GT4 physics is made.
 
 ## Reusable setup and packaging
 
@@ -67,7 +69,7 @@ This feature branch depends on the pending 0.8 and 0.8.1 increments; `main` rema
 
 ## Remaining work
 
-Human driving, graphical feedback and testing with physical controllers; additional original circuits; broader physical career events; AI defending and more robust recovery in arbitrary crowded scenarios; realistic collision response/damage, tires, heat and engine torque; autosave with recovery. Preserve successful physical race tests and transaction guarantees when expanding these systems.
+Human driving feedback and testing with physical controllers/GPU hardware; additional original circuits; broader physical career events; AI defending and more robust recovery in arbitrary crowded scenarios; realistic collision response/damage, tires, heat and engine torque; autosave with recovery. Preserve successful physical race tests and transaction guarantees when expanding these systems.
 
 ## Version 0.10 and distribution
 
@@ -88,5 +90,31 @@ The supplied files were originally marked unverified in Godot and checked only i
 - `tests/test_vehicle_dynamics.gd`: torque curve, drag taper, axle loads, braking distance versus tires/brakes, power/coast/brake cornering per drivetrain, yaw saturation, preset differences and camera behaviour.
 
 Known trade-offs: braking from 30 m/s with default tires now takes about 20.6 m (was about 17.7 m); AI target speeds are unchanged; native scene tests measure the new lap times rather than assuming they match the Python estimate. Weight transfer is still a single-body approximation, not a two-axle tire model.
+
+## Version 0.12: presentation and camera/steering response
+
+See [RELEASE-0.12.md](RELEASE-0.12.md) for implementation and checks. Camera damping
+now applies to heading and relative arm only; damping absolute world position
+caused additional speed-dependent follow distance. Chase views shorten their arm
+against real world barriers; bumper view hides only the player's visual node.
+No collider or lap gate is moved by a camera change. Camera mode and keyboard
+steering range are optional fields in the existing version-1 preference format.
+The save format and transaction rules are unchanged.
+
+Steering has independent turn-in/centring rates; turn-in slows with speed while
+throttle retains its previous response. The keyboard range defaults to 80% and
+can be adjusted from 40–100%; analog steering retains its full range. Visual
+geometry and the preview share one procedural model, including steering/spinning
+wheels and brake lights for pedal braking as well as the dedicated brake input.
+The minimap renders the actual circuit polyline and actor positions.
+
+`tools/capture_presentation.sh` uses temporary player data, checks renderer errors
+and requires ten fresh PNGs. With an OpenGL display, run it with an absolute output
+directory. CI uses Xvfb/software OpenGL and uploads the captures. Local cloud setup
+also retains verified Debian Xvfb binaries under `/workspace/visual-runtime/` and
+the helper `capture-game.sh`, which starts and stops its own display. Rendering
+was checked with Mesa llvmpipe, including the home, dealer, garage, settings, four
+views, rearward view and race grid. This establishes composition on that renderer,
+not hardware performance or driving feel.
 
 Integration corrections: the supplied dynamics test called a missing `speed()` method, now exposed as planar velocity magnitude. The camera uses that magnitude so sideways drift does not incorrectly reduce its speed response. The same grip cap now applies to brake input and braking by selecting the opposite travel direction. Only actual propulsion applies driven-axle penalties; reverse-pedal deceleration is not treated as power. Added native tests cover both braking directions, drivetrain-independent pedal braking with equal axle bias, total speed and the camera's sideways-speed response. Save schemas and input preferences are unchanged. Windows/controller hardware and graphical appearance remain untested.

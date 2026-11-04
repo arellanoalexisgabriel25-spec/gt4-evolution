@@ -52,9 +52,12 @@ func _initialize() -> void:
     check(strong.signed_speed() < light.signed_speed() and light.signed_speed() < 20.0, "Trigger pressure changes actual braking force")
     var path := "user://controls-test-%d.json" % Time.get_ticks_usec()
     settings.deadzone = 0.25
+    settings.camera_mode = 2
+    settings.keyboard_steering = 0.55
     check(settings.save_file(path) == OK, "Custom controls write to a real settings file")
     var restored = Settings.new()
     check(restored.load_file(path) and restored.keys["accelerate"] == KEY_I and restored.deadzone == 0.25, "Settings reload independently from a game save")
+    check(restored.camera_mode == 2 and restored.keyboard_steering == 0.55,"Camera and steering preferences survive a real file round trip")
     var valid_file := FileAccess.get_file_as_string(path)
     settings.deadzone = NAN
     check(settings.save_file(path) != OK and FileAccess.get_file_as_string(path) == valid_file, "Invalid settings cannot overwrite the previous file")
@@ -62,8 +65,17 @@ func _initialize() -> void:
     var invalid := old.duplicate(true)
     invalid["keys"]["pause"] = invalid["keys"]["accelerate"]
     check(not restored.from_dict(invalid) and restored.to_dict() == old, "Invalid load preserves valid settings")
+    for field in [{"camera_mode":4},{"camera_mode":1.5},{"keyboard_steering":0.0},{"keyboard_steering":NAN}]:
+        invalid = old.duplicate(true)
+        invalid.merge(field,true)
+        check(not restored.from_dict(invalid) and restored.to_dict() == old,"Malformed presentation preference is rejected atomically")
+    var legacy := old.duplicate(true)
+    legacy.erase("camera_mode")
+    legacy.erase("keyboard_steering")
+    check(restored.from_dict(legacy) and restored.camera_mode == 0 and restored.keyboard_steering == 0.8,"Existing v1 preferences load with safe defaults for new optional fields")
     restored.restore_defaults()
     check(restored.keys == Settings.DEFAULT_KEYS and restored.deadzone == 0.18, "Restore defaults resets keyboard and deadzone")
+    check(restored.camera_mode == 0 and restored.keyboard_steering == 0.8,"Restore defaults also resets camera and keyboard sensitivity")
     DirAccess.remove_absolute(path)
     if not failed:
         print("PASS: %d control setting assertions" % checks)
