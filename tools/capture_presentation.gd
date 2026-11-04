@@ -1,6 +1,7 @@
 extends SceneTree
 
-var output := "/workspace/artifacts/presentation-0.12"
+const DragDriver = preload("res://tests/drag_test_driver.gd")
+var output := "/workspace/artifacts/presentation-0.13"
 
 func _initialize() -> void:
     var args := OS.get_cmdline_user_args()
@@ -67,4 +68,71 @@ func run() -> void:
     await process_frame
     await process_frame
     await picture("10-race-grid")
+    current_scene._back_to_garage()
+    await process_frame
+    await process_frame
+    session.start_drag(1)
+    change_scene_to_file("res://scenes/drag.tscn")
+    await process_frame
+    await process_frame
+    await picture("11-drag-staging")
+    var drag = current_scene
+    drag.paused = true
+    await physics_frame
+    await physics_frame
+    if not drag.engine_audio.stream_paused:
+        push_error("Rendered audio playback did not pause with the powertrain.")
+        quit(1)
+        return
+    drag.paused = false
+    var driver = DragDriver.new()
+    drag.input_provider = func() -> Dictionary: return driver.controls(drag.car.powertrain,drag.run.clock,drag.get_physics_process_delta_time())
+    driver.controls(drag.car.powertrain,0,1.0/60.0)
+    drag._arm()
+    Engine.time_scale = 3.0
+    while drag.run.clock < 1.0:
+        await physics_frame
+    drag.set_physics_process(false)
+    drag._refresh_hud()
+    await picture("12-drag-tree")
+    drag.set_physics_process(true)
+    while -drag.car.position.z < 140 and drag.run.phase not in ["finished","invalid"]:
+        await physics_frame
+    drag.set_physics_process(false)
+    drag.camera.snap()
+    drag._refresh_hud()
+    await picture("13-drag-driving")
+    drag.camera.mode = 1
+    drag.camera.snap()
+    await picture("14-drag-close")
+    drag.set_physics_process(true)
+    while drag.run.phase not in ["finished","invalid"]:
+        await physics_frame
+    if drag.run.phase != "finished":
+        push_error("The rendered manual quarter-mile pass did not finish: "+drag.run.reason)
+        quit(1)
+        return
+    drag.set_physics_process(false)
+    drag._refresh_hud()
+    await picture("15-drag-ticket")
+    drag._recover()
+    driver.reaction_delay = -1.0
+    driver.shift_hold = 0.0
+    driver.controls(drag.car.powertrain,0,1.0/60.0)
+    drag._arm()
+    drag.set_physics_process(true)
+    while drag.run.phase not in ["finished","invalid"]:
+        await physics_frame
+    if drag.run.reason != "LARGADA EN FALSO":
+        push_error("The rendered early launch did not trigger the false-start rule.")
+        quit(1)
+        return
+    drag.set_physics_process(false)
+    drag._refresh_hud()
+    await picture("16-drag-red-light")
+    Engine.time_scale = 1.0
+    drag.input_provider = Callable()
+    drag._back_to_garage()
+    await process_frame
+    await process_frame
     quit(0)

@@ -191,12 +191,15 @@ func _home() -> void:
     intro.custom_minimum_size.x = 220
     intro.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     hero.add_child(intro)
-    intro.add_child(_label("THE DRIVE STARTS HERE",25))
-    intro.add_child(_label("Cada auto tiene una historia.
-Encontrá el tuyo y construí tu carrera.",14))
+    intro.add_child(_label("402,336 M / CAJA MANUAL",25))
+    intro.add_child(_label("Una recta para perfeccionar tu largada.
+El cambio justo define la marca.",14))
     intro.add_child(_label(featured["model"],22))
     intro.add_child(_label("Licencia %s  /  Reputación %d" % [career.license,career.reputation],14))
-    intro.add_child(_button("VISITAR EL CONCESIONARIO" if owned.is_empty() else "ENTRAR AL GARAJE",_change_tab.bind("mercado" if owned.is_empty() else "garaje")))
+    if owned.is_empty():
+        intro.add_child(_button("VISITAR EL CONCESIONARIO",_change_tab.bind("mercado")))
+    else:
+        intro.add_child(_button("CORRER ¼ DE MILLA",_drag_3d.bind(int(owned["id"]))))
     var map = CityMap.new()
     map.destination_selected.connect(_change_tab)
     content.add_child(map)
@@ -238,7 +241,7 @@ func _market() -> void:
 
 func _garage() -> void:
     content.add_child(_label("MI GARAJE", 22))
-    content.add_child(_label("Práctica: contrarreloj · Carrera libre: dos rivales, sin inscripción ni premios", 14))
+    content.add_child(_label("¼ de milla: largada, cambios y récords · Circuito del club: práctica y carrera libre", 14))
     var selected: Dictionary = {}
     for vehicle in game.cars:
         if vehicle["owner"] == "player":
@@ -267,9 +270,15 @@ func _garage() -> void:
         var best := career.lap_records.get_best(int(car["id"]))
         if best > 0.0:
             layout.add_child(_label("Mejor vuelta al club: %.2f s" % best, 15))
+        var drag_best := career.drag_records.best(int(car["id"]))
+        if not drag_best.is_empty():
+            layout.add_child(_label("Mejor ¼ de milla: %.3f s · trampa %.1f km/h · reacción %.3f s" % [drag_best.et,drag_best.trap_kmh,drag_best.reaction],15))
         var actions := HFlowContainer.new()
         actions.add_theme_constant_override("h_separation", 8)
         layout.add_child(actions)
+        var drag := _button("¼ DE MILLA / MANUAL",_drag_3d.bind(int(car["id"])))
+        drag.disabled = not game.eligible(car)
+        actions.add_child(drag)
         var drive_button := _button("PRUEBA SIMULADA 10 KM", _drive.bind(int(car["id"])))
         drive_button.disabled = not game.eligible(car)
         actions.add_child(drive_button)
@@ -401,6 +410,12 @@ func _drive_3d(id: int) -> void:
         return
     get_tree().change_scene_to_file("res://scenes/driving.tscn")
 
+func _drag_3d(id: int) -> void:
+    if not GameSession.start_drag(id):
+        notice.text = "El auto no está disponible o tenés una inscripción pendiente."
+        return
+    get_tree().change_scene_to_file("res://scenes/drag.tscn")
+
 func _race_3d(id: int) -> void:
     if not GameSession.start_driving(id, "race"):
         notice.text = "El auto no está disponible o requiere reparación."
@@ -463,7 +478,7 @@ func _settings() -> void:
     bindings.columns = 2
     bindings.add_theme_constant_override("h_separation",30)
     content.add_child(bindings)
-    for name in GameSession.controls.DEFAULT_KEYS:
+    for name in GameSession.controls.all_keys():
         var row := HBoxContainer.new()
         row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         bindings.add_child(row)

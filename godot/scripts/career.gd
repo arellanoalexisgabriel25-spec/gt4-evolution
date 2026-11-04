@@ -4,6 +4,7 @@ class_name EvolutionCareer
 const Tuning = preload("res://scripts/tuning.gd")
 const Rivals = preload("res://scripts/rivals.gd")
 const LapRecords = preload("res://scripts/lap_records.gd")
+const DragRecords = preload("res://scripts/drag_records.gd")
 
 # Legacy event simulation and validated results from the physical race module.
 # Each event pays only once. Licenses depend on achievements, not cash.
@@ -22,6 +23,7 @@ var completed: Array[String] = []
 var results: Array[Dictionary] = []
 var rivalries: Dictionary = {}
 var lap_records = LapRecords.new()
+var drag_records = DragRecords.new()
 var _track_entry: Dictionary = {}
 var _track_game
 
@@ -188,9 +190,14 @@ func _promote() -> void:
         license = "A"
 
 func to_dict() -> Dictionary:
-    return {"schema_version":1, "license":license, "reputation":reputation, "completed":completed.duplicate(), "results":results.duplicate(true), "rivalries":rivalries.duplicate(true), "lap_records":lap_records.to_dict()}
+    return {"schema_version":1, "license":license, "reputation":reputation, "completed":completed.duplicate(), "results":results.duplicate(true), "rivalries":rivalries.duplicate(true), "lap_records":lap_records.to_dict(),"drag_records":drag_records.to_dict()}
 
 func from_dict(data: Dictionary) -> bool:
+    if typeof(data.get("drag_records",{})) != TYPE_DICTIONARY:
+        return false
+    var candidate_drag = DragRecords.new()
+    if not candidate_drag.from_dict(data.get("drag_records",{})):
+        return false
     if typeof(data.get("lap_records", {})) != TYPE_DICTIONARY:
         return false
     var candidate_records = LapRecords.new()
@@ -242,4 +249,5 @@ func from_dict(data: Dictionary) -> bool:
         results.append(result.duplicate(true))
     rivalries = data.get("rivalries", {}).duplicate(true)
     lap_records = candidate_records
+    drag_records = candidate_drag
     return true

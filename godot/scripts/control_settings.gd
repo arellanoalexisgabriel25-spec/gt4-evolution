@@ -1,10 +1,12 @@
 extends RefCounted
 
 const DEFAULT_KEYS := {"accelerate":KEY_W, "reverse":KEY_S, "left":KEY_A, "right":KEY_D, "brake":KEY_SPACE, "recover":KEY_R, "pause":KEY_P}
+const DRAG_KEYS := {"shift_up":KEY_E,"shift_down":KEY_Q,"clutch":KEY_C}
 const ARROWS := {"accelerate":KEY_UP, "reverse":KEY_DOWN, "left":KEY_LEFT, "right":KEY_RIGHT}
-const TITLES := {"accelerate":"Acelerar", "reverse":"Frenar / reversa", "left":"Girar a la izquierda", "right":"Girar a la derecha", "brake":"Freno", "recover":"Recuperar vehículo", "pause":"Pausar"}
+const TITLES := {"accelerate":"Acelerar", "reverse":"Frenar / reversa", "left":"Girar a la izquierda", "right":"Girar a la derecha", "brake":"Freno", "recover":"Recuperar vehículo", "pause":"Pausar","shift_up":"Subir marcha (¼ milla)","shift_down":"Bajar marcha (¼ milla)","clutch":"Embrague (¼ milla)"}
 const FILE_PATH := "user://controls_v1.json"
 var keys: Dictionary = DEFAULT_KEYS.duplicate()
+var drag_keys: Dictionary = DRAG_KEYS.duplicate()
 var deadzone := 0.18
 var camera_mode := 0
 var keyboard_steering := 0.8
@@ -16,31 +18,37 @@ static func valid_key(code: int) -> bool:
     return (code >= KEY_A and code <= KEY_Z) or (code >= KEY_0 and code <= KEY_9) or code == KEY_SPACE
 
 func bind(name: String, code: int) -> String:
-    if not keys.has(name) or not valid_key(code):
+    if (not keys.has(name) and not drag_keys.has(name)) or not valid_key(code):
         return "Elegí una letra, un número o Espacio. Esc cancela."
-    for other in keys:
-        if other != name and int(keys[other]) == code:
+    var bindings := all_keys()
+    for other in bindings:
+        if other != name and int(bindings[other]) == code:
             return "Esa tecla ya se usa para %s." % str(TITLES[other]).to_lower()
-    keys[name] = code
+    if keys.has(name):
+        keys[name] = code
+    else:
+        drag_keys[name] = code
     apply()
     return ""
 
 func restore_defaults() -> void:
     keys = DEFAULT_KEYS.duplicate()
+    drag_keys = DRAG_KEYS.duplicate()
     deadzone = 0.18
     camera_mode = 0
     keyboard_steering = 0.8
     apply()
 
 func apply() -> void:
-    for name in keys:
+    var bindings := all_keys()
+    for name in bindings:
         var mapped := action(name)
         if not InputMap.has_action(mapped):
             InputMap.add_action(mapped)
         Input.action_release(mapped) # Remapping a held key must not leave throttle stuck.
         InputMap.action_erase_events(mapped)
         var event := InputEventKey.new()
-        event.physical_keycode = keys[name]
+        event.physical_keycode = bindings[name]
         InputMap.action_add_event(mapped, event)
         if ARROWS.has(name):
             var arrow := InputEventKey.new()
@@ -69,8 +77,21 @@ func read_controls() -> Dictionary:
         brake = maxf(brake, float(sample["brake"]))
     return {"throttle":clampf(throttle, -1.0, 1.0), "steer":clampf(steer, -1.0, 1.0), "brake":brake}
 
+func all_keys() -> Dictionary:
+    var bindings := keys.duplicate()
+    bindings.merge(drag_keys)
+    return bindings
+
 func key_label(name: String) -> String:
-    return "Espacio" if keys[name] == KEY_SPACE else OS.get_keycode_string(keys[name])
+    var code: int = all_keys().get(name,0)
+    return "Espacio" if code == KEY_SPACE else OS.get_keycode_string(code)
+
+func clutch_input() -> float:
+    var value := Input.get_action_strength(action("clutch"))
+    var pads := Input.get_connected_joypads()
+    if not pads.is_empty() and Input.is_joy_button_pressed(pads[0],JOY_BUTTON_LEFT_SHOULDER):
+        value = 1.0
+    return value
 
 func camera_look() -> Dictionary:
     var look := Vector2.ZERO
@@ -85,7 +106,7 @@ func help_text() -> String:
     return "%s/↑ acelerar · %s/↓ reversa · %s/%s girar\n%s freno · %s recuperar · %s pausa · Esc garaje\nMando: RT/LT acelerar/frenar · B reversa\nStick/cruceta girar · X recuperar · Inicio pausa" % [key_label("accelerate"),key_label("reverse"),key_label("left"),key_label("right"),key_label("brake"),key_label("recover"),key_label("pause")]
 
 func to_dict() -> Dictionary:
-    return {"version":1, "keys":keys.duplicate(), "deadzone":deadzone,"camera_mode":camera_mode,"keyboard_steering":keyboard_steering}
+    return {"version":1, "keys":keys.duplicate(), "drag_keys":drag_keys.duplicate(),"deadzone":deadzone,"camera_mode":camera_mode,"keyboard_steering":keyboard_steering}
 
 func from_dict(data: Dictionary) -> bool:
     if data.get("version") != 1 or typeof(data.get("keys")) != TYPE_DICTIONARY or data["keys"].size() != DEFAULT_KEYS.size():
@@ -107,7 +128,27 @@ func from_dict(data: Dictionary) -> bool:
             return false
         candidate[name] = int(code)
         seen[int(code)] = true
+    var drag := {}
+    if data.has("drag_keys"):
+        if typeof(data["drag_keys"]) != TYPE_DICTIONARY or data["drag_keys"].size() != DRAG_KEYS.size():
+            return false
+        for name in DRAG_KEYS:
+            var code = data["drag_keys"].get(name)
+            if typeof(code) not in [TYPE_INT,TYPE_FLOAT] or not is_finite(float(code)) or float(code)!=floorf(float(code)) or not valid_key(int(code)) or seen.has(int(code)):
+                return false
+            drag[name] = int(code)
+            seen[int(code)] = true
+    else:
+        # Preserve existing custom bindings, even if E/Q/C were used before 0.13.
+        for name in DRAG_KEYS:
+            var choices := [DRAG_KEYS[name],KEY_F,KEY_G,KEY_H,KEY_J,KEY_K,KEY_L,KEY_Z,KEY_V,KEY_B,KEY_N,KEY_M]
+            for code in choices:
+                if not seen.has(code):
+                    drag[name] = code
+                    seen[code] = true
+                    break
     keys = candidate
+    drag_keys = drag
     deadzone = float(zone)
     camera_mode = int(camera)
     keyboard_steering = float(steering)

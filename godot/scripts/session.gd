@@ -2,7 +2,7 @@ extends Node
 
 const Economy = preload("res://scripts/economy.gd")
 const Career = preload("res://scripts/career.gd")
-const VERSION := "0.12"
+const VERSION := "0.13"
 const ControlSettings = preload("res://scripts/control_settings.gd")
 var controls = ControlSettings.new()
 
@@ -37,6 +37,12 @@ func start_driving(car_id: int, mode: String = "practice") -> bool:
     if not entry_ticket.is_empty() or mode not in ["practice", "race"] or not choose_vehicle(car_id):
         return false
     driving_mode = mode
+    return true
+
+func start_drag(car_id: int) -> bool:
+    if not entry_ticket.is_empty() or career.has_pending_track_entry() or not choose_vehicle(car_id):
+        return false
+    driving_mode = "drag"
     return true
 
 func enter_track_event(event_id: String, car_id: int) -> String:

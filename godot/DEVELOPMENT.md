@@ -6,7 +6,7 @@ The runnable game lives in `godot/`. Preserve the original GT4 research document
 
 Develop functional increments on descriptive branches, preserve user work and save compatibility, run meaningful checks, prepare a PR and inspect CI before merging. Keep `main` stable. Use existing isolated checkouts; do not create a worktree unless requested. Continue routine technical work autonomously. Ask only for a missing prerequisite that cannot be resolved independently.
 
-Priorities: driving foundation, functioning circuit, physical rival AI, progressively replace simulated career events with real track results, then deeper mechanical systems. A simulated result must always be labelled as such.
+Current priority: develop a compact quarter-mile environment, manual shifting, measurable driving skill, persistent mechanical use and original visuals. Large-circuit expansion is deferred. Existing circuit, career and AI modes remain available. A simulated result must always be labelled as such.
 
 ## Architecture through 0.12
 
@@ -14,6 +14,10 @@ Priorities: driving foundation, functioning circuit, physical rival AI, progress
 | --- | --- |
 | `vehicle_physics.gd`, `vehicle_config.gd`, `resources/*.tres` | Deterministic planar arcade dynamics and configurable handling |
 | `transmission.gd` | Ratio-based RPM and sequential automatic shifting; not a torque/clutch simulation |
+| `drag_vehicle_config.gd`, `manual_powertrain.gd` | Original approximate per-car mass/torque/gear data; substepped longitudinal engine/wheel inertia, finite clutch, grip/load transfer, drag, braking and session heat/stress |
+| `drag_actor.gd`, `drag_strip.gd`, `drag_mode.gd` | Real collision body, original two-lane strip and manual input/timing/garage integration; directional assistance is explicit |
+| `drag_run.gd`, `drag_records.gd`, `drag_garage_session.gd` | Interpolated beams, tree/false starts, validated personal tickets and once-only cumulative usage settlement |
+| `drag_hud.gd`, `engine_audio.gd` | Measured manual telemetry/ticket and original provisional synthesized engine sound |
 | `handling.gd` | Garage condition and installed parts translated into vehicle parameters |
 | `vehicle_actor.gd` | Character body, collision, original provisional visual, measured distance and normalized controls |
 | `chase_camera.gd` | Four independent views, damped heading/relative arm, rear/orbit input and wall avoidance |
@@ -116,5 +120,49 @@ the helper `capture-game.sh`, which starts and stops its own display. Rendering
 was checked with Mesa llvmpipe, including the home, dealer, garage, settings, four
 views, rearward view and race grid. This establishes composition on that renderer,
 not hardware performance or driving feel.
+
+## Version 0.13: quarter-mile focus
+
+The current increment is [RELEASE-0.13.md](RELEASE-0.13.md). The two-lane Autódromo
+Sur is original and only takes broad inspiration from the Gálvez atmosphere.
+The drag mode is individual practice: no admission fee, prize, license or simulated
+opponent result is introduced. The existing garage unit supplies condition/tuning.
+
+`manual_powertrain.gd` integrates separate engine and driven-wheel inertia with
+240 Hz maximum substeps. Clutch torque is finite and depends on engagement and
+condition. Gear changes are requested explicitly, require the clutch and interrupt
+coupling for 0.18 seconds; there is no automatic change in this mode. Torque follows
+RPM and engine condition; fuel cut and mechanical overspeed are distinct. Tire
+force depends on slip, driven-axle load, grip, condition and approximate temperature.
+Aerodynamic drag and rolling resistance use SI units. These are development presets,
+not manufacturer measurements or a recovered GT4 physics implementation. Direction
+is assisted; a full lateral tire/suspension model remains future work.
+
+The scene uses actual CharacterBody movement for progress, distance and timing.
+The tree turns green at two seconds; departure is measured after 0.20 m rollout.
+Crossings of start, splits, trap entrance and finish interpolate within each physics
+step. ET excludes reaction, total includes it; trap speed averages the last 20.1168 m.
+Invalid attempts never create record tickets. Records are optional in the existing
+career schema; numeric ticket fields are canonical floats after real JSON loading.
+
+The garage adapter settles differences between cumulative distance/stress and
+previous settlement counters, at finish, recovery and departure. Recovery keeps
+heat and cumulative use but resets the attempt. Engine/gearbox/tire/brake stress is
+separate from base odometer wear and never changes credits. The next session reads
+the changed health from the persistent car. Workshop transmission repairs cover
+the current clutch wear approximation; a separate clutch part is not yet modelled.
+
+Three optional manual bindings extend the version-1 preference data. Old bindings
+are not stolen: missing drag actions choose unused keys. Scene input consumes drive
+actions before buttons can interpret Space. Controller drag mapping differs from
+circuit mapping: A upshift, Y downshift, LB clutch, R3 rear view, Start arm/pause.
+
+The four drag suites include physical complete runs, early/no-shift comparisons,
+garage preset differences, engine stalls, overspeed, neutral and open clutch,
+interpolated timing, invalid runs, actual JSON files, legacy controls and idempotent
+usage settlement. The graphical capture adds actual manual arrival/false start and
+checks audio pause on a real playback, since headless mode skips audio generation.
+The capture driver is test-only; clear its Callable before changing scene to release
+the captured script context. Sixteen PNGs are required by the capture wrapper.
 
 Integration corrections: the supplied dynamics test called a missing `speed()` method, now exposed as planar velocity magnitude. The camera uses that magnitude so sideways drift does not incorrectly reduce its speed response. The same grip cap now applies to brake input and braking by selecting the opposite travel direction. Only actual propulsion applies driven-axle penalties; reverse-pedal deceleration is not treated as power. Added native tests cover both braking directions, drivetrain-independent pedal braking with equal axle bias, total speed and the camera's sideways-speed response. Save schemas and input preferences are unchanged. Windows/controller hardware and graphical appearance remain untested.

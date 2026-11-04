@@ -30,17 +30,23 @@ func _shell(rings: Array, mat: Material) -> void:
     # Each ring is (z, half-width, lower-height, upper-height).
     var vertices: Array[PackedVector3Array] = []
     for r in rings:
-        vertices.append(PackedVector3Array([Vector3(-r[1],r[2],r[0]),Vector3(r[1],r[2],r[0]),Vector3(r[1],r[3],r[0]),Vector3(-r[1],r[3],r[0])]))
+        var bevel := minf(0.10,(float(r[3])-float(r[2]))*0.25)
+        var width: float = r[1]
+        var lower: float = r[2]
+        var upper: float = r[3]
+        var depth: float = r[0]
+        vertices.append(PackedVector3Array([Vector3(-width+0.09,lower,depth),Vector3(width-0.09,lower,depth),Vector3(width,lower+bevel,depth),Vector3(width,upper-bevel,depth),Vector3(width-0.09,upper,depth),Vector3(-width+0.09,upper,depth),Vector3(-width,upper-bevel,depth),Vector3(-width,lower+bevel,depth)]))
     for i in range(vertices.size() - 1):
-        for j in range(4):
-            var k := (j + 1) % 4
+        for j in range(8):
+            var k := (j + 1) % 8
             for v in [vertices[i][j],vertices[i + 1][j],vertices[i + 1][k],vertices[i][j],vertices[i + 1][k],vertices[i][k]]:
                 surface.add_vertex(v)
     for end in [0,vertices.size() - 1]:
         var ring := vertices[end]
-        var order := [0,1,2,0,2,3] if end == 0 else [2,1,0,3,2,0]
-        for j in order:
-            surface.add_vertex(ring[j])
+        for index in range(1,ring.size()-1):
+            var order := [0,index,index+1] if end == 0 else [0,index+1,index]
+            for j in order:
+                surface.add_vertex(ring[j])
     surface.generate_normals()
     var mesh := MeshInstance3D.new()
     mesh.mesh = surface.commit()
@@ -48,7 +54,7 @@ func _shell(rings: Array, mat: Material) -> void:
     add_child(mesh)
 
 func _ready() -> void:
-    var body := material(paint_color, 0.55, 0.25)
+    var body := material(paint_color, 0.35, 0.34)
     body.cull_mode = BaseMaterial3D.CULL_DISABLED
     var glass := material(Color("172c3e"), 0.65, 0.12)
     glass.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -73,9 +79,24 @@ func _ready() -> void:
     brake_material.emission = Color("ff2638")
     brake_material.emission_energy_multiplier = 0.25
     for x in [-0.56,0.56]:
-        _box(Vector3(0.38,0.14,0.05),Vector3(x,0.20,-1.94),light)
+        _box(Vector3(0.38,0.11,0.05),Vector3(x,0.09,-1.965),light)
         _box(Vector3(0.40,0.13,0.05),Vector3(x,0.22,1.94),brake_material)
         _box(Vector3(0.2,0.11,0.16),Vector3(signf(x)*0.91,0.53,-0.25),body)
+    for side in [-1.0,1.0]:
+        _box(Vector3(0.012,0.34,0.018),Vector3(side*0.879,0.10,-0.45),black)
+        _box(Vector3(0.012,0.31,0.018),Vector3(side*0.879,0.09,0.93),black)
+        _box(Vector3(0.018,0.035,0.16),Vector3(side*0.89,0.25,0.67),trim)
+        _box(Vector3(0.018,0.025,1.40),Vector3(side*0.876,-0.065,0.24),black)
+    _box(Vector3(0.44,0.12,0.035),Vector3(0,0.12,1.968),light)
+    var plate := Label3D.new()
+    plate.text = "EV-402"
+    plate.font = preload("res://assets/fonts/BarlowCondensed-SemiBold.ttf")
+    plate.font_size = 28
+    plate.pixel_size = 0.003
+    plate.modulate = Color("192d3e")
+    plate.outline_size = 0
+    plate.position = Vector3(0,0.12,1.99)
+    add_child(plate)
     for x in [-0.89,0.89]:
         for z in [-1.25,1.25]:
             var pivot := Node3D.new()
@@ -104,16 +125,28 @@ func _ready() -> void:
             ring.radial_segments = 12
             rim.mesh = ring
             rim.rotation.z = PI * 0.5
-            rim.material_override = trim
+            rim.material_override = black
             spin.add_child(rim)
             for angle in range(5):
                 var spoke := MeshInstance3D.new()
                 var bar := BoxMesh.new()
-                bar.size = Vector3(0.235,0.035,0.34)
+                bar.size = Vector3(0.235,0.03,0.18)
                 spoke.mesh = bar
-                spoke.rotation.x = float(angle) * TAU / 5.0
-                spoke.material_override = black
+                var spoke_angle := float(angle)*TAU/5.0
+                spoke.rotation.x = -spoke_angle
+                spoke.position = Vector3(0,sin(spoke_angle)*0.10,cos(spoke_angle)*0.10)
+                spoke.material_override = trim
                 spin.add_child(spoke)
+            var hub := MeshInstance3D.new()
+            var center := CylinderMesh.new()
+            center.top_radius = 0.055
+            center.bottom_radius = 0.055
+            center.height = 0.24
+            center.radial_segments = 12
+            hub.mesh = center
+            hub.rotation.z = PI*0.5
+            hub.material_override = trim
+            spin.add_child(hub)
 
 func update_motion(delta: float, speed: float, steering: float, load_shift: float, brake: float) -> void:
     for wheel in wheels:

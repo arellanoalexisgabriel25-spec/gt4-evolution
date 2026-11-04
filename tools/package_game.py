@@ -6,17 +6,42 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.12"
+VERSION = "0.13"
 ENGINE = "Godot_v4.6.3-stable_win64.exe"
-README = """GT4 EVOLUTION — PROTOTIPO 0.12
+README = """GT4 EVOLUTION — PROTOTIPO 0.13 / CUARTO DE MILLA
 
 Extraé TODO el ZIP antes de abrir el juego.
 Windows 10/11 de 64 bits: doble clic en JUGAR.cmd. El primer inicio importa
 el proyecto; puede tardar unos segundos. No requiere instalar Godot aparte.
 Si descargaste el ZIP de código, abrí juego/project.godot con Godot 4.6.3.
 
-Para practicar: comprá un auto en CONCESIONARIO, abrí GARAJE y elegí
-CONTRARRELOJ 3D o CARRERA LIBRE 3D. La carrera libre no cobra ni da premios.
+Nuevo foco: una pista original de 402,336 m con ambiente inspirado en el
+autódromo Gálvez, sin reproducir exactamente su trazado ni sus instalaciones.
+Comprá un auto en CONCESIONARIO, abrí GARAJE y elegí ¼ DE MILLA / MANUAL.
+Es práctica libre, sin inscripción ni premios en créditos; el desgaste sí se conserva.
+
+1. Mantené C (embrague) y tocá E para poner primera. Mantené C presionado.
+2. Enter inicia el semáforo. Regulá W para preparar las RPM y esperá el verde.
+3. Soltá C y acelerá. Cambiar en la banda de potencia mejora la marca.
+4. Para subir: soltá W, pisá C, tocá E, soltá C y volvé a acelerar.
+Q baja una marcha. El cambio sin embrague se rechaza y desgasta la caja.
+El limitador corta potencia; reducir demasiado puede forzar el motor.
+R prepara otra pasada y conserva el uso, el desgaste y la temperatura acumulados.
+P pausa, Tab cambia cámara y Esc regresa al garaje. Guardá el progreso al volver.
+Las teclas son configurables; los controles anteriores migran sin perder sus asignaciones.
+Mando en ¼ de milla: RT acelera, LT o B frena, LB embrague, A sube, Y baja,
+X repite, RB cámara, R3 mirada trasera. Inicio arma en preparación o pausa durante la pasada.
+
+El ticket mide ET, reacción, total, 60 pies, 1/8 de milla y velocidad de trampa.
+Salir de carril o cruzar antes del verde invalida la marca. Las mejores pasadas
+se conservan por unidad de vehículo; ET y reacción se muestran por separado.
+El motor tiene inercia, curva de par, embrague con acople finito y tracción limitada.
+El estado y las mejoras del garaje afectan potencia y agarre; errores, patinamiento
+y deslizamiento del embrague añaden desgaste. Son aproximaciones de desarrollo,
+no mediciones oficiales de los autos. Sonido de motor sintetizado provisional.
+
+El circuito del club conserva CONTRARRELOJ 3D y CARRERA LIBRE 3D.
+La carrera libre no cobra ni da premios.
 Para competir con progreso: MODO CARRERA -> Copa de Debutantes -> CORRER 3D.
 La inscripción cuesta 120 Cr. Abandonar consume la inscripción y no da premio.
 Son dos vueltas contra Nico y Claire; la llegada real paga 700/400/200 Cr.
@@ -43,8 +68,9 @@ cada eje y el frenado está limitado por neumáticos, también al pedir reversa.
 Cuatro cámaras, mirada trasera y brazo de seguimiento con prevención de obstáculos.
 Menú con mapa de servicios, garaje 3D y HUD de carrera; gráficos propios.
 La dirección de teclado entra progresivamente y vuelve al centro con mayor rapidez.
-La conducción y los vehículos geométricos siguen siendo provisionales. No hay daños por
-impacto, sonidos de motor ni física completa de neumáticos/embrague.
+La dirección del ¼ de milla tiene asistencia; aún no hay un modelo lateral completo.
+Los vehículos geométricos, las temperaturas y el audio siguen siendo provisionales.
+No hay daños por impacto ni simulación térmica/mecánica completa.
 Se consultó gt4-decomp como referencia para RPM y cambios secuenciales.
 La IA y el circuito son implementaciones originales. No se han incluido
 recursos del juego comercial. Ver juego/REFERENCES.md y juego/README.md.
