@@ -195,7 +195,7 @@ func refresh(data: Dictionary) -> void:
         var heading := "VICTORIA" if duel_result["winner"]=="player" else ("DERROTA" if duel_result["winner"]=="rival" else ("EMPATE" if duel_result["outcome"]=="tie" else "SIN GANADOR"))
         status_label.text = heading + " · " + str(duel_result["reason"])
         ticket_panel.visible = true
-        ticket_label.text = heading+" / DUELO DE FÁBRICA\n"+_lane_result("VOS",duel_result["entries"]["player"])+"\n"+_lane_result(str(data["opponent_name"]),duel_result["entries"]["rival"])+"\n"+("CLASE %s · PISO ET %.2f s\n" % [category.id,category.minimum_et] if not category.is_empty() else "")+("EXCEPCIÓN ART. 12 / FALSO RIVAL\n" if duel_result.get("exception","")=="art12_single_false_start" else "")+"Sin inscripción ni premios"
+        ticket_label.text = heading+" / DUELO DE FÁBRICA\n"+_lane_result("VOS",duel_result["entries"]["player"])+"\n"+_lane_result(str(data["opponent_name"]),duel_result["entries"]["rival"])+"\n"+("CLASE %s · PISO ET %.2f s\n" % [category.id,category.minimum_et] if not category.is_empty() else "")+("EXCEPCIÓN ART. 12 / FALSO INDIVIDUAL\n" if duel_result.get("exception","")=="art12_single_false_start" else "")+"Sin inscripción ni premios"
         if data["paused"]: status_label.text = "PAUSA · "+heading
     var start: Dictionary = data["wear_start"]
     wear_label.text = "DESGASTE ADICIONAL / ESTA PASADA\nMotor %.3f · Caja %.3f · Gomas %.3f" % [float(model.wear.motor)-float(start.get("motor",0.0)),float(model.wear.transmision)-float(start.get("transmision",0.0)),float(model.wear.neumaticos)-float(start.get("neumaticos",0.0))]
