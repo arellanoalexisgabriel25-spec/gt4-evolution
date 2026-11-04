@@ -5,6 +5,8 @@ const Money = preload("res://scripts/money.gd")
 const Preview = preload("res://scripts/car_preview.gd")
 const CityMap = preload("res://scripts/city_map.gd")
 const Navigation = preload("res://scripts/menu_controller.gd")
+const Catalog = preload("res://scripts/car_catalog.gd")
+const Tire = preload("res://scripts/tire_model.gd")
 
 const Economy = preload("res://scripts/economy.gd")
 const Career = preload("res://scripts/career.gd")
@@ -29,9 +31,12 @@ var controls_path: String = ControlSettings.FILE_PATH
 var navigation
 var controller_label: Label
 var music_label: Label
+var home_featured := ""
+var garage_featured := 0
 
 func _ready() -> void:
     game = GameSession.game
+    game.ensure_flagship_offers()
     career = GameSession.career
     current_tab = GameSession.menu_tab
     GameSession.menu_tab = "inicio"
@@ -191,6 +196,10 @@ func _render() -> void:
         var selected: bool = key == current_tab
         nav_buttons[key].add_theme_stylebox_override("normal",Style.panel(Style.BLUE if selected else Color("e8edf3"),9))
         nav_buttons[key].add_theme_color_override("font_color",Color.WHITE if selected else Style.BLUE)
+        for state in ["hover","pressed"]:
+            nav_buttons[key].add_theme_stylebox_override(state,Style.panel(Style.BLUE if selected else Color("d9e5f2"),9))
+        for state in ["font_focus_color","font_hover_color","font_pressed_color"]:
+            nav_buttons[key].add_theme_color_override(state,Color.WHITE if selected else Style.BLUE)
     for item in content.get_children():
         content.remove_child(item)
         item.queue_free()
@@ -213,7 +222,10 @@ func _home() -> void:
         if vehicle["owner"] == "player":
             owned = vehicle
             break
-    var featured: Dictionary = game.cars[0] if owned.is_empty() else owned
+    var featured: Dictionary = Catalog.market_order(game.cars)[0] if owned.is_empty() else owned
+    for vehicle in game.cars:
+        if vehicle["model"]==home_featured:
+            featured = vehicle
     var preview = Preview.new()
     preview.model_name = featured["model"]
     preview.custom_minimum_size = Vector2(380,185)
@@ -224,36 +236,48 @@ func _home() -> void:
     intro.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     hero.add_child(intro)
     intro.add_child(_label("402,336 M / CAJA MANUAL",25))
-    intro.add_child(_label("Una recta para perfeccionar tu largada.
-El cambio justo define la marca.",14))
+    intro.add_child(_label("Tres puertas. Una pasión por el ¼ de milla.",14))
     intro.add_child(_label(featured["model"],22))
-    intro.add_child(_label("Licencia %s  /  Reputación %d" % [career.license,career.reputation],14))
-    if owned.is_empty():
+    if featured["owner"]!="player":
         intro.add_child(_button("VISITAR EL CONCESIONARIO",_change_tab.bind("mercado")))
     else:
-        intro.add_child(_button("CORRER ¼ DE MILLA",_drag_3d.bind(int(owned["id"]))))
+        intro.add_child(_button("CORRER ¼ DE MILLA",_drag_3d.bind(int(featured["id"]))))
+    var lineup := HBoxContainer.new()
+    intro.add_child(lineup)
+    for index in range(Catalog.FLAGSHIPS.size()):
+        var choice := _button(["147","UNO","GOL"][index],_feature.bind(Catalog.FLAGSHIPS[index]))
+        choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        choice.custom_minimum_size.y = 32
+        lineup.add_child(choice)
     var map = CityMap.new()
     map.destination_selected.connect(_change_tab)
     content.add_child(map)
 
+func _feature(model: String) -> void:
+    home_featured = model
+    _render()
+
 func _market() -> void:
-    content.add_child(_label("USED CAR LINEUP",24))
+    content.add_child(_label("GARAGE NACIONAL / AUTOS INSIGNIA",24))
     content.add_child(_label("Inspeccioná antes de comprar. La condición oculta puede convertir una oferta en una restauración costosa.",13))
     var grid := GridContainer.new()
     grid.columns = 2 if size.x >= 1100 else 1
     grid.add_theme_constant_override("h_separation",12)
     grid.add_theme_constant_override("v_separation",12)
     content.add_child(grid)
-    for car in game.cars:
+    for car in Catalog.market_order(game.cars):
         if car["owner"] != "seller":
             continue
         var panel := PanelContainer.new()
+        panel.set_meta("vehicle_id",int(car["id"]))
         panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         panel.custom_minimum_size.x = 390 if grid.columns == 2 else 0
         grid.add_child(panel)
         var column := VBoxContainer.new()
         panel.add_child(column)
         column.add_child(_label(car["model"],24))
+        if Catalog.flagship(str(car["model"])):
+            column.add_child(_label("INSIGNIA · 3 PUERTAS · TRACCIÓN DELANTERA",12))
         var status := "CONDICIÓN %.1f / 100" % game.condition(car) if bool(car.get("inspected",false)) else "CONDICIÓN SIN VERIFICAR"
         column.add_child(_label("%s KM   /   %s" % [car["km"],status],12))
         var price := _label(Money.format(int(car["price"])),30)
@@ -277,8 +301,8 @@ func _garage() -> void:
     var selected: Dictionary = {}
     for vehicle in game.cars:
         if vehicle["owner"] == "player":
-            selected = vehicle
-            break
+            if selected.is_empty() or int(vehicle["id"])==garage_featured:
+                selected = vehicle
     if not selected.is_empty():
         var preview = Preview.new()
         preview.model_name = selected["model"]
@@ -299,6 +323,7 @@ func _garage() -> void:
         var info := _label("%s · %.2f km · %.1f/100 · %s" % [car["model"], float(car["km"]) + remainder / 1000.0, game.condition(car), state], 17)
         info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
         layout.add_child(info)
+        layout.add_child(_label("Neumáticos: "+Tire.title(Tire.for_vehicle(car)),14))
         var best := career.lap_records.get_best(int(car["id"]))
         if best > 0.0:
             layout.add_child(_label("Mejor vuelta al club: %.2f s" % best, 15))
@@ -308,6 +333,7 @@ func _garage() -> void:
         var actions := HFlowContainer.new()
         actions.add_theme_constant_override("h_separation", 8)
         layout.add_child(actions)
+        actions.add_child(_button("VER MODELO",_preview_vehicle.bind(int(car["id"]))))
         var drag := _button("¼ DE MILLA / MANUAL",_drag_3d.bind(int(car["id"])))
         drag.disabled = not game.eligible(car)
         actions.add_child(drag)
@@ -324,6 +350,10 @@ func _garage() -> void:
     if not found:
         content.add_child(_label("No tenés vehículos. Visitá el concesionario."))
 
+func _preview_vehicle(id: int) -> void:
+    garage_featured = id
+    _change_tab("garaje")
+
 func _workshop() -> void:
     content.add_child(_label("TALLER MECÁNICO", 22))
     for car in game.cars:
@@ -332,6 +362,15 @@ func _workshop() -> void:
         content.add_child(_label("%s  ·  Estado %.1f" % [car["model"], game.condition(car)], 19))
         var problems := game.inspection_summary({"inspected": true, "faults": car.get("faults", {})})
         content.add_child(_label("Diagnóstico: " + problems, 14))
+        var tires := HFlowContainer.new()
+        tires.add_theme_constant_override("h_separation",8)
+        content.add_child(tires)
+        for kind in Economy.TIRE_PRICES:
+            var quote := game.tire_quote(int(car["id"]),str(kind))
+            var fit := _button("MONTAR " + Tire.title(str(kind)).to_upper() + " · " + Money.format(maxi(0,quote)),_replace_tires.bind(int(car["id"]),str(kind)))
+            fit.disabled = quote<=0 or quote>game.balance
+            tires.add_child(fit)
+        content.add_child(_label("Calle: agarre desde frío · Deportivos: mayor exigencia térmica · Slick: más agarre en caliente y mayor desgaste",13))
         for component in Economy.WEIGHTS:
             var line := HBoxContainer.new()
             content.add_child(line)
@@ -471,10 +510,15 @@ func _load() -> void:
         notice.text = loaded["error"]
         return
     game = loaded["game"]
+    game.ensure_flagship_offers()
     career = loaded["career"]
     GameSession.game = game
     GameSession.career = career
     notice.text = "Partida recuperada."
+    _render()
+
+func _replace_tires(id: int, kind: String) -> void:
+    notice.text = game.replace_tires(id,kind)
     _render()
 
 func _reset() -> void:

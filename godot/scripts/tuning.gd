@@ -64,5 +64,8 @@ func install(game, car_id: int, part_id: String) -> String:
     if not car.has("upgrades"):
         car["upgrades"] = []
     car["upgrades"].append(part_id)
+    if part_id=="tires":
+        car["tire_compound"] = "sport"
+        car["health"]["neumaticos"] = 100.0
     game._record(car, "tuning:" + part_id, -price)
     return "Instalaste %s por %s. Bonificación +%.1f." % [part["name"], Money.format(price), performance_bonus(car)]

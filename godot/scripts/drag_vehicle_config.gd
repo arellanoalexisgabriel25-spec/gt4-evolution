@@ -1,4 +1,7 @@
 extends Resource
+const Catalog = preload("res://scripts/car_catalog.gd")
+const Tire = preload("res://scripts/tire_model.gd")
+const Damage = preload("res://scripts/damage_model.gd")
 
 # Original approximate presets for development, not measured manufacturer data.
 @export var mass := 980.0
@@ -34,6 +37,10 @@ extends Resource
 @export var turbo_response := 2.0
 @export var brake_health := 100.0
 @export var engine_wear_factor := 1.0
+@export var tire_compound := "street"
+@export var suspension_health := 100.0
+@export var chassis_health := 100.0
+@export var steering_factor := 1.0
 
 static func from_vehicle(vehicle: Dictionary):
     var result = load("res://scripts/drag_vehicle_config.gd").new()
@@ -50,6 +57,19 @@ static func from_vehicle(vehicle: Dictionary):
             break
     result.drivetrain_efficiency = 0.91 if result.drivetrain=="FWD" else (0.83 if result.drivetrain=="AWD" else 0.88)
     var name := str(vehicle.get("model",""))
+    var local: Dictionary = Catalog.definition(name)
+    if not local.is_empty():
+        result.mass = float(local["mass"])
+        result.peak_torque = float(local["torque"])
+        result.redline_rpm = float(local["redline"])
+        result.wheelbase = float(local["wheelbase"])
+        result.wheel_radius = float(local["radius"])
+        result.gear_ratios = PackedFloat32Array(local["gears"])
+        result.final_drive = float(local["final_drive"])
+        result.torque_rpm = PackedFloat32Array([900,1500,2300,3000,3800,4600,5400,result.redline_rpm])
+        result.torque_curve = PackedFloat32Array([0.62,0.78,0.92,1.0,0.98,0.89,0.76,0.60])
+        result.drag_area = 0.69
+        result.cg_height = 0.48
     if name.contains("Civic") or name.contains("Levin") or name.contains("FTO"):
         result.redline_rpm = 7800.0
         result.torque_rpm = PackedFloat32Array([900,1800,2800,3800,4800,6000,7000,7800])
@@ -66,10 +86,30 @@ static func from_vehicle(vehicle: Dictionary):
     result.transmission_health = float(vehicle.get("health",{}).get("transmision",50.0))
     result.tire_health = float(vehicle.get("health",{}).get("neumaticos",50.0))
     result.brake_health = float(vehicle.get("health",{}).get("frenos",50.0))
+    result.suspension_health = float(vehicle.get("health",{}).get("suspension",100.0))
+    result.chassis_health = float(vehicle.get("health",{}).get("chasis",100.0))
+    result.tire_compound = Tire.for_vehicle(vehicle)
     var upgrades: Array = vehicle.get("upgrades",[])
     result.peak_torque *= (1.10 if upgrades.has("ecu") else 1.0)*(1.05 if upgrades.has("escape") else 1.0)
-    result.grip *= (1.12 if upgrades.has("tires") else 1.0)*(1.04 if upgrades.has("suspension") else 1.0)
+    result.grip *= 1.04 if upgrades.has("suspension") else 1.0
     result.brake_capacity *= 1.2 if upgrades.has("brakes") else 1.0
     result.cg_height = 0.43 if upgrades.has("suspension") else 0.46
     result.engine_wear_factor = 1.0+(0.22 if upgrades.has("ecu") else 0.0)+(0.08 if upgrades.has("escape") else 0.0)
+    var handicaps: Dictionary = Damage.handicaps(vehicle.get("health",{}))
+    result.drivetrain_efficiency *= float(handicaps["acceleration"])
+    result.grip *= float(handicaps["grip"])
+    result.steering_factor = float(handicaps["steering"])
     return result
+
+func apply_damage(points: Dictionary) -> void:
+    var previous := Damage.handicaps({"transmision":transmission_health,"suspension":suspension_health,"chasis":chassis_health})
+    engine_health = maxf(0,engine_health-float(points.get("motor",0.0)))
+    transmission_health = maxf(0,transmission_health-float(points.get("transmision",0.0)))
+    tire_health = maxf(0,tire_health-float(points.get("neumaticos",0.0)))
+    brake_health = maxf(0,brake_health-float(points.get("frenos",0.0)))
+    suspension_health = maxf(0,suspension_health-float(points.get("suspension",0.0)))
+    chassis_health = maxf(0,chassis_health-float(points.get("chasis",0.0)))
+    var current := Damage.handicaps({"transmision":transmission_health,"suspension":suspension_health,"chasis":chassis_health})
+    drivetrain_efficiency *= float(current["acceleration"])/float(previous["acceleration"])
+    grip *= float(current["grip"])/float(previous["grip"])
+    steering_factor = float(current["steering"])

@@ -1,4 +1,5 @@
 extends RefCounted
+const Tire = preload("res://scripts/tire_model.gd")
 
 # Two longitudinal axle states. Contact forces dissipate slip energy; front/rear
 # torque split and load transfer never create extra normal force or engine power.
@@ -6,7 +7,12 @@ var omega := Vector2.ZERO
 var forces := Vector2.ZERO
 var normal_loads := Vector2.ZERO
 var slips := Vector2.ZERO
-var temperatures := Vector2(28,28)
+var tires: Array = [Tire.new(),Tire.new()]
+var temperatures: Vector2:
+    get: return Vector2(tires[0].temperature,tires[1].temperature)
+    set(value):
+        tires[0].temperature = value.x
+        tires[1].temperature = value.y
 var filtered_acceleration := 0.0
 var slip_power := 0.0
 var brake_power := 0.0
@@ -19,7 +25,8 @@ func reset(keep_heat: bool = true) -> void:
     filtered_acceleration = 0.0
     abs_active = false
     if not keep_heat:
-        temperatures = Vector2(28,28)
+        for tire in tires:
+            tire.reset()
 
 static func front_share(config) -> float:
     if config.drivetrain == "FWD":
@@ -66,9 +73,8 @@ func step(dt: float, speed: float, drive_torque: float, brake: float, config, ti
     abs_active = false
     for index in range(2):
         slips[index] = (omega[index]*config.wheel_radius-speed)/maxf(speed,2.5)
-        var temperature_grip := clampf(0.90+(temperatures[index]-28.0)*0.003,0.65,1.08)
-        if temperatures[index]>90.0:
-            temperature_grip = maxf(0.65,1.08-(temperatures[index]-90.0)*0.012)
+        tires[index].compound = config.tire_compound
+        var temperature_grip: float = tires[index].thermal_grip()
         var load_sensitivity: float = pow(maxf(normal_loads[index]/(weight*0.5),0.1),-0.08)
         var mu: float = config.grip*(0.6+0.4*clampf(tire_health/100.0,0,1))*temperature_grip*load_sensitivity*(1.0 if road else 0.4)
         var target: float = normal_loads[index]*mu*friction_curve(slips[index],config.peak_slip)
@@ -87,8 +93,11 @@ func step(dt: float, speed: float, drive_torque: float, brake: float, config, ti
         var energy_rate := maxf(0,forces[index]*(spin_before*config.wheel_radius-speed))
         slip_power += energy_rate
         brake_power += applied_brake*minf(spin_before,omega[index])
-        temperatures[index] += (energy_rate/16000.0-(temperatures[index]-28.0)*0.025)*dt
+        tires[index].step_contact(dt,energy_rate,normal_loads[index],forces[index],speed,road)
     return forces.x+forces.y
 
 func observe_acceleration(value: float, dt: float) -> void:
     filtered_acceleration = lerpf(filtered_acceleration,clampf(value,-15,15),1.0-exp(-12.0*dt))
+
+func tread_wear_points() -> float:
+    return (float(tires[0].wear)+float(tires[1].wear))*25.0

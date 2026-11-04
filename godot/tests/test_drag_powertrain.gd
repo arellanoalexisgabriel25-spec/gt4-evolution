@@ -73,7 +73,7 @@ func _initialize() -> void:
     var upgraded: Dictionary = game.find_car(1).duplicate(true)
     upgraded["upgrades"] = ["ecu","escape","tires"]
     var tuned = Config.from_vehicle(upgraded)
-    check(tuned.peak_torque>stock.peak_torque and tuned.grip>stock.grip,"Existing garage upgrades change drag torque and tire grip")
+    check(tuned.peak_torque>stock.peak_torque and tuned.tire_compound=="sport" and is_equal_approx(tuned.grip,stock.grip),"Garage upgrades add torque and select sport tires without applying their grip bonus twice")
     var civic = Config.from_vehicle(game.find_car(2))
     var skyline = Config.from_vehicle(game.find_car(10))
     check(stock.drivetrain=="RWD" and civic.drivetrain=="FWD" and skyline.drivetrain=="AWD","Garage models retain the correct driven-axle configurations")

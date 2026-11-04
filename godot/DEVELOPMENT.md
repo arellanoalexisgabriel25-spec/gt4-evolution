@@ -8,7 +8,7 @@ Develop functional increments on descriptive branches, preserve user work and sa
 
 Current priority: develop a compact quarter-mile environment, manual shifting, measurable driving skill, persistent mechanical use and original visuals. Large-circuit expansion is deferred. Existing circuit, career and AI modes remain available. A simulated result must always be labelled as such.
 
-## Architecture through 0.14
+## Architecture through 0.15
 
 | Module | Responsibility |
 | --- | --- |
@@ -16,6 +16,8 @@ Current priority: develop a compact quarter-mile environment, manual shifting, m
 | `transmission.gd` | Ratio-based RPM and sequential automatic shifting; not a torque/clutch simulation |
 | `drag_vehicle_config.gd`, `manual_powertrain.gd` | Original approximate per-car data; 480 Hz maximum substeps for engine/clutch, torque and driveline efficiency; wires independent axles and session wear |
 | `engine_torque.gd`, `axle_traction.gd` | RPM torque interpolation and transient turbo; independent front/rear rotation, slip, load, tire force, heat, brake torque and ABS modulation |
+| `tire_model.gd`, `damage_model.gd` | Adapted supplied modules: per-axle slip-energy temperature/tread, compound windows, actual collision damage and validated settlement |
+| `car_catalog.gd`, `imported_car.gd`, `assets/cars/` | Three flagship presets and stable market order; original supplied Gol GLB, cached render-only body/wheel partition with original UV/material |
 | `drag_actor.gd`, `drag_strip.gd`, `drag_mode.gd` | Real collision body, original two-lane strip and manual input/timing/garage integration; directional assistance is explicit |
 | `drag_run.gd`, `drag_records.gd`, `drag_garage_session.gd` | Interpolated beams, tree/false starts, validated personal tickets and once-only cumulative usage settlement |
 | `drag_hud.gd`, `engine_audio.gd` | Measured manual telemetry/ticket and original provisional synthesized engine sound |
@@ -209,3 +211,55 @@ Four new suites cover axle forces/energy/braking/boost/aids, ARS/legacy JSON,
 actual audio/preferences and controller-driven purchases/settings/scene changes.
 The current capture wrapper requires seventeen PNGs, including the pause overlay.
 Focused buttons use explicit dark text on the light theme to retain contrast.
+
+## Version 0.15: flagship cars and reviewed mechanics
+
+See [RELEASE-0.15.md](RELEASE-0.15.md) and the specific technical decision in
+[INTEGRATION-CLAUDE-0.11d.md](INTEGRATION-CLAUDE-0.11d.md). The supplied originals
+are retained outside the checkout at `/workspace/references/user-changes-0.15/`.
+Only `tire_model.gd` and the impact portion of `damage_model.gd` are adopted.
+The supplied replacement run/spec/tree/settlement modules are incompatible with
+the existing physical scene and cumulative settlement and are not copied over them.
+
+The 147, Uno and Gol are appended as IDs 11–13. The first ten seed entries retain
+their names, health, prices and IDs. Menu loading adds missing flagship offers
+idempotently; an occupied custom ID is preserved and a fresh ID allocated instead.
+Each flagship is FWD in both modes and has independent dimensions, approximate
+mass, torque and gear ratios. Home selectors and garage preview buttons are real
+menu actions. The national range is shown first without sorting persistent arrays.
+
+The supplied Gol GLB is unchanged and includes 40,000 triangles and embedded PBR
+textures. Runtime normalization and cached mesh partition preserve all geometry,
+UVs and material. Wheel regions are refined with neutral/dark diffuse texels so
+painted fenders remain part of the body; visual pivots come from separated geometry.
+The colliders remain simple per-car boxes. The two larger model attachments exceed
+the 32 MiB transfer limit; the alternate Drive link is denied by the current proxy.
+Drive domains are already in the configuration draft but not applied to the runtime.
+The 147/Uno use distinct original procedural placeholders pending actual inspection.
+Do not describe those two supplied models as imported or verified.
+
+Each axle owns a Tire model. Contact updates receive measured slip dissipation,
+normal force, tire force and speed, not chassis acceleration. Tread adds monotonically
+to the existing mechanical wear counter; contact grip uses compound/temperature
+without reapplying the same session tread loss. The old upgrade maps to sport tires
+and its old grip multiplier is not stacked with the sport peak in drag mode.
+Paid tire replacement is validated atomically, restores tire health and records a
+single debit. The optional `tire_compound` persists under the same save schema;
+invalid values are rejected. Circuit physics retains its controller and reads the
+selected compound only as a base-grip choice.
+
+DragActor measures impact velocity loss only around a real wall collision after
+propulsion/braking. Damage alters current powertrain parameters immediately and
+settles pending health loss via the existing garage adapter. Recovery preserves
+damage, heat and cumulative use. Invalid pending damage is rejected before distance
+changes; repeated settlement never duplicates it. The visit's damage report remains
+visible independently of pending settlement. An unroadworthy unit cannot arm another
+pass; repair and return to the garage remain available. Electronic limiting is not
+classified as an impact or mechanical over-rev; existing clutch/overspeed wear remains.
+
+The current graphical wrapper requires 24 images, adding the three showroom
+choices, tire workshop, supplied Gol staging/driving and an impact against the actual
+runoff barrier. It checks the supplied Gol's real manual launch. Source packaging and
+publication include and byte-compare `.glb` assets as well as the existing MP3/font.
+Use the current complete suite and fresh-package checks; historical release counts
+and the stored setup description are not evidence for this new source state.

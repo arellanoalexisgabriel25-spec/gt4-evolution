@@ -58,7 +58,7 @@ func run() -> void:
     check(focused!=null and menu.content.is_ancestor_of(focused),"D-pad moves from the sidebar into the real dealership controls")
     var inspection: Button
     for node in menu.content.find_children("*","Button",true,false):
-        if node.text.begins_with("INSPECCIÓN"):
+        if node.text.begins_with("INSPECCIÓN") and node.get_parent().get_parent().get_parent().get_meta("vehicle_id",0)==1:
             inspection = node
             break
     var before: int = session.game.balance
@@ -72,7 +72,7 @@ func run() -> void:
     await frames()
     var buy: Button
     for node in menu.content.find_children("*","Button",true,false):
-        if node.text=="COMPRAR":
+        if node.text=="COMPRAR" and node.get_parent().get_parent().get_parent().get_meta("vehicle_id",0)==1:
             buy = node
             break
     buy.grab_focus()

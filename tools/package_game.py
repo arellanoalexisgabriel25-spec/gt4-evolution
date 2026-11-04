@@ -6,14 +6,31 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.14"
+VERSION = "0.15"
 ENGINE = "Godot_v4.6.3-stable_win64.exe"
-README = """GT4 EVOLUTION — PROTOTIPO 0.14 / TRACCIÓN, PESOS Y MANDO
+README = """GT4 EVOLUTION — PROTOTIPO 0.15 / AUTOS INSIGNIA, DAÑOS Y NEUMÁTICOS
 
 Extraé TODO el ZIP antes de abrir el juego.
 Windows 10/11 de 64 bits: doble clic en JUGAR.cmd. El primer inicio importa
 el proyecto; puede tardar unos segundos. No requiere instalar Godot aparte.
 Si descargaste el ZIP de código, abrí juego/project.godot con Godot 4.6.3.
+
+AUTOS INSIGNIA: Fiat 147 Vivace, Fiat Uno Fire 3 puertas y Gol Power 3 puertas.
+Encabezan el concesionario; Inicio permite verlos con 147 / UNO / GOL.
+En GARAJE, VER MODELO selecciona la vista si tenés varias unidades.
+El Gol usa el GLB texturizado suministrado, con sus ruedas animadas.
+Los modelos adjuntos del 147 y del Uno todavía no pudieron descargarse;
+usan carrocerías originales provisionales y configuraciones de manejo propias.
+Ver juego/assets/cars/README.md e informe RELEASE-0.15.md.
+
+TALLER: montar calle ($320.000 ARS), deportivos ($650.000 ARS) o slick ($1.400.000 ARS).
+El juego de neumáticos restaura su salud y queda guardado al guardar la partida.
+Calle funciona desde frío; los slick exigen temperatura y se desgastan más.
+El contacto y el patinamiento generan el calor, por separado para cada eje.
+Los impactos reales en el cuarto de milla dañan componentes y reducen rendimiento.
+R no repara: volvé al taller. El ticket diferencia daños y desgaste.
+Se conserva el cronometraje, los cambios manuales y la liquidación existentes.
+La evaluación del aporte de Claude está en juego/INTEGRATION-CLAUDE-0.11d.md.
 
 Novedades: ejes delantero/trasero independientes, torque por RPM y carga de turbo,
 pérdidas de transmisión, ABS y TCS opcionales. TCS recorta motor, no añade agarre.
@@ -88,8 +105,9 @@ Cuatro cámaras, mirada trasera y brazo de seguimiento con prevención de obstá
 Menú con mapa de servicios, garaje 3D y HUD de carrera; gráficos propios.
 La dirección de teclado entra progresivamente y vuelve al centro con mayor rapidez.
 La dirección del ¼ de milla tiene asistencia; aún no hay un modelo lateral completo.
-Los vehículos geométricos, las temperaturas y el audio siguen siendo provisionales.
-No hay daños por impacto ni simulación térmica/mecánica completa.
+Salvo el Gol importado, los modelos siguen siendo provisionales, al igual que
+las temperaturas y el audio de motor. Hay daños mecánicos por impacto en el
+cuarto de milla, sin deformación visual ni simulación térmica/mecánica completa.
 Se consultó gt4-decomp como referencia para RPM y cambios secuenciales.
 La IA y el circuito son implementaciones originales. No se han incluido
 recursos del juego comercial. Ver juego/REFERENCES.md y juego/README.md.
@@ -127,7 +145,7 @@ def write_project(archive):
     for path in sorted((ROOT / "godot").rglob("*")):
         if not path.is_file() or ".godot" in path.parts:
             continue
-        if path.suffix not in {".gd", ".uid", ".tscn", ".tres", ".godot", ".md", ".ttf", ".otf", ".txt", ".import", ".mp3"}:
+        if path.suffix not in {".gd", ".uid", ".tscn", ".tres", ".godot", ".md", ".ttf", ".otf", ".txt", ".import", ".mp3", ".glb"}:
             continue
         archive.write(path, Path("juego") / path.relative_to(ROOT / "godot"))
     archive.write(ROOT / "LICENSE", "LICENSE")

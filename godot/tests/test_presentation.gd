@@ -37,6 +37,7 @@ func run() -> void:
         for button in services:
             check(map.get_global_rect().encloses(button.get_global_rect()),"A service card fits within the visible map")
         check(root.get_visible_rect().encloses(map.get_global_rect()),"The complete home map fits at the default 1280×720 viewport")
+        check(map.get_parent().get_parent().get_global_rect().encloses(map.get_global_rect()),"Home services are fully visible within the actual scrolling viewport")
         services[0].pressed.emit()
         await settle()
         check(menu.current_tab == "mercado","A map destination opens the existing dealership")
@@ -44,15 +45,18 @@ func run() -> void:
     for child in menu.content.get_children():
         if child is GridContainer:
             grid = child
-    check(grid is GridContainer and grid.get_child_count() == 10,"The new dealership displays all existing ten used offers")
+    check(grid is GridContainer and grid.get_child_count() == 13,"The dealership retains ten legacy offers and adds three flagship cars")
     var balance: int = session.game.balance
     var button_found := false
     if grid is GridContainer:
-        for button in grid.get_child(0).find_children("*","Button",true,false):
-            if button.text == "INSPECCIÓN " + preload("res://scripts/money.gd").format(200):
-                button.pressed.emit()
-                button_found = true
-                break
+        for card in grid.get_children():
+            if card.get_meta("vehicle_id",0)!=1:
+                continue
+            for button in card.find_children("*","Button",true,false):
+                if button.text == "INSPECCIÓN " + preload("res://scripts/money.gd").format(200):
+                    button.pressed.emit()
+                    button_found = true
+                    break
     await settle()
     check(button_found and session.game.balance == balance-200 and bool(session.game.find_car(1)["inspected"]),"Inspecting from a redesigned card still applies the real economic transaction")
     session.game.buy(1)

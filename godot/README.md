@@ -1,8 +1,19 @@
-# GT4 Evolution · v0.14 / Tracción, pesos y mando
+# GT4 Evolution · v0.15 / Autos insignia, daños y neumáticos
 
 Prototipo independiente de automovilismo en Godot 4.6.3. El desarrollo se centra ahora en un **¼ de milla de 402,336 m**, con largada, cambios manuales, marcas y desgaste en un entorno original inspirado en el ambiente del autódromo Gálvez. Conserva mercado, garaje, taller, tuning y los modos anteriores. La investigación de GT4 se consulta como referencia; no se incluyen su ejecutable, modelos, texturas ni circuitos comerciales.
 
-## Novedades v0.14
+## Novedades v0.15
+
+- **147 Vivace, Uno Fire de tres puertas y Gol Power de tres puertas** encabezan el concesionario y se eligen en Inicio con los botones 147 / UNO / GOL. Tienen precios, masas, torque, relaciones de caja y colisiones diferenciados. GARAJE → VER MODELO permite elegir la vista cuando tenés varios autos.
+- El **Gol usa el GLB texturizado aportado por el usuario**, con ruedas delanteras/traseras animadas. El archivo original conserva sus 40.000 triángulos, UV y material. Los modelos adjuntos del 147 y del Uno aún requieren acceso: esos dos ZIP exceden 32 MiB y Drive está bloqueado por la red del entorno. Ambos usan por ahora carrocerías procedurales originales, además de sus configuraciones propias.
+- **TALLER → MONTAR:** calle ($ 320.000 ARS), deportivos ($ 650.000 ARS) o slick ($ 1.400.000 ARS). El juego completo restaura salud de neumáticos y cobra una sola vez. La elección se guarda; los deportivos anteriores migran al compuesto correspondiente. Calle funciona desde frío; el slick exige preparación y se desgasta más.
+- El ¼ de milla mide calor y desgaste de cada eje a partir del contacto y el deslizamiento. **Los choques reales causan daño mecánico**, reducen rendimiento y quedan en el historial y la salud del auto. Recuperar no repara; los daños se atienden en el taller. El ticket separa desgaste normal y daños por impacto.
+- Se adoptaron y adaptaron los módulos útiles de Claude, conservando física, cronometraje y liquidación actuales. Evaluación: [INTEGRATION-CLAUDE-0.11d.md](INTEGRATION-CLAUDE-0.11d.md). No se añade daño duplicado por limitador o embrague.
+- Las diez ofertas anteriores, sus IDs, partidas, récords, controles, ARS y música se conservan. Al abrir una partida anterior se añaden las ofertas insignia que falten, sin sobrescribir unidades ni repetir la migración.
+
+Informe de la entrega: [RELEASE-0.15.md](RELEASE-0.15.md). Procedencia y límites de modelos: [assets/cars/README.md](assets/cars/README.md).
+
+## Incorporado en v0.14
 
 - El ¼ de milla calcula por separado la rotación, patinamiento, carga y temperatura de los ejes delantero y trasero. La transferencia de peso reduce la tracción delantera al acelerar y aumenta la carga trasera. FWD, RWD y AWD responden de forma diferente.
 - Curvas de torque por RPM, carga progresiva del turbo, pérdidas de transmisión y frenado por torque en las ruedas. Salud, neumáticos, frenos, suspensión y mejoras existentes afectan el modelo. El control de tracción recorta motor; el ABS modula los frenos. Ambos se eligen en AJUSTES para el ¼ de milla; por defecto TCS está apagado y ABS encendido.
@@ -32,7 +43,7 @@ Las diez acciones de teclado se reasignan en AJUSTES. Las preferencias anteriore
 
 Mando en este modo: RT/R2 acelera, LT/L2 o B/Círculo frena, LB/L1 sostiene embrague, A/Cruz sube, Y/Triángulo baja, X/Cuadrado recupera, RB/R1 cambia cámara y R3 mira atrás. Inicio arma el árbol durante preparación y pausa/reanuda durante la pasada; Select/Back abre la pausa en cualquier momento. AJUSTES permite usar **LT/L2 como embrague analógico**: en ese modo B/Círculo frena, también si se mantiene el acelerador. LB sigue disponible. La opción solo afecta al ¼ de milla. El stick izquierdo conserva asistencia de dirección; el mando físico sigue pendiente de prueba.
 
-El escenario se llama **Autódromo Sur**: tribuna, boxes, control, colores argentinos, semáforo y una escapatoria de más de 250 m. Es un diseño original inspirado en un ambiente de autódromo porteño; no es una reproducción exacta ni homologada del Gálvez. El sonido de motor es sintetizado y provisional. Las carrocerías incorporan bordes achaflanados, llantas, detalles de puertas, luces y matrícula originales; siguen siendo modelos geométricos de desarrollo.
+El escenario se llama **Autódromo Sur**: tribuna, boxes, control, colores argentinos, semáforo y una escapatoria de más de 250 m. Es un diseño original inspirado en un ambiente de autódromo porteño; no es una reproducción exacta ni homologada del Gálvez. El sonido de motor es sintetizado y provisional. El Gol utiliza el modelo aportado; las demás carrocerías siguen siendo geometría original de desarrollo.
 
 ## Probar el juego
 
@@ -87,7 +98,7 @@ La recuperación conserva las vueltas ya completadas y la distancia realmente re
 
 ## Límites actuales
 
-La conducción del circuito sigue siendo arcade. El ¼ de milla añade un modelo longitudinal con embrague y cambios manuales, asistencia lateral y temperaturas simplificadas. Los vehículos son geométricos y el sonido sintetizado es provisional; faltan daños por impacto, modelos detallados y simulación completa de neumáticos y embrague. Las colisiones usan cuerpos de personaje, sin intercambio realista de impulsos. El ¼ de milla es una contrarreloj individual; no incluye todavía rivales físicos ni campeonatos propios. Se revisan capturas reales a 1280×720 con Mesa/llvmpipe en Linux; faltan conducción humana, Windows, mando físico y mediciones de rendimiento en GPU real.
+La conducción del circuito sigue siendo arcade. El ¼ de milla añade un modelo longitudinal con embrague, cambios manuales y daños mecánicos, asistencia lateral y temperaturas simplificadas. El 147 y el Uno tienen gráficos provisionales hasta importar sus adjuntos; el Gol conserva detalles y luces horneados de su GLB. No hay deformación visual ni simulación completa de neumáticos, suspensión o embrague. Las colisiones usan cuerpos de personaje, sin intercambio realista de impulsos. El ¼ de milla es una contrarreloj individual; no incluye todavía rivales físicos ni campeonatos propios. Se revisan capturas reales a 1280×720 con Mesa/llvmpipe en Linux; faltan conducción humana, Windows, mando físico y mediciones de rendimiento en GPU real.
 
 ## Desarrollo y pruebas
 
@@ -110,7 +121,7 @@ Los parámetros siguen siendo de balance arcade, no medidas extraídas de GT4. L
 
 La estética toma como referencia los menús clásicos de automovilismo, usando gráficos y geometría originales. Las preferencias anteriores y las partidas siguen siendo compatibles. Regresar de la pista abre directamente el garaje y recuerda guardar; no cambia las reglas de premios ni el guardado manual.
 
-Las pruebas cubren las vistas, dirección, preferencias, navegación, transacciones y HUD; también pasadas manuales completas, diferencias de cambio y desgaste, semáforo, reacción, parciales, marca única por intento y compatibilidad de guardado. v0.14 añade torque y ejes, frenado, moneda, música y navegación con eventos de mando. Para producir diecisiete capturas en un entorno con pantalla OpenGL:
+Las pruebas cubren las vistas, dirección, preferencias, navegación, transacciones y HUD; también pasadas manuales completas, diferencias de cambio y desgaste, semáforo, reacción, parciales, marca única por intento y compatibilidad de guardado. v0.15 añade los tres autos, la migración de ofertas, el GLB, compuestos, montaje pagado, colisiones, daños y reparaciones. Para producir veinticuatro capturas en un entorno con pantalla OpenGL:
 
 ```sh
 LIBGL_ALWAYS_SOFTWARE=1 bash tools/capture_presentation.sh /ruta/absoluta/capturas

@@ -92,7 +92,11 @@ func _staged() -> bool:
     return absf(car.position.z)<=0.10 and car.powertrain.speed_mps<0.10 and _in_lane()
 
 func _can_arm() -> bool:
-    return enabled and not paused and run.phase == "preparation" and _staged() and car.powertrain.gear == 1 and car.powertrain.engine_running and float(_controls().get("clutch",0.0))>=0.7
+    return enabled and not paused and _mechanically_ready() and run.phase == "preparation" and _staged() and car.powertrain.gear == 1 and car.powertrain.engine_running and float(_controls().get("clutch",0.0))>=0.7
+
+func _mechanically_ready() -> bool:
+    var model = car.powertrain
+    return model.config.engine_health-float(model.wear["motor"])>=20.0 and model.config.brake_health-float(model.wear["frenos"])>=40.0 and model.config.tire_health-float(model.wear["neumaticos"])>=40.0
 
 func _arm() -> void:
     if not _can_arm():
@@ -120,6 +124,12 @@ func _physics_process(delta: float) -> void:
     if message_time == 0.0:
         message = ""
     var controls := _controls().duplicate()
+    if not _mechanically_ready():
+        controls["throttle"] = 0.0
+        controls["brake"] = 1.0
+        controls["clutch"] = 1.0
+        message = "MECÁNICA NO APTA · Volvé al taller para reparar"
+        message_time = 2.0
     if run.phase == "finished":
         controls["throttle"] = 0.0
         controls["brake"] = maxf(0.65,float(controls.get("brake",0.0)))
@@ -128,14 +138,14 @@ func _physics_process(delta: float) -> void:
     garage.measured_distance = car.distance_m
     run.advance(delta,-car.position.z,car.powertrain.speed_mps,_in_lane() and not car.is_on_wall())
     if run.phase == "finished" and not handled_finish:
-        if garage.settle(car.powertrain.wear):
+        if garage.settle(car.powertrain.wear,car.damage):
             personal_best = garage.record_finish(run.report())
             handled_finish = true
     strip.update_tree(run,_staged())
     _refresh_hud()
 
 func _refresh_hud() -> void:
-    hud.refresh({"model":car.powertrain,"run":run,"settings":GameSession.controls,"name":car.model_name,"position":-car.position.z,"best":GameSession.career.drag_records.best(GameSession.selected_vehicle),"staged":_staged(),"can_arm":_can_arm(),"message":message,"paused":paused,"personal_best":personal_best,"wear_start":attempt_wear_start})
+    hud.refresh({"model":car.powertrain,"run":run,"settings":GameSession.controls,"name":car.model_name,"position":-car.position.z,"best":GameSession.career.drag_records.best(GameSession.selected_vehicle),"staged":_staged(),"can_arm":_can_arm(),"message":message,"paused":paused,"personal_best":personal_best,"wear_start":attempt_wear_start,"impacts":car.damage.impacts,"damage":car.damage.cumulative})
 
 func _shift(direction: int) -> void:
     if enabled and not leaving and not paused and run.phase not in ["finished","invalid"]:
@@ -144,7 +154,7 @@ func _shift(direction: int) -> void:
 func _recover() -> void:
     if not enabled or leaving:
         return
-    if not garage.settle(car.powertrain.wear):
+    if not garage.settle(car.powertrain.wear,car.damage):
         message = "No se pudo registrar el uso. Volvé al garaje."
         message_time = 5.0
         return
@@ -202,7 +212,7 @@ func _input(event: InputEvent) -> void:
 func _back_to_garage() -> void:
     if leaving:
         return
-    if enabled and not garage.settle(car.powertrain.wear):
+    if enabled and not garage.settle(car.powertrain.wear,car.damage):
         message = "No se pudo registrar el uso."
         message_time = 5.0
         return

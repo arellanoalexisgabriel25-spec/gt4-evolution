@@ -2,6 +2,7 @@ extends CharacterBody3D
 
 const Visual = preload("res://scripts/car_visual.gd")
 const Physics = preload("res://scripts/vehicle_physics.gd")
+const Catalog = preload("res://scripts/car_catalog.gd")
 var physics = Physics.new()
 var visual
 var color := Color("b93a40")
@@ -15,6 +16,10 @@ func _ready() -> void:
     var collision := CollisionShape3D.new()
     var shape := BoxShape3D.new()
     shape.size = Vector3(1.8, 1.0, 3.9)
+    var profile: Dictionary = Catalog.definition(model_name)
+    if not profile.is_empty():
+        var dimensions: Vector3 = profile["size"]
+        shape.size = Vector3(dimensions.x,1.0,dimensions.z)
     collision.shape = shape
     add_child(collision)
     visual = Visual.new()

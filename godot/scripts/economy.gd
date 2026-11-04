@@ -3,10 +3,13 @@ class_name EvolutionEconomy
 
 const Tuning = preload("res://scripts/tuning.gd")
 const Money = preload("res://scripts/money.gd")
+const Catalog = preload("res://scripts/car_catalog.gd")
+const Tire = preload("res://scripts/tire_model.gd")
 
 const SCHEMA_VERSION := 1
 const START_BALANCE := 12000
-const MODELS := ["Mazda MX-5 NA", "Honda Civic EK", "Toyota Corolla Levin AE86", "Nissan Silvia S13", "Toyota MR2 SW20", "Honda Prelude", "Mitsubishi FTO", "Mazda RX-7 FC", "Subaru Impreza GC8", "Nissan Skyline R32"]
+const MODELS := ["Mazda MX-5 NA", "Honda Civic EK", "Toyota Corolla Levin AE86", "Nissan Silvia S13", "Toyota MR2 SW20", "Honda Prelude", "Mitsubishi FTO", "Mazda RX-7 FC", "Subaru Impreza GC8", "Nissan Skyline R32", "Fiat 147 Vivace", "Fiat Uno Fire 3 puertas", "Volkswagen Gol Power 3 puertas"]
+const TIRE_PRICES := {"street":320,"sport":650,"slick":1400}
 const WEIGHTS := {"motor": 0.25, "transmision": 0.15, "suspension": 0.15, "frenos": 0.15, "neumaticos": 0.10, "chasis": 0.15, "electrico": 0.05}
 const WEAR := {"motor": 0.0010, "transmision": 0.0008, "suspension": 0.0012, "frenos": 0.0030, "neumaticos": 0.0090, "chasis": 0.0003, "electrico": 0.0004}
 
@@ -29,7 +32,54 @@ func seed_demo() -> void:
         if i % 3 == 2:
             faults["motor" if i % 2 == 0 else "frenos"] = true
         var price := calculate_market_price(i, km, health, faults)
+        var flagship: Dictionary = Catalog.definition(MODELS[i])
+        if not flagship.is_empty():
+            faults.clear()
+            for component in health:
+                health[component] = maxf(55.0,float(health[component]))
+            price = int(flagship["price"])
         cars.append({"id": i + 1, "model": MODELS[i], "km": km, "health": health, "faults": faults, "owner": "seller", "listed": true, "inspected": false, "price": price, "upgrades": [], "history": []})
+
+# Bring the flagship offers to pre-existing saves without changing old IDs,
+# balances, ownership or records. A player-created high ID is never overwritten.
+func ensure_flagship_offers() -> void:
+    var seeded = load("res://scripts/economy.gd").new()
+    seeded.seed_demo()
+    for offer in seeded.cars:
+        if not Catalog.flagship(str(offer["model"])):
+            continue
+        var exists := false
+        var next_id := 1
+        for car in cars:
+            exists = exists or car.get("model")==offer["model"]
+            next_id = maxi(next_id,int(car["id"])+1)
+        if not exists:
+            var added: Dictionary = offer.duplicate(true)
+            if not find_car(int(added["id"])).is_empty():
+                added["id"] = next_id
+            cars.append(added)
+
+func tire_quote(id: int, kind: String) -> int:
+    var car := find_car(id)
+    if car.is_empty() or car.get("owner")!="player" or not TIRE_PRICES.has(kind):
+        return -1
+    if Tire.for_vehicle(car)==kind and float(car["health"]["neumaticos"])>=99.999:
+        return 0
+    return int(TIRE_PRICES[kind])
+
+func replace_tires(id: int, kind: String) -> String:
+    var price := tire_quote(id,kind)
+    if price<=0:
+        return "Los neumáticos ya están nuevos o la selección no es válida."
+    if balance<price:
+        return "Saldo insuficiente para los neumáticos."
+    var car := find_car(id)
+    balance -= price
+    car["tire_compound"] = kind
+    car["health"]["neumaticos"] = 100.0
+    car.get("faults",{}).erase("neumaticos")
+    _record(car,"neumaticos:"+kind,-price)
+    return "Juego de %s instalado por %s" % [Tire.title(kind),Money.format(price)]
 
 # Reference value, mileage, mechanical health and known structural defects determine asking prices.
 # These tuning coefficients are deliberately game-balance values, not real-world appraisals.
@@ -216,6 +266,8 @@ func from_dict(data: Dictionary) -> bool:
         if typeof(car.get("history")) != TYPE_ARRAY or typeof(car.get("health")) != TYPE_DICTIONARY:
             return false
         if typeof(car.get("upgrades", [])) != TYPE_ARRAY:
+            return false
+        if car.has("tire_compound") and (typeof(car["tire_compound"])!=TYPE_STRING or not Tire.COMPOUNDS.has(car["tire_compound"])):
             return false
         var known_upgrades := {}
         var tuning = Tuning.new()

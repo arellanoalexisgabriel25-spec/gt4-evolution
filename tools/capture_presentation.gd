@@ -1,7 +1,7 @@
 extends SceneTree
 
 const DragDriver = preload("res://tests/drag_test_driver.gd")
-var output := "/workspace/artifacts/presentation-0.14"
+var output := "/workspace/artifacts/presentation-0.15"
 
 func _initialize() -> void:
     var args := OS.get_cmdline_user_args()
@@ -156,6 +156,63 @@ func run() -> void:
     Input.flush_buffered_events()
     Engine.time_scale = 1.0
     drag.input_provider = Callable()
+    drag._back_to_garage()
+    await process_frame
+    await process_frame
+    current_scene._change_tab("inicio")
+    for entry in [["Fiat 147 Vivace","18-147-showroom"],["Fiat Uno Fire 3 puertas","19-uno-showroom"],["Volkswagen Gol Power 3 puertas","20-gol-showroom"]]:
+        current_scene._feature(entry[0])
+        await picture(entry[1])
+    current_scene._change_tab("taller")
+    await picture("21-tire-workshop")
+    session.game.buy(13)
+    if not session.start_drag(13):
+        push_error("Could not enter the supplied Gol from the actual garage.")
+        quit(1)
+        return
+    change_scene_to_file("res://scenes/drag.tscn")
+    await process_frame
+    await process_frame
+    drag = current_scene
+    drag.set_physics_process(false)
+    drag.camera.mode = 1
+    drag.camera.snap()
+    await picture("22-gol-staging")
+    var gol_driver := DragDriver.new()
+    drag.input_provider = func() -> Dictionary: return gol_driver.controls(drag.car.powertrain,drag.run.clock,drag.get_physics_process_delta_time())
+    gol_driver.controls(drag.car.powertrain,0,1.0/60.0)
+    drag._arm()
+    drag.set_physics_process(true)
+    Engine.time_scale = 3.0
+    while -drag.car.position.z<140 and drag.run.phase not in ["finished","invalid"]:
+        await physics_frame
+    if drag.run.phase!="running":
+        push_error("The supplied Gol failed its rendered manual launch.")
+        quit(1)
+        return
+    drag.set_physics_process(false)
+    drag.camera.look_input = Vector2(0.8,0)
+    drag.camera.snap()
+    drag._refresh_hud()
+    await picture("24-gol-driving")
+    Engine.time_scale = 1.0
+    drag.input_provider = Callable()
+    drag.car.recover(Vector3(-3.5,0.55,-704))
+    drag.car.powertrain.speed_mps = 25
+    drag.car.powertrain.wheel_omega = 25/drag.car.powertrain.config.wheel_radius
+    for i in range(30):
+        drag.car.drive_manual(1.0/60.0,{"throttle":0.0,"clutch":1.0,"brake":0.0},true)
+        if drag.car.damage.impacts>0:
+            break
+    if drag.car.damage.impacts==0:
+        push_error("The rendered Gol did not collide with the existing end barrier.")
+        quit(1)
+        return
+    drag.run.invalidate("IMPACTO EN LA ESCAPATORIA")
+    drag.camera.look_input = Vector2.ZERO
+    drag.camera.snap()
+    drag._refresh_hud()
+    await picture("23-impact-damage")
     drag._back_to_garage()
     await process_frame
     await process_frame

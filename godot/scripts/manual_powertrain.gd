@@ -62,7 +62,6 @@ func reset(keep_heat: bool = true) -> void:
     driveline_loss_kw = 0.0
     feedback = "Punto muerto · Embrague + subir marcha para engranar primera"
     if not keep_heat:
-        tire_temperature = 28.0
         engine_temperature = 88.0
 
 func torque_at(engine_rpm: float) -> float:
@@ -138,6 +137,7 @@ func _integrate(dt: float, accelerator: float, clutch: float, brake: float, on_r
         feedback = "MOTOR CALADO · R recupera y vuelve a arrancar"
         feedback_time = 5.0
     wheel_torque_nm = clutch_torque*ratio*config.drivetrain_efficiency
+    var tread_before: float = axles.tread_wear_points()
     var tire_force: float = axles.step(dt,speed_mps,wheel_torque_nm,brake,config,config.tire_health-float(wear["neumaticos"]),on_road)
     wheelspin = axles.driven_slip(config)
     var resistance: float = 0.5*1.225*config.drag_area*speed_mps*speed_mps+config.rolling_resistance*config.mass*9.81
@@ -151,7 +151,7 @@ func _integrate(dt: float, accelerator: float, clutch: float, brake: float, on_r
     clutch_loss_kw = absf(clutch_torque*difference)/1000.0
     driveline_loss_kw = absf(clutch_torque*ratio*wheel_omega)*(1.0-config.drivetrain_efficiency)/1000.0
     engine_temperature += (throttle*0.22-(engine_temperature-85.0)*0.015-speed_mps*0.001)*dt
-    wear["neumaticos"] += axles.slip_power*dt*0.00000004
+    wear["neumaticos"] += maxf(0,axles.tread_wear_points()-tread_before)
     wear["transmision"] += absf(clutch_torque*difference)*dt*0.00000004
     wear["motor"] += (0.001*throttle+0.04*maxf(0,rpm/config.redline_rpm-1.0))*dt*config.engine_wear_factor
     wear["frenos"] += axles.brake_power*dt*0.000000005

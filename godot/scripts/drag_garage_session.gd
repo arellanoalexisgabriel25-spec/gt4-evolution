@@ -19,11 +19,13 @@ func begin(economy, profession, id: int) -> bool:
     vehicle_id = id
     return true
 
-func settle(wear: Dictionary) -> bool:
+func settle(wear: Dictionary, damage = null) -> bool:
     if game == null or vehicle_id <= 0 or not is_finite(measured_distance) or measured_distance < settled_distance:
         return false
     var vehicle: Dictionary = game.find_car(vehicle_id)
     if vehicle.is_empty() or vehicle.get("owner") != "player":
+        return false
+    if damage!=null and not damage.valid_pending():
         return false
     var delta := {}
     for component in settled_wear:
@@ -37,6 +39,8 @@ func settle(wear: Dictionary) -> bool:
         vehicle["health"][component] = maxf(0,float(vehicle["health"][component])-float(delta[component]))
         settled_wear[component] = wear[component]
     settled_distance = measured_distance
+    if damage!=null:
+        damage.settle(game,vehicle_id)
     return true
 
 func record_finish(ticket: Dictionary) -> bool:
