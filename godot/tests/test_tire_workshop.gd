@@ -6,6 +6,7 @@ const Store = preload("res://scripts/save_store.gd")
 const Tire = preload("res://scripts/tire_model.gd")
 const Config = preload("res://scripts/drag_vehicle_config.gd")
 const Model = preload("res://scripts/manual_powertrain.gd")
+const Tuning = preload("res://scripts/tuning.gd")
 var checks := 0
 var failed := false
 
@@ -27,7 +28,9 @@ func _initialize() -> void:
     var quote: int = game.tire_quote(11,"sport")
     check(game.replace_tires(11,"sport").contains("ARS") and game.balance==balance-quote,"A compound replacement charges its exact ARS quote once")
     check(car.health.neumaticos==100.0 and Config.from_vehicle(car).tire_compound=="sport","New tires restore tread health and reach the real powertrain")
+    check(car.upgrades.count("tires")==1,"Workshop sport tires share the existing tuning part instead of creating a second independent upgrade")
     var installed: Dictionary = game.to_dict()
+    check(Tuning.new().install(game,11,"tires").contains("instalada") and game.to_dict()==installed,"Buying the same tire improvement again through Tuning cannot double-debit the player")
     check(game.tire_quote(11,"sport")==0 and not game.replace_tires(11,"sport").contains("instalado") and game.to_dict()==installed,"Duplicate confirmation cannot buy the same fresh set twice")
     check(game.tire_quote(11,"unknown")==-1 and not game.replace_tires(11,"unknown").contains("instalado") and game.to_dict()==installed,"Invalid compounds are rejected without partial mutation")
     car.health.neumaticos = 50.0
@@ -42,6 +45,8 @@ func _initialize() -> void:
     var corrupt: Dictionary = before.duplicate(true)
     corrupt.cars[10].tire_compound = "unknown"
     check(not game.from_dict(corrupt) and game.to_dict()==before,"Malformed compound saves are rejected atomically")
+    balance = game.balance
+    check(game.replace_tires(11,"street").contains("instalado") and game.balance==balance-320 and not car.upgrades.has("tires"),"Returning to street tires removes the sport upgrade without a refund or phantom tuning bonus")
     var street = Tire.new("street")
     var slick = Tire.new("slick")
     check(street.thermal_grip()>slick.thermal_grip(),"Street tires beat cold slicks at ambient temperature")

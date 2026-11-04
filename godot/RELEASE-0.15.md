@@ -51,7 +51,7 @@ embrague, cambios fallidos y reducciones excesivas. Evaluación completa:
 
 ## Pruebas
 
-**Godot 4.6.3 en Linux: 41 suites / 742 comprobaciones, 48 scripts compilados.**
+**Godot 4.6.3 en Linux: 41 suites / 745 comprobaciones, 48 scripts compilados.**
 La suite completa finalizó con código cero y sin errores de motor o script.
 El runner estricto importa recursos, compila los scripts,
 ejecuta todas las suites con datos aislados y exige ausencia de errores de motor

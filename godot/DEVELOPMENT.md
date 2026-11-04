@@ -247,6 +247,9 @@ Paid tire replacement is validated atomically, restores tire health and records 
 single debit. The optional `tire_compound` persists under the same save schema;
 invalid values are rejected. Circuit physics retains its controller and reads the
 selected compound only as a base-grip choice.
+Sport/slick mounting synchronizes the existing `tires` upgrade flag, so Tuning
+cannot sell that same improvement a second time. Returning to street tires removes
+the flag without a refund; both interfaces describe the same installed set.
 
 DragActor measures impact velocity loss only around a real wall collision after
 propulsion/braking. Damage alters current powertrain parameters immediately and

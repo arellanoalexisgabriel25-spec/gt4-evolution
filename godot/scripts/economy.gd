@@ -77,6 +77,12 @@ func replace_tires(id: int, kind: String) -> String:
     balance -= price
     car["tire_compound"] = kind
     car["health"]["neumaticos"] = 100.0
+    if not car.has("upgrades"):
+        car["upgrades"] = []
+    if kind=="street":
+        car["upgrades"].erase("tires")
+    elif not car["upgrades"].has("tires"):
+        car["upgrades"].append("tires")
     car.get("faults",{}).erase("neumaticos")
     _record(car,"neumaticos:"+kind,-price)
     return "Juego de %s instalado por %s" % [Tire.title(kind),Money.format(price)]
