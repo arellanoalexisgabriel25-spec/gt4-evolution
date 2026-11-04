@@ -41,6 +41,9 @@ var engine_power_kw := 0.0
 var shaft_power_kw := 0.0
 var contact_power_kw := 0.0
 var road_load_n := 0.0
+var contact_loads := Vector2.ONE
+var surface_grip := Vector2.ONE
+var rolling_scale := 1.0
 var engine_work_j := 0.0
 var clutch_heat_j := 0.0
 var driveline_heat_j := 0.0
@@ -74,6 +77,9 @@ func reset(keep_heat: bool = true) -> void:
     shaft_power_kw = 0.0
     contact_power_kw = 0.0
     road_load_n = 0.0
+    contact_loads = Vector2.ONE
+    surface_grip = Vector2.ONE
+    rolling_scale = 1.0
     feedback = "Punto muerto · Embrague + subir marcha para engranar primera"
     if not keep_heat:
         engine_temperature = 88.0
@@ -91,7 +97,7 @@ static func transmitted_torque(clutch_torque: float, ratio: float, efficiency: f
     return clutch_torque*ratio*(eta if clutch_torque>=0.0 else 1.0/eta)
 
 func road_load_force(speed: float) -> float:
-    return 0.5*config.air_density*config.drag_area*speed*speed+config.rolling_resistance*config.mass*9.81
+    return 0.5*config.air_density*config.drag_area*speed*speed+config.rolling_resistance*config.mass*9.81*rolling_scale
 
 func kinetic_energy_j() -> float:
     var engine_omega := rpm*TAU/60.0
@@ -123,9 +129,20 @@ func shift(direction: int, clutch: float) -> bool:
     feedback_time = 1.6
     return true
 
-func step(delta: float, accelerator: float, clutch: float, brake: float, on_road: bool = true) -> void:
+func step(delta: float, accelerator: float, clutch: float, brake: float, on_road: bool = true, contact_state: Dictionary = {}) -> void:
     if not is_finite(delta) or delta <= 0.0 or not is_finite(accelerator) or not is_finite(clutch) or not is_finite(brake):
         return
+    var support = contact_state.get("contact",Vector2.ONE)
+    var friction = contact_state.get("grip",Vector2.ONE)
+    var rolling = contact_state.get("rolling",1.0)
+    if typeof(support)!=TYPE_VECTOR2 or not support.is_finite() or typeof(friction)!=TYPE_VECTOR2 or not friction.is_finite():
+        return
+    if typeof(rolling) not in [TYPE_INT,TYPE_FLOAT] or not is_finite(float(rolling)) or float(rolling)<0.0:
+        return
+    contact_loads = support.clamp(Vector2.ZERO,Vector2.ONE)
+    surface_grip = friction.clamp(Vector2.ZERO,Vector2.ONE*2.0)
+    # A tire must be supported to create rolling resistance. Air drag remains.
+    rolling_scale = minf(float(rolling),8.0) if contact_loads.length_squared()>0.0 else 0.0
     var duration := minf(delta,0.1)
     var count := maxi(1,ceili(duration*480.0))
     var dt := duration/float(count)
@@ -173,7 +190,7 @@ func _integrate(dt: float, accelerator: float, clutch: float, brake: float, on_r
     wheel_power_kw = maxf(0,shaft_power_kw)
     driveline_loss_kw = maxf(0,(clutch_torque*ratio-wheel_torque_nm)*wheel_omega/1000.0)
     var tread_before: float = axles.tread_wear_points()
-    var tire_force: float = axles.step(dt,speed_mps,wheel_torque_nm,brake,config,config.tire_health-float(wear["neumaticos"]),on_road)
+    var tire_force: float = axles.step(dt,speed_mps,wheel_torque_nm,brake,config,config.tire_health-float(wear["neumaticos"]),on_road,contact_loads,surface_grip)
     wheelspin = axles.driven_slip(config)
     var resistance: float = road_load_force(speed_mps)
     road_load_n = resistance

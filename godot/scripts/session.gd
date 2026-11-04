@@ -2,7 +2,7 @@ extends Node
 
 const Economy = preload("res://scripts/economy.gd")
 const Career = preload("res://scripts/career.gd")
-const VERSION := "0.17"
+const VERSION := "0.18"
 const ControlSettings = preload("res://scripts/control_settings.gd")
 const DragClasses = preload("res://scripts/drag_class_rules.gd")
 const Music = preload("res://scripts/menu_music.gd")

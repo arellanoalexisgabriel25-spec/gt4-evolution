@@ -1,6 +1,7 @@
 """Publish checked release ZIPs on an immutable, separate GitHub download branch."""
 import argparse
 import hashlib
+import json
 from pathlib import Path
 import re
 import subprocess
@@ -8,6 +9,7 @@ import zipfile
 from urllib.parse import urlsplit
 
 from package_game import ROOT, VERSION
+from release_artifacts import project_files, source_snapshot, validate_export
 
 
 def git(*args, data=None):
@@ -17,7 +19,7 @@ def git(*args, data=None):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--artifacts", type=Path, required=True)
-    parser.add_argument("--screenshots", type=Path, help="Directory of the twenty-seven checked 1280x720 presentation PNGs")
+    parser.add_argument("--screenshots", type=Path, help="Directory of checked 1280x720 presentation PNGs")
     parser.add_argument("--push", action="store_true")
     args = parser.parse_args()
     if git("status", "--porcelain"):
@@ -50,23 +52,34 @@ def main():
             raise SystemExit(f"Package checksum mismatch: {name}")
         files.extend([(name, path), (checksum.name, checksum)])
     source_commit = git("rev-parse", "HEAD")
+    sources = source_snapshot(ROOT / "godot")
     for name in names:
         with zipfile.ZipFile(args.artifacts / name) as archive:
             if archive.testzip() is not None:
                 raise SystemExit(f"Corrupt package: {name}")
-            for source in (ROOT / "godot").rglob("*"):
-                if not source.is_file() or ".godot" in source.parts or source.suffix not in {".gd", ".tscn", ".tres", ".godot", ".md", ".ttf", ".otf", ".txt", ".import", ".mp3", ".glb", ".png"}:
-                    continue
-                key = "juego/" + source.relative_to(ROOT / "godot").as_posix()
-                if archive.read(key) != source.read_bytes():
-                    raise SystemExit(f"Package differs from committed source: {key}")
+            if name.endswith("-Proyecto.zip"):
+                for source in project_files(ROOT / "godot"):
+                    key = "juego/" + source.relative_to(ROOT / "godot").as_posix()
+                    if archive.read(key) != source.read_bytes():
+                        raise SystemExit(f"Package differs from committed source: {key}")
+            else:
+                manifest = json.loads(archive.read("MANIFIESTO.json"))
+                if manifest.get("game_version") != VERSION or manifest.get("source_commit") != source_commit:
+                    raise SystemExit("Windows export was built from another version/commit")
+                if manifest.get("same_pck_linux_smoke") != "passed":
+                    raise SystemExit("The exported PCK has not passed its release-runtime smoke test")
+                if manifest.get("same_pck_physical_test") != "passed":
+                    raise SystemExit("The exported PCK has not passed its six-model and physical-duel checks")
+                validate_export(manifest, archive.read("GT4Evolution.exe"), archive.read("GT4Evolution.pck"), sources)
     base = f"https://github.com/{identity}/raw/refs/heads/{branch}"
     readme = f"""# GT4 Evolution {VERSION} · Descargas
 
 - [Descargar juego para Windows]({base}/{names[0]})
 - [Descargar proyecto para Godot]({base}/{names[1]})
 
-Extraé TODO el ZIP Windows y abrí **JUGAR.cmd**. El motor está incluido.
+Extraé TODO el ZIP Windows y abrí **GT4Evolution.exe** o **JUGAR.cmd**.
+Es una exportación independiente; no requiere instalar Godot ni importar el proyecto.
+Conservá **GT4Evolution.pck** junto al ejecutable. El ZIP Proyecto conserva las fuentes.
 **GARAJE → DUELO ¼ DE MILLA / FÁBRICA** corre contra otro auto físico.
 Elegí piloto y clase (Clase 1: piso ET 18,00 s) o LIBRE, sin piso.
 Clases de ¼ según el art. 21 del texto aportado; caída por ET bajo el piso.
@@ -74,14 +87,19 @@ La reacción cuenta para llegar primero. Un falso individual concede al rival
 la excepción del art. 12 aunque su ET caiga. Exhibición sin inscripción ni premios.
 Fábrica conserva salud del garaje y excluye preparaciones; «serie» oficial tiene
 otro alcance. La práctica individual y sus marcas anteriores siguen disponibles.
-147 Vivace y Uno Fire usan derivados optimizados de los nuevos modelos aportados,
+Se suman Fiat 128 Súper Europa, Fiat 133 y Fiat 128 con sus modelos aportados.
+El 133 tiene tracción trasera y los 128 delantera, con perfiles diferenciados.
+El contacto distingue superficies, apoyo y ruedas sin suelo; el agarre respeta
+la capacidad actual del piso y el frenado registra la energía disipada.
+147 Vivace y Uno Fire conservan derivados optimizados de los modelos aportados,
 con texturas conservadas y ruedas animadas. El Uno suministrado tiene cinco puertas,
 referencia visual provisional de la variante de tres puertas del catálogo.
-El Gol conserva el modelo aportado original. Las métricas físicas todavía son
-estimaciones pendientes de fuentes de fabricante. Ver STOCK-SOURCES.md.
-En Inicio podés elegir 147 / UNO / GOL; en garaje, VER MODELO cambia la vista.
+El Gol conserva el modelo aportado original. Las fichas distinguen datos aportados
+y parámetros estimados; la calibración de prestaciones sigue pendiente.
+Ver STOCK-SOURCES.md. En Inicio podés elegir los seis modelos; en garaje,
+VER MODELO cambia la vista.
 El taller ofrece calle, deportivos o slick. Los impactos dejan daño mecánico
-persistente; recuperar no repara. Ver RELEASE-0.17.md y REGULATIONS-REFERENCE.md.
+persistente; recuperar no repara. Ver RELEASE-0.18.md y REGULATIONS-REFERENCE.md.
 
 Comprá un auto y abrí **GARAJE → ¼ DE MILLA / MANUAL**. Mantené C, tocá E
 para primera, iniciá el árbol con Enter y esperá el verde. Regulá W para las RPM,
@@ -94,8 +112,8 @@ por el usuario y autorizada para redistribución; volumen en AJUSTES.
 Mando: stick/cruceta navega, A confirma, B vuelve, LB/RB cambia pestaña.
 Select/Back abre la pausa en pista; embrague analógico LT/L2 opcional.
 
-El paquete incluye LEEME.txt con controles y limitaciones, y DIAGNOSTICO.cmd
-para registrar fallos de arranque. Windows y los mandos físicos requieren
+El paquete incluye LEEME.txt con controles y limitaciones, MANIFIESTO.json con
+hashes de fuentes/exportación y DIAGNOSTICO.cmd para registrar fallos de arranque. Windows y los mandos físicos requieren
 prueba en esos equipos; la validación automatizada se realiza en Linux.
 Las licencias se incluyen. No se distribuyen recursos comerciales de GT4.
 
@@ -104,7 +122,7 @@ Esta rama contiene únicamente distribución y no se integra en main.
 Los archivos .sha256 permiten verificar los ZIP.
 """
     if args.screenshots:
-        shots = ["01-home", "02-dealer", "03-garage", "04-settings", "05-camera-0", "06-camera-1", "07-camera-2", "08-camera-3", "09-look-back", "10-race-grid", "11-drag-staging", "12-drag-tree", "13-drag-driving", "14-drag-close", "15-drag-ticket", "16-drag-red-light", "17-controller-pause", "18-147-showroom", "19-uno-showroom", "20-gol-showroom", "21-tire-workshop", "22-gol-staging", "23-impact-damage", "24-gol-driving", "25-duel-staging", "26-duel-driving", "27-duel-result"]
+        shots = ["01-home", "02-dealer", "03-garage", "04-settings", "05-camera-0", "06-camera-1", "07-camera-2", "08-camera-3", "09-look-back", "10-race-grid", "11-drag-staging", "12-drag-tree", "13-drag-driving", "14-drag-close", "15-drag-ticket", "16-drag-red-light", "17-controller-pause", "18-147-showroom", "19-uno-showroom", "20-gol-showroom", "21-tire-workshop", "22-gol-staging", "23-impact-damage", "24-gol-driving", "25-duel-staging", "26-duel-driving", "27-duel-result", "28-128-super-showroom", "29-133-showroom", "30-128-standard-showroom", "31-133-duel-staging", "32-133-duel-driving", "33-133-duel-result"]
         for shot in shots:
             path = args.screenshots / (shot + ".png")
             header = path.read_bytes()[:24]
@@ -116,7 +134,7 @@ Los archivos .sha256 permiten verificar los ZIP.
         readme += "Capturas reales del juego en Linux con OpenGL por software. No son renders conceptuales.\n\n"
         readme += "Tab / RB cambia entre seguimiento, cercana, capó y paragolpes; Shift / Y permite mirar atrás.\n"
         readme += "AJUSTES conserva la cámara inicial y permite suavizar la dirección del teclado.\n\n"
-        for title, shot in [("Dos autos de fábrica / Semáforo común", "25-duel-staging"), ("Carrera física contra un rival", "26-duel-driving"), ("Resultado por reacción más ET", "27-duel-result"), ("Gol Power / Modelo aportado", "20-gol-showroom"), ("Gol en una pasada manual real", "24-gol-driving"), ("Impacto real / Daños mecánicos", "23-impact-damage"), ("Taller / Compuestos de neumáticos", "21-tire-workshop"), ("147 Vivace / Modelo aportado", "18-147-showroom"), ("Uno Fire / Modelo aportado", "19-uno-showroom"), ("Inicio y autos insignia", "01-home"), ("Música, mando y ayudas", "04-settings"), ("Ticket de llegada real", "15-drag-ticket"), ("Pausa con mando", "17-controller-pause")]:
+        for title, shot in [("Fiat 128 Súper Europa / Modelo aportado", "28-128-super-showroom"), ("Fiat 133 / Modelo aportado", "29-133-showroom"), ("Fiat 128 / Modelo aportado", "30-128-standard-showroom"), ("133 / Duelo de tracción trasera", "31-133-duel-staging"), ("133 / Carrera física", "32-133-duel-driving"), ("133 / Dos tickets medidos", "33-133-duel-result"), ("Dos autos de fábrica / Semáforo común", "25-duel-staging"), ("Carrera física contra un rival", "26-duel-driving"), ("Resultado por reacción más ET", "27-duel-result"), ("Gol Power / Modelo aportado", "20-gol-showroom"), ("Gol en una pasada manual real", "24-gol-driving"), ("Impacto real / Daños mecánicos", "23-impact-damage"), ("Taller / Compuestos de neumáticos", "21-tire-workshop"), ("147 Vivace / Modelo aportado", "18-147-showroom"), ("Uno Fire / Modelo aportado", "19-uno-showroom"), ("Inicio y autos insignia", "01-home"), ("Música, mando y ayudas", "04-settings"), ("Ticket de llegada real", "15-drag-ticket"), ("Pausa con mando", "17-controller-pause")]:
             readme += f"### {title}\n\n![{title}](captura-{shot}.png)\n\n"
     blob = git("hash-object", "-w", "--stdin", data=readme.encode())
     rows = [f"100644 blob {blob}\tREADME.md\n"]

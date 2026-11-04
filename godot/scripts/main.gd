@@ -240,7 +240,7 @@ func _home() -> void:
     intro.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     hero.add_child(intro)
     intro.add_child(_label("402,336 M / CAJA MANUAL",25))
-    intro.add_child(_label("Tres puertas. Una pasión por el ¼ de milla.",14))
+    intro.add_child(_label("Clásicos argentinos. Una pasión por el ¼ de milla.",14))
     intro.add_child(_label(featured["model"],22))
     if featured["owner"]!="player":
         intro.add_child(_button("VISITAR EL CONCESIONARIO",_change_tab.bind("mercado")))
@@ -248,10 +248,12 @@ func _home() -> void:
         intro.add_child(_button("DUELO ¼ DE MILLA / FÁBRICA",_drag_duel.bind(int(featured["id"]))))
     var lineup := HBoxContainer.new()
     intro.add_child(lineup)
-    for index in range(Catalog.FLAGSHIPS.size()):
-        var choice := _button(["147","UNO","GOL"][index],_feature.bind(Catalog.FLAGSHIPS[index]))
+    var models: Array = Catalog.FLAGSHIPS+Catalog.CLASSICS
+    for index in range(models.size()):
+        var choice := _button(["147","UNO","GOL","128 S","133","128"][index],_feature.bind(models[index]))
         choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         choice.custom_minimum_size.y = 32
+        choice.add_theme_font_size_override("font_size",18)
         lineup.add_child(choice)
     var map = CityMap.new()
     map.destination_selected.connect(_change_tab)
@@ -349,8 +351,13 @@ func _garage() -> void:
         layout.add_child(_label("Neumáticos: "+Tire.title(Tire.for_vehicle(car)),14))
         var metrics: Dictionary = DragConfig.from_vehicle(car,true).metrics()
         layout.add_child(_label("FICHA PROVISIONAL / FÁBRICA · %.0f kg + piloto %.0f kg · potencia base calculada %.1f CV (%.1f kW)" % [metrics["curb_mass_kg"],metrics["driver_mass_kg"],metrics["calculated_peak_power_cv"],metrics["calculated_peak_power_kw"]],13))
-        if not metrics["reference_targets"].is_empty():
-            layout.add_child(_label("%s · referencia 0–100: %.1f s / máxima %.0f km/h; calibración pendiente" % [metrics["variant"],metrics["reference_targets"]["zero_to_hundred_s"],metrics["reference_targets"]["top_speed_kmh"]],13))
+        var targets: Dictionary = metrics["reference_targets"]
+        if not targets.is_empty():
+            var details: Array[String] = []
+            if targets.has("zero_to_hundred_s"): details.append("0–100 %.1f s" % float(targets.zero_to_hundred_s))
+            if targets.has("top_speed_kmh"): details.append("máxima %.0f km/h" % float(targets.top_speed_kmh))
+            if targets.has("power_cv"): details.append("%.0f CV" % float(targets.power_cv))
+            layout.add_child(_label("%s · referencia: %s · calibración pendiente" % [metrics["variant"]," / ".join(details)],13))
         var best := career.lap_records.get_best(int(car["id"]))
         if best > 0.0:
             layout.add_child(_label("Mejor vuelta al club: %.2f s" % best, 15))

@@ -1,8 +1,18 @@
-# GT4 Evolution · v0.17 / Modelos y clases de ¼ de milla
+# GT4 Evolution · v0.18 / Clásicos argentinos y contacto físico
 
 Prototipo independiente de automovilismo en Godot 4.6.3. El desarrollo se centra en un **¼ de milla de 402,336 m contra otro auto físico**, con largada, cambios manuales, marcas y desgaste en un entorno original inspirado en el ambiente del autódromo Gálvez. Conserva mercado, garaje, taller, tuning y los modos anteriores. La investigación de GT4 se consulta como referencia; no se incluyen su ejecutable, modelos, texturas ni circuitos comerciales.
 
-## Novedades v0.17
+## Novedades v0.18
+
+Se suman **Fiat 128 Súper Europa 1.5, Fiat 133 y Fiat 128 estándar** con los modelos aportados. Se eligen en Inicio y se compran en el concesionario. Los tres insignia siguen encabezando la gama; los IDs anteriores y las partidas se conservan. El 133 tiene motor/reparto trasero y tracción **RWD**, mientras ambos 128 son **FWD**. El Súper Europa usa los datos aportados de 82 CV a 5.600 RPM y 12 kgf·m a 3.000 RPM; el 133 y el 128 estándar toman las referencias de 34 y 55 CV del informe. Los parámetros no especificados permanecen estimados.
+
+La pista consulta **cuatro apoyos reales** mediante raycasts. Sin suelo, las ruedas pueden girar y frenarse, pero no impulsan el auto ni generan desgaste de contacto. Asfalto, banquina pavimentada, tierra y pasto tienen agarre y rodadura diferentes; los bordes visuales y físicos usan las mismas dimensiones. Se limita inmediatamente la fuerza de neumático al agarre disponible y el calor de frenos sale de la energía rotacional realmente eliminada. El HUD indica la superficie y el apoyo de ruedas.
+
+Los modelos nuevos conservan sus texturas y utilizan derivados de alrededor de 80.000 triángulos. La separación de ruedas incluye tapacubos claros y considera el contorno para preservar los guardabarros de carrocerías oscuras. El archivo original de cada aporte se mantiene separado y sin cambios.
+
+**Windows ahora se distribuye como ejecutable y PCK exportados con Godot 4.6.3**, con las licencias correspondientes. Extraé todo el ZIP y abrí `JUGAR.cmd`; el editor ya no forma parte de esa descarga. El ZIP Proyecto conserva el código y recursos para Godot. [Informe técnico](RELEASE-0.18.md) · [Procedencia de los seis modelos](assets/cars/README.md).
+
+## Estado histórico: novedades v0.17
 
 **GARAJE → DUELO ¼ DE MILLA / FÁBRICA** permite elegir rival y clase antes de correr. Nico es técnico, Claire agresiva y Akira conservador. Por defecto se usa **Clase 1, piso de 18,00 s ET**; también podés elegir los demás pisos de ¼ del art. 21 del reglamento aportado, incluidos **4i y 5i**, o **LIBRE / PRIMERA LLEGADA** para correr sin piso. La opción LIBRE es una exhibición propia; no representa admisión a la clase oficial L1.
 

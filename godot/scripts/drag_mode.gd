@@ -144,7 +144,7 @@ func _in_lane() -> bool:
     return absf(car.position.x-Strip.LANE_X) <= 2.7
 
 func _staged() -> bool:
-    return absf(car.position.z)<=0.10 and car.powertrain.speed_mps<0.10 and _in_lane()
+    return absf(car.position.z)<=0.10 and car.powertrain.speed_mps<0.10 and _in_lane() and int(car.ground_state.get("wheels_on_ground",0))==4
 
 func _can_arm() -> bool:
     return enabled and not paused and _mechanically_ready() and run.phase == "preparation" and _staged() and car.powertrain.gear == 1 and car.powertrain.engine_running and float(_controls().get("clutch",0.0))>=0.7
@@ -220,7 +220,7 @@ func _physics_process(delta: float) -> void:
 
 func _refresh_hud() -> void:
     var best: Dictionary = (GameSession.career.stock_drag_records if is_duel else GameSession.career.drag_records).best(GameSession.selected_vehicle)
-    hud.refresh({"model":car.powertrain,"run":run,"settings":GameSession.controls,"name":car.model_name,"position":-car.position.z,"best":best,"staged":_staged(),"can_arm":_can_arm(),"message":message,"paused":paused,"personal_best":personal_best,"wear_start":attempt_wear_start,"impacts":car.damage.impacts,"damage":car.damage.cumulative,"duel":is_duel,"opponent_name":opponent_name,"opponent_run":opponent_run,"opponent_gap":opponent.position.z-car.position.z if is_duel else 0.0,"duel_result":duel_result,"zero_to_hundred":car.zero_to_hundred,"class_data":class_data})
+    hud.refresh({"model":car.powertrain,"run":run,"settings":GameSession.controls,"name":car.model_name,"position":-car.position.z,"best":best,"staged":_staged(),"can_arm":_can_arm(),"message":message,"paused":paused,"personal_best":personal_best,"wear_start":attempt_wear_start,"impacts":car.damage.impacts,"damage":car.damage.cumulative,"duel":is_duel,"opponent_name":opponent_name,"opponent_run":opponent_run,"opponent_gap":opponent.position.z-car.position.z if is_duel else 0.0,"duel_result":duel_result,"zero_to_hundred":car.zero_to_hundred,"class_data":class_data,"ground":car.ground_state})
 
 func _shift(direction: int) -> void:
     if enabled and not leaving and not paused and run.phase not in ["finished","invalid"]:

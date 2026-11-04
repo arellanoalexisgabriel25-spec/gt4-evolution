@@ -203,6 +203,9 @@ func refresh(data: Dictionary) -> void:
     damage_label.text = "DAÑOS POR IMPACTO / SESIÓN\nMotor −%.1f · Chasis −%.1f · Suspensión −%.1f" % [float(damage.get("motor",0.0)),float(damage.get("chasis",0.0)),float(damage.get("suspension",0.0))] if not damage.is_empty() else ""
     var pad_clutch := "LT/LB embrague · B frena" if settings.analog_clutch else "LB embrague · LT/B frena"
     help_label.text = "%s acelerar · %s/%s frenar · %s embrague · %s subir / %s bajar\nEnter: semáforo · %s repetir · %s/Select pausa · Esc: garaje\nTab/RB: cámara · Shift/R3: atrás · A sube / Y baja · %s" % [settings.key_label("accelerate"),settings.key_label("reverse"),settings.key_label("brake"),settings.key_label("clutch"),settings.key_label("shift_up"),settings.key_label("shift_down"),settings.key_label("recover"),settings.key_label("pause"),pad_clutch]
+    var ground: Dictionary = data.get("ground",{})
+    if not ground.is_empty():
+        help_label.text += "\n%s · APOYO %d/4 RUEDAS" % [ground.label,int(ground.wheels_on_ground)]
     queue_redraw()
 
 func _lane_result(name: String, entry: Dictionary) -> String:

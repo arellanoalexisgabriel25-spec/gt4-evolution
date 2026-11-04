@@ -2,6 +2,7 @@ extends Node3D
 
 const Visual = preload("res://scripts/car_visual.gd")
 const Style = preload("res://scripts/racing_theme.gd")
+const Surfaces = preload("res://scripts/track_surface.gd")
 const Run = preload("res://scripts/drag_run.gd")
 const LANE_X := -3.75
 var lamps: Array[StandardMaterial3D] = []
@@ -69,8 +70,10 @@ func _ready() -> void:
     shader.code = "shader_type spatial; varying vec3 p; void vertex(){p=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;} void fragment(){float grain=fract(sin(dot(floor(p.xz*18.0),vec2(12.9898,78.233)))*43758.5453); float rubber=1.0-smoothstep(0.3,0.8,abs(abs(p.x)-3.75)); ALBEDO=vec3(0.15,0.16,0.17)*mix(0.90,1.06,grain)*(1.0-rubber*0.30); ROUGHNESS=0.97;}"
     var asphalt := ShaderMaterial.new()
     asphalt.shader = shader
-    box(Vector3(19,0.06,780),Vector3(0,0.01,-325),Color("343b43"),false,asphalt)
-    box(Vector3(25,0.04,780),Vector3(0,-0.025,-325),Color("b5ae94"))
+    # Surface borders and tire queries share these exact dimensions.
+    box(Vector3(Surfaces.GRAVEL_HALF_WIDTH*2.0,0.04,Surfaces.LENGTH),Vector3(0,-0.025,Surfaces.CENTER_Z),Color("b5ae94"))
+    box(Vector3(Surfaces.APRON_HALF_WIDTH*2.0,0.04,Surfaces.LENGTH),Vector3(0,0.005,Surfaces.CENTER_Z),Color("686b69"))
+    box(Vector3(Surfaces.ROAD_HALF_WIDTH*2.0,0.06,Surfaces.LENGTH),Vector3(0,0.01,Surfaces.CENTER_Z),Color("343b43"),false,asphalt)
     for side in [-1,1]:
         box(Vector3(0.35,0.92,780),Vector3(side*9.7,0.46,-325),Color("c7c8be"),true)
         box(Vector3(0.12,0.012,775),Vector3(side*8.5,0.047,-325),Color("d5d5ca"))

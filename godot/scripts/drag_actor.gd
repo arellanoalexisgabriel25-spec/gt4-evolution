@@ -1,19 +1,48 @@
 extends "res://scripts/vehicle_actor.gd"
 
 const Manual = preload("res://scripts/manual_powertrain.gd")
+const Surfaces = preload("res://scripts/track_surface.gd")
 const Damage = preload("res://scripts/damage_model.gd")
 var powertrain = Manual.new()
 var damage = Damage.new()
+var ground_state: Dictionary = Surfaces.combine([{},{},{},{}])
 var measured_acceleration := 0.0
 var zero_to_hundred := -1.0
 var acceleration_clock := 0.0
 
-func drive_manual(delta: float, controls: Dictionary, road: bool) -> void:
+# Four vertical suspension probes query real world collision, excluding vehicles.
+# Ray reach is an explicit approximation; there is no full suspension solver yet.
+func sample_ground() -> Dictionary:
+    var profile: Dictionary = Catalog.definition(model_name)
+    var width: float = profile.get("size",Vector3(1.8,1.4,3.9)).x
+    var half_track := width*0.40
+    var half_base: float = powertrain.config.wheelbase*0.5
+    var samples: Array = []
+    var space := get_world_3d().direct_space_state
+    for z in [-half_base,half_base]:
+        for x in [-half_track,half_track]:
+            var origin := to_global(Vector3(x,0.15,z))
+            var end := to_global(Vector3(x,-0.66,z))
+            var query := PhysicsRayQueryParameters3D.create(origin,end,1,[get_rid()])
+            var hit := space.intersect_ray(query)
+            var supported := not hit.is_empty() and Vector3(hit.normal).dot(Vector3.UP)>=0.65
+            samples.append(Surfaces.at(hit.position) if supported else {})
+    return Surfaces.combine(samples)
+
+func drive_manual(delta: float, controls: Dictionary, _road: bool = true) -> void:
+    if not is_finite(delta) or delta<=0.0 or delta>0.1:
+        return
+    # Reject malformed controls before touching transforms, wear or telemetry.
+    for action in ["throttle","brake","clutch","steer"]:
+        var value = controls.get(action,0.0)
+        if typeof(value) not in [TYPE_INT,TYPE_FLOAT] or not is_finite(float(value)):
+            return
+    ground_state = sample_ground()
     var speed_before: float = powertrain.speed_mps
     damage.tick(delta)
     var pedal: float = float(controls.get("throttle",0.0))
     var brake: float = maxf(float(controls.get("brake",0.0)),-pedal)
-    powertrain.step(delta,maxf(0,pedal),float(controls.get("clutch",0.0)),brake,road)
+    powertrain.step(delta,maxf(0,pedal),float(controls.get("clutch",0.0)),brake,true,ground_state)
     # Light directional assistance for the first longitudinal driving increment.
     # Lane violations still use the real collider position and invalidate a pass.
     var steer: float = float(controls.get("steer",0.0))*powertrain.config.steering_factor
@@ -22,7 +51,7 @@ func drive_manual(delta: float, controls: Dictionary, road: bool) -> void:
     var forward := -global_basis.z
     velocity.x = forward.x*powertrain.speed_mps
     velocity.z = forward.z*powertrain.speed_mps
-    velocity.y = -1.0 if is_on_floor() else velocity.y-15.0*delta
+    velocity.y = -1.0 if is_on_floor() else velocity.y-9.81*delta
     var incoming := Vector2(velocity.x,velocity.z)
     move_and_slide()
     # Compare the requested velocity AFTER propulsion/braking with the resolved
@@ -52,6 +81,7 @@ func drive_manual(delta: float, controls: Dictionary, road: bool) -> void:
 func recover(location: Vector3, angle: float = 0.0) -> void:
     super.recover(location,angle)
     powertrain.reset()
+    ground_state = Surfaces.combine([{},{},{},{}])
     reset_metrics()
 
 func reset_metrics() -> void:

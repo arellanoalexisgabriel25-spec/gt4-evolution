@@ -8,6 +8,9 @@ const Tire = preload("res://scripts/tire_model.gd")
 static func configuration(vehicle: Dictionary):
     var model := str(vehicle.get("model", ""))
     var front := model.contains("Civic") or model.contains("Prelude") or model.contains("FTO") or Catalog.flagship(model)
+    var local: Dictionary = Catalog.definition(model)
+    if not local.is_empty():
+        front = str(local.get("drivetrain","FWD"))=="FWD"
     var config = (FWD if front else RWD).duplicate()
     if model.contains("Impreza") or model.contains("Skyline"):
         config.drivetrain = "AWD"
@@ -17,8 +20,9 @@ static func configuration(vehicle: Dictionary):
     config.top_speed *= float(values["top_speed"]) / 38.0
     config.braking = float(values["braking"])
     config.grip *= float(values["grip"])
-    var local: Dictionary = Catalog.definition(model)
     if not local.is_empty():
+        config.drivetrain = str(local.get("drivetrain","FWD"))
+        config.front_weight_bias = float(local.get("front_weight_bias",0.62))
         config.wheelbase = float(local["wheelbase"])
         config.wheel_radius = float(local["radius"])
         config.gear_ratios = PackedFloat32Array(local["gears"])

@@ -60,13 +60,20 @@ func drive_slip(config) -> float:
         return maxf(0,slips.y)
     return maxf(0,maxf(slips.x,slips.y))
 
-func step(dt: float, speed: float, drive_torque: float, brake: float, config, tire_health: float, road: bool) -> float:
+# contact is the supported fraction of each axle; no missing load is invented on
+# the other axle. surface_grip is additional per-axle grip (legacy road=false still
+# applies its historical 0.4 multiplier). Bench callers retain full dry contact.
+func step(dt: float, speed: float, drive_torque: float, brake: float, config, tire_health: float, road: bool, contact: Vector2 = Vector2.ONE, surface_grip: Vector2 = Vector2.ONE) -> float:
+    if not is_finite(dt) or dt<=0.0 or not is_finite(speed) or not is_finite(drive_torque) or not is_finite(brake) or not is_finite(tire_health):
+        return 0.0
+    contact = Vector2(clampf(contact.x,0.0,1.0),clampf(contact.y,0.0,1.0)) if contact.is_finite() else Vector2.ZERO
+    surface_grip = Vector2(clampf(surface_grip.x,0.0,2.0),clampf(surface_grip.y,0.0,2.0)) if surface_grip.is_finite() else Vector2.ZERO
     var weight: float = config.mass*9.81
     var front_load := clampf(weight*config.front_weight_bias-config.mass*filtered_acceleration*config.cg_height/config.wheelbase,weight*0.08,weight*0.92)
-    normal_loads = Vector2(front_load,weight-front_load)
+    normal_loads = Vector2(front_load,weight-front_load)*contact
     var split := front_share(config)
     var drive := Vector2(drive_torque*split,drive_torque*(1.0-split))
-    var brake_total: float = brake*weight*config.wheel_radius*config.brake_capacity*(0.55+0.45*clampf(config.brake_health/100.0,0,1))
+    var brake_total: float = clampf(brake,0.0,1.0)*weight*config.wheel_radius*config.brake_capacity*(0.55+0.45*clampf(config.brake_health/100.0,0,1))
     var brakes := Vector2(brake_total*config.brake_front_bias,brake_total*(1.0-config.brake_front_bias))
     slip_power = 0.0
     brake_power = 0.0
@@ -76,23 +83,29 @@ func step(dt: float, speed: float, drive_torque: float, brake: float, config, ti
         tires[index].compound = config.tire_compound
         var temperature_grip: float = tires[index].thermal_grip()
         var load_sensitivity: float = pow(maxf(normal_loads[index]/(weight*0.5),0.1),-0.08)
-        var mu: float = config.grip*(0.6+0.4*clampf(tire_health/100.0,0,1))*temperature_grip*load_sensitivity*(1.0 if road else 0.4)
-        var target: float = normal_loads[index]*mu*friction_curve(slips[index],config.peak_slip)
-        forces[index] = lerpf(forces[index],target,1.0-exp(-maxf(20,speed/0.25)*dt))
+        var mu: float = config.grip*(0.6+0.4*clampf(tire_health/100.0,0,1))*temperature_grip*load_sensitivity*surface_grip[index]*(1.0 if road else 0.4)
+        var capacity: float = normal_loads[index]*mu
+        var target: float = capacity*friction_curve(slips[index],config.peak_slip)
+        forces[index] = clampf(lerpf(forces[index],target,1.0-exp(-maxf(20,speed/0.25)*dt)),-capacity,capacity)
+        # Force relaxation cannot retain more grip than the surface currently
+        # supports. In the air capacity is zero, so contact force ends at once.
         # A relaxed force must not do positive work across a reversed slip.
         if forces[index]*slips[index]<0.0:
             forces[index] = 0.0
         var applied_brake := brakes[index]
-        if config.abs_assist and speed>3.0 and slips[index]<-0.16:
+        if normal_loads[index]>0.0 and config.abs_assist and speed>3.0 and slips[index]<-0.16:
             applied_brake *= clampf(1.0+(slips[index]+0.16)*4.0,0.08,1.0)
             abs_active = true
         var spin_before := omega[index]
         var torque: float = drive[index]-forces[index]*config.wheel_radius
         omega[index] = maxf(0,omega[index]+torque*dt/config.wheel_inertia)
-        omega[index] = move_toward(omega[index],0,applied_brake*dt/config.wheel_inertia)
+        var pre_brake := omega[index]
+        omega[index] = move_toward(pre_brake,0,applied_brake*dt/config.wheel_inertia)
         var energy_rate := maxf(0,forces[index]*(spin_before*config.wheel_radius-speed))
         slip_power += energy_rate
-        brake_power += applied_brake*minf(spin_before,omega[index])
+        # Exact energy removed by the brake operator, including a wheel that
+        # stops within this step. Drive/contact work before braking stays separate.
+        brake_power += 0.5*config.wheel_inertia*(pre_brake*pre_brake-omega[index]*omega[index])/dt
         tires[index].step_contact(dt,energy_rate,normal_loads[index],forces[index],speed,road)
     return forces.x+forces.y
 

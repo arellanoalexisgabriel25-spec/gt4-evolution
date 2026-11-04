@@ -8,7 +8,15 @@ Develop functional increments on descriptive branches, preserve user work and sa
 
 Current priority: develop a compact quarter-mile environment, manual shifting, measurable driving skill, persistent mechanical use and original visuals. Large-circuit expansion is deferred. Existing circuit, career and AI modes remain available. A simulated result must always be labelled as such.
 
-## Current increment: 0.17
+## Current increment: 0.18
+
+Three appended classic offers retain IDs 1–13: 128 Súper Europa 1.5 (ID14), rear-drive 133 (ID15), standard 128 (ID16). `Catalog.FLAGSHIPS` remains the original three; `CLASSICS` and `has_definition` separate market priority from supported profiles. Legacy offer migration remains idempotent and collision-safe. Supplied manufacturer-report claims and estimated fields remain distinct.
+
+`track_surface.gd` owns visible strip boundaries and dry surface presets. Four world collision raycasts in DragActor exclude vehicle layers and aggregate front/rear support, grip and rolling resistance. `Manual.step` accepts optional `contact_state` without changing legacy pure-model callers. Missing support removes tire force/road heating/rolling drag, while engine torque and wheel/brake inertia remain. Aerodynamic drag and gravity continue in flight. Surface transitions cap relaxed tire forces at the current μN. Brake heat uses exact pre/post rotational energy removed by the braking operator. This is longitudinal contact handling, not a full suspension or lateral tire solver.
+
+`imported_car.gd` additionally segments the new classic wheels by their lower contour, retaining bright hubcaps and original UVs. The GLBs in the previous release remain byte-identical. Windows distribution uses official Godot 4.6.3 export templates, a verified executable and PCK instead of the editor. `tools/release_artifacts.py` handles manifests and PCK integrity; Linux checks run the identical PCK. See RELEASE-0.18.md for exact validation results and limits.
+
+## Historical increment: 0.17
 
 See [RELEASE-0.17.md](RELEASE-0.17.md) for implementation scope and the validation
 status of this exact source state. New user-supplied plain texts enable Article 21
@@ -46,7 +54,7 @@ manufacturer powertrain or a reason to silently alter the catalogue variant.
 Final asset counts and source-state test/capture results belong in the release
 report after measurement; no previous release's passing count certifies 0.17.
 
-## Architecture through 0.17
+## Architecture through 0.18
 
 | Module | Responsibility |
 | --- | --- |
@@ -56,6 +64,7 @@ report after measurement; no previous release's passing count certifies 0.17.
 | `engine_torque.gd`, `axle_traction.gd` | RPM torque interpolation and transient turbo; independent front/rear rotation, slip, load, tire force, heat, brake torque and ABS modulation |
 | `tire_model.gd`, `damage_model.gd` | Adapted supplied modules: per-axle slip-energy temperature/tread, compound windows, actual collision damage and validated settlement |
 | `car_catalog.gd`, `imported_car.gd`, `assets/cars/` | Three flagship presets and stable market order; supplied Gol and optimized supplied 147/Uno render meshes, normalization, UV/material preservation and independent colliders |
+| `track_surface.gd` | Shared finite visual surface bands and four-wheel support/coefficients aggregation |
 | `drag_actor.gd`, `drag_strip.gd`, `drag_mode.gd` | Real collision body, original two-lane strip and manual input/timing/garage integration; directional assistance is explicit |
 | `drag_run.gd`, `drag_records.gd`, `drag_garage_session.gd` | Interpolated beams, tree/false starts, validated personal tickets and once-only cumulative usage settlement |
 | `drag_class_rules.gd` | Independent quarter/eighth-mile Article 21 tables and strict ET floor evaluation; source metadata makes admission/safety limits explicit |

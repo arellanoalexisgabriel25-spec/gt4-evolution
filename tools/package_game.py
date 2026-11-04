@@ -1,141 +1,241 @@
-"""Package the standalone prototype, optionally with a verified Windows Godot runtime."""
+"""Package source and a real Godot Windows export using verified official templates."""
 import argparse
-import hashlib
 import re
 from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.17"
-ENGINE = "Godot_v4.6.3-stable_win64.exe"
-README = """GT4 EVOLUTION — PROTOTIPO 0.17 / MODELOS Y CLASES ARGENTINAS
+VERSION = "0.18"
+README = """GT4 EVOLUTION — PROTOTIPO 0.18 / FIAT CLÁSICOS Y CONTACTO DE NEUMÁTICOS
 
-Extraé TODO el ZIP. Windows 10/11 de 64 bits: doble clic en JUGAR.cmd.
-El motor está incluido y el primer inicio importa el proyecto.
-El ZIP Proyecto requiere Godot 4.6.3: abrí juego/project.godot.
+WINDOWS: extraé TODO el ZIP y abrí GT4Evolution.exe o JUGAR.cmd.
+Es un juego exportado independiente: no necesita Godot instalado ni importar el
+proyecto al iniciar. Conservá GT4Evolution.pck junto al ejecutable.
+El ZIP Proyecto contiene las fuentes: abrí juego/project.godot con Godot 4.6.3.
 
-NUEVO: modelos aportados del 147 Vivace y Uno Fire integrados con ruedas animadas.
-Derivados optimizados conservan las texturas; fuentes originales preservadas aparte.
-El Uno suministrado tiene cinco puertas: es una referencia visual provisional para la
-variante de tres puertas del catálogo. El Gol conserva su modelo original. Ver assets/cars/README.md.
+Se incorporan los modelos aportados de Fiat 128 Súper Europa, Fiat 133 y Fiat 128.
+Los derivados optimizados conservan las texturas originales y la colisión sigue
+siendo independiente de las mallas visuales. El 133 usa tracción trasera; los 128,
+delantera. Los parámetros sin ficha completa siguen siendo estimaciones.
+Se conservan 147 Vivace, Uno Fire y Gol Power. El Uno recibido tiene cinco puertas,
+referencia visual provisional de la variante de tres puertas del catálogo.
+
+El nuevo contacto diferencia neumáticos apoyados, superficies y ruedas sin suelo.
+La fuerza se limita al agarre de cada superficie. Calor y desgaste de frenos se
+calculan a partir de la energía disipada por las ruedas. La conducción todavía es
+una aproximación: no hay simulación completa de suspensión o deformación visual.
 
 Comprá un auto en CONCESIONARIO y abrí GARAJE → DUELO ¼ DE MILLA / FÁBRICA.
 Elegí rival y clase: por defecto Clase 1 / piso 18,00 s; LIBRE no aplica piso.
-Los pisos de ¼ provienen del art. 21 del reglamento aportado. Ir por debajo del piso
-es caída; la reacción NO se suma al ET para evaluarlo. La llegada usa reacción+ET.
-Excepción art. 12: el falso individual entrega victoria al rival aunque caiga de tiempo.
-El ticket conserva ambos tiempos y señala la excepción; ambos falsos/caídas no
-generan un ganador. Es exhibición sin inscripción, premios ni campeonato oficial.
-Fábrica ignora preparaciones y compuestos deportivos, conservando salud del auto.
-La categoría oficial «serie» permite mecánica preparada y tiene otro alcance.
-Los récords de fábrica se guardan separados de los de práctica.
-GARAJE → ¼ DE MILLA / MANUAL conserva práctica individual con mejoras existentes.
+Los pisos de ¼ provienen del art. 21 del reglamento aportado. Caer bajo el piso
+es descalificación por ET; la reacción cuenta para llegar primero (RT + ET).
+El art. 12 permite ganar al rival de un falso individual aunque su ET caiga.
+Exhibición sin inscripción, premios ni campeonato. FÁBRICA excluye preparaciones
+y conserva la salud de tu unidad. La categoría oficial Serie tiene otro alcance.
+¼ DE MILLA / MANUAL mantiene la práctica individual con mejoras anteriores.
 
-CONTROLES DEL ¼: mantené C (embrague), tocá E para primera, Enter arma semáforo.
-Regulá W para RPM, esperá verde y soltá C. Para subir: soltá W, pisá C, tocá E,
-soltá C y acelerá. Q baja marcha. Cambiar sin embrague se rechaza y desgasta caja.
-R repite conservando desgaste y temperatura; P pausa ambos autos; Esc vuelve a garaje.
-Tab cambia cámara; Shift mira atrás. AJUSTES permite reasignar teclas y ayudas.
+CONTROLES: C embrague, E sube marcha, Q baja, W acelera, S/Espacio frena.
+Primera: mantené C y tocá E. Enter arma el semáforo; esperá verde y soltá C.
+Para cambiar, soltá W, pisá C, tocá E, soltá C y acelerá. R repite conservando uso,
+desgaste y temperatura. P pausa ambos autos; Esc vuelve al garaje. Tab cambia cámara.
 Mando: RT acelera, LT/B frena, LB embrague, A sube, Y baja, X repite, RB cámara.
-Select abre pausa; embrague analógico LT/L2 opcional. Menús: stick/cruceta, A confirma,
-B vuelve, LB/RB cambia pestaña. Desconectar mando activo pausa el juego.
+Select abre pausa; embrague analógico LT/L2 opcional. AJUSTES permite reasignar teclas.
+Menús: stick/cruceta navega, A confirma, B vuelve, LB/RB cambia pestaña.
 
-Motor, embrague, caja, ejes, neumáticos, pérdidas y transferencia de carga se simulan.
-El HUD muestra 0–100 medido, torque, potencia al eje, temperaturas, RT/ET y trampa.
+TALLER repara y cambia neumáticos. Recuperar no repara. Los importes están en
+pesos argentinos (ARS); cada unidad contable histórica representa $ 1.000 ARS.
+Volvé al garaje y presioná GUARDAR para conservar salud, marcas y progreso.
+Las partidas previas conservan sus unidades; las ofertas nuevas se añaden sin
+cambiar IDs existentes ni generar créditos.
+
 Uno Fire 1.3 8V 2014: curva anclada en 68 CV/5250 RPM y 11,3 kgfm/2250 RPM,
-según datos de fabricante transcritos por el usuario. 13,2 s de 0–100 es una referencia,
-no una aceleración impuesta por el juego. La calibración completa sigue pendiente:
-los reglamentos no demuestran potencia/masa/relaciones reales. Ver STOCK-SOURCES.md.
-El circuito es original de 402,336 m, inspirado en el ambiente del Gálvez.
-Colisiones y agarre lateral simplificados; sin deformación visual ni homologación.
+según la transcripción de fabricante aportada. 13,2 s de 0–100 y 158 km/h son
+referencias de contraste, no aceleraciones impuestas por el juego.
+La pista original de 402,336 m se inspira en el ambiente del autódromo Gálvez.
+Los modos anteriores siguen disponibles; los eventos simulados se identifican.
+Música: Lezcano Alan — PERRA #Ritmomanijero, Prod Sketchy, aportada con autorización
+de redistribución; volumen en AJUSTES. No está cubierta por MIT.
 
-TALLER: reparaciones y neumáticos calle/deportivos/slick. Recuperar NO repara.
-Los importes están en pesos argentinos ARS; cada unidad contable histórica = $ 1.000 ARS.
-GUARDAR conserva progreso; CARGAR recupera la partida. Mantiene guardados anteriores.
-Música: Lezcano Alan — PERRA #Ritmomanijero, Prod Sketchy, aportada con autorización de
-redistribución. Volumen en AJUSTES; se desvanece en pista. No cubierta por MIT.
-El circuito del club, carrera y modos previos siguen disponibles; los eventos simulados
-se identifican en su interfaz. No se distribuyen recursos comerciales de GT4.
-
-Ver RELEASE-0.17.md y REGULATIONS-REFERENCE.md para alcance y reglas no implementadas.
-Validación en Linux con Godot 4.6.3, headless y capturas OpenGL por software.
-Windows, mando físico y GPU real requieren prueba en esos equipos. Si no abre, ejecutá
-DIAGNOSTICO.cmd y compartí importacion.log/juego.log. Licencias incluidas.
+Ver juego/RELEASE-0.18.md en el ZIP Proyecto y documentacion/ en Windows para el
+alcance exacto y resultados de validación. El entorno valida Linux y el mismo PCK;
+Windows y mando físico requieren prueba en esos equipos. Si no inicia, ejecutá
+DIAGNOSTICO.cmd y compartí juego.log. Licencias incluidas. No se distribuyen
+recursos comerciales de GT4.
 """
 
 LAUNCH = r'''@echo off
 setlocal
 cd /d "%~dp0"
-"motor\Godot_v4.6.3-stable_win64_console.exe" --headless --path "%~dp0juego" --editor --import > importacion.log 2>&1
-if errorlevel 1 (
-  echo No se pudo importar el juego. Revisa importacion.log.
-  pause
-  exit /b 1
-)
-"motor\Godot_v4.6.3-stable_win64.exe" --path "%~dp0juego"
+start "" "%~dp0GT4Evolution.exe"
 '''
 DIAGNOSTIC = r'''@echo off
 setlocal
 cd /d "%~dp0"
-"motor\Godot_v4.6.3-stable_win64_console.exe" --headless --path "%~dp0juego" --editor --import > importacion.log 2>&1
-"motor\Godot_v4.6.3-stable_win64_console.exe" --path "%~dp0juego" > juego.log 2>&1
-echo Diagnostico guardado en importacion.log y juego.log.
+start "" /wait "%~dp0GT4Evolution.exe" --log-file "%~dp0juego.log"
+echo Diagnostico guardado en juego.log.
 pause
 '''
 
+from release_artifacts import (ENGINE_VERSION, TEMPLATE_ARCHIVE, TEMPLATE_ARCHIVE_SHA512,
+                               digest_bytes, digest_file, project_files, source_snapshot,
+                               pck_snapshot, validate_export)
+import json
+import os
+import shutil
+import subprocess
+import tempfile
+
+
+def write_common(archive):
+    archive.write(ROOT / "LICENSE", "LICENSE")
+    archive.writestr("LEEME.txt", README)
+
 
 def write_project(archive):
-    for path in sorted((ROOT / "godot").rglob("*")):
-        if not path.is_file() or ".godot" in path.parts:
-            continue
-        if path.suffix not in {".gd", ".uid", ".tscn", ".tres", ".godot", ".md", ".ttf", ".otf", ".txt", ".import", ".mp3", ".glb", ".png"}:
-            continue
+    for path in project_files(ROOT / "godot"):
         archive.write(path, Path("juego") / path.relative_to(ROOT / "godot"))
-    archive.write(ROOT / "LICENSE", "LICENSE")
+    write_common(archive)
     archive.write(ROOT / "README.md", "README-proyecto.md")
-    archive.writestr("LEEME.txt", README)
+
+
+def verified_templates(archive_path, checksums, output):
+    if archive_path.name != TEMPLATE_ARCHIVE:
+        raise ValueError("Expected the official Godot 4.6.3 standard export templates")
+    expected = next(line.split()[0] for line in checksums.read_text().splitlines()
+                    if line.split()[-1] == archive_path.name)
+    if expected != TEMPLATE_ARCHIVE_SHA512 or digest_file(archive_path, "sha512") != expected:
+        raise ValueError("Complete official export-template SHA-512 mismatch")
+    result = {}
+    with zipfile.ZipFile(archive_path) as templates:
+        if templates.read("templates/version.txt").strip() != b"4.6.3.stable":
+            raise ValueError("Export template version differs from engine")
+        for name in ["windows_release_x86_64.exe", "linux_release.x86_64"]:
+            target = output / name
+            target.write_bytes(templates.read("templates/" + name))
+            result[name] = target
+    return result
+
+
+def run_engine(command, log, environment):
+    completed = subprocess.run(command, capture_output=True, text=True, env=environment, timeout=180)
+    output = completed.stdout + completed.stderr
+    log.write_text(output)
+    if completed.returncode or re.search(r"^SCRIPT ERROR:|^ERROR:", output, re.MULTILINE):
+        raise RuntimeError("Godot import/export failed; inspect " + str(log))
+    return output
+
+
+def export_windows(args, sources):
+    evidence = args.output / "export-validation"
+    evidence.mkdir(exist_ok=True)
+    binary = shutil.which(args.godot_bin)
+    if binary is None:
+        raise ValueError("Godot executable not found")
+    version = subprocess.check_output([binary, "--version"], text=True).strip()
+    if not version.startswith("4.6.3.stable."):
+        raise ValueError("Export requires Godot 4.6.3 stable")
+    with tempfile.TemporaryDirectory(prefix="gt4-export-") as temp:
+        base = Path(temp)
+        templates = verified_templates(args.export_templates, args.checksums, base)
+        project = base / "game"
+        project.mkdir()
+        for path in project_files(ROOT / "godot"):
+            target = project / path.relative_to(ROOT / "godot")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, target)
+        if source_snapshot(project) != sources:
+            raise ValueError("Export staging differs from source snapshot")
+        preset = (project / "export_presets.cfg").read_text()
+        template_path = str(templates["windows_release_x86_64.exe"])
+        preset = preset.replace('custom_template/debug=""', 'custom_template/debug=' + json.dumps(template_path))
+        preset = preset.replace('custom_template/release=""', 'custom_template/release=' + json.dumps(template_path))
+        (project / "export_presets.cfg").write_text(preset)
+        environment = os.environ.copy()
+        for variable, name in [("XDG_DATA_HOME", "data"), ("XDG_CONFIG_HOME", "config"), ("XDG_CACHE_HOME", "cache")]:
+            target = base / name
+            target.mkdir()
+            environment[variable] = str(target)
+        run_engine([binary, "--headless", "--path", str(project), "--editor", "--import"],
+                   evidence / "import.log", environment)
+        executable = evidence / "GT4Evolution.exe"
+        run_engine([binary, "--headless", "--path", str(project), "--export-release", "Windows Desktop", str(executable)],
+                   evidence / "export-windows.log", environment)
+        pack = executable.with_suffix(".pck")
+        manifest = {
+            "schema": 1, "game_version": VERSION, "engine_version": ENGINE_VERSION,
+            "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
+            "sources": sources,
+            "template_archive_sha512": TEMPLATE_ARCHIVE_SHA512,
+            "windows_template_sha256": digest_file(templates["windows_release_x86_64.exe"]),
+            "windows_executable_sha256": digest_file(executable),
+            "pack_sha256": digest_file(pack),
+            "pack_entries": pck_snapshot(pack.read_bytes()),
+            "script_export_mode": "text_byte_exact",
+            "windows_executed": False,
+        }
+        validate_export(manifest, executable.read_bytes(), pack.read_bytes(), sources)
+        # Validate that the Windows-target pack also loads with the official
+        # Linux release runtime of exactly the same version. This is not a test
+        # of Windows OS integration or drivers.
+        # Official release templates disable --main-pack overrides. Matching
+        # the executable/PCK basenames exercises their normal shipping path.
+        linux = evidence / "GT4Evolution.x86_64"
+        shutil.copy2(templates["linux_release.x86_64"], linux)
+        linux.chmod(0o700)
+        run_engine([str(linux), "--headless", "--quit-after", "120"],
+                   evidence / "same-pck-linux-smoke.log", environment)
+        manifest["same_pck_linux_smoke"] = "passed"
+        output = run_engine([binary, "--headless", "--main-pack", str(pack), "--fixed-fps", "60",
+                             "--audio-driver", "Dummy", "--script", str(ROOT / "tools/validate_export.gd")],
+                            evidence / "same-pck-physical-test.log", environment)
+        if not re.search(r"^PASS: \d+ exported PCK assertions", output, re.MULTILINE):
+            raise RuntimeError("The exported-PCK fixture did not complete")
+        manifest["same_pck_physical_test"] = "passed"
+        if source_snapshot(ROOT / "godot") != sources:
+            raise ValueError("Source changed during export; rebuild from the final source")
+        (evidence / "MANIFIESTO.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
+        return evidence, manifest
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--windows-engine", type=Path)
+    parser.add_argument("--export-templates", type=Path, help="Official complete Godot 4.6.3 standard .tpz")
     parser.add_argument("--checksums", type=Path)
     parser.add_argument("--engine-license", type=Path)
+    parser.add_argument("--engine-copyright", type=Path, help="Godot 4.6.3 COPYRIGHT.txt with bundled-library notices")
+    parser.add_argument("--godot-bin", default=os.environ.get("GODOT_BIN", "godot"))
     args = parser.parse_args()
+    args.output = args.output.resolve()
     session_version = re.search(r'^const VERSION := "([^"]+)"', (ROOT / "godot/scripts/session.gd").read_text(), re.MULTILINE)
     if session_version is None or session_version.group(1) != VERSION:
         raise ValueError("Game and package versions differ")
     args.output.mkdir(parents=True, exist_ok=True)
-    if args.windows_engine:
-        if not args.checksums:
-            parser.error("--checksums is required with --windows-engine")
-        if not args.engine_license:
-            parser.error("--engine-license is required with --windows-engine")
-        expected = next(line.split()[0] for line in args.checksums.read_text().splitlines()
-                        if line.split()[-1] == args.windows_engine.name)
-        with args.windows_engine.open("rb") as handle:
-            actual = hashlib.file_digest(handle, "sha512").hexdigest()
-        if actual != expected:
-            raise ValueError("Official engine SHA-512 mismatch")
-    source = args.output / f"GT4-Evolution-{VERSION}-Proyecto.zip"
-    with zipfile.ZipFile(source, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-        write_project(archive)
-    if args.windows_engine:
+    if args.export_templates and (not args.checksums or not args.engine_license or not args.engine_copyright):
+        parser.error("--checksums, --engine-license and --engine-copyright are required with --export-templates")
+    sources = source_snapshot(ROOT / "godot")
+    if args.export_templates:
+        evidence, manifest = export_windows(args, sources)
         windows = args.output / f"GT4-Evolution-{VERSION}-Windows.zip"
         with zipfile.ZipFile(windows, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-            write_project(archive)
-            with zipfile.ZipFile(args.windows_engine) as engine:
-                for name in [ENGINE, ENGINE.replace(".exe", "_console.exe")]:
-                    archive.writestr("motor/" + name, engine.read(name))
+            write_common(archive)
+            for name in ["GT4Evolution.exe", "GT4Evolution.pck", "MANIFIESTO.json"]:
+                archive.write(evidence / name, name)
             archive.writestr("JUGAR.cmd", LAUNCH.replace("\n", "\r\n"))
             archive.writestr("DIAGNOSTICO.cmd", DIAGNOSTIC.replace("\n", "\r\n"))
             archive.write(args.checksums, "Godot-SHA512-SUMS.txt")
             archive.write(args.engine_license, "Godot-LICENSE.txt")
+            archive.write(args.engine_copyright, "Godot-COPYRIGHT.txt")
+            for path in project_files(ROOT / "godot"):
+                if path.suffix == ".md" or (path.suffix == ".txt" and "assets" in path.parts):
+                    archive.write(path, "documentacion/" + path.relative_to(ROOT / "godot").as_posix())
+    source = args.output / f"GT4-Evolution-{VERSION}-Proyecto.zip"
+    with zipfile.ZipFile(source, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+        write_project(archive)
     for package in sorted(args.output.glob(f"GT4-Evolution-{VERSION}-*.zip")):
-        with package.open("rb") as handle:
-            checksum = hashlib.file_digest(handle, "sha256").hexdigest()
-        package.with_suffix(".zip.sha256").write_text(f"{checksum}  {package.name}\n")
+        if package.stat().st_size >= 100 * 1024 * 1024:
+            raise ValueError("Package exceeds GitHub's 100 MiB Git file limit: " + package.name)
+        package.with_suffix(".zip.sha256").write_text(f"{digest_file(package)}  {package.name}\n")
         print(f"{package.name}: {package.stat().st_size:,} bytes")
 
 

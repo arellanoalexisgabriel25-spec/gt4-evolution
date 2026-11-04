@@ -1,7 +1,7 @@
 extends SceneTree
 
 const DragDriver = preload("res://tests/drag_test_driver.gd")
-var output := "/workspace/artifacts/presentation-0.16"
+var output := "/workspace/artifacts/presentation-0.18"
 
 func _initialize() -> void:
     var args := OS.get_cmdline_user_args()
@@ -20,6 +20,20 @@ func picture(name: String) -> void:
         push_error("Failed screenshot: " + name)
         quit(1)
     print("Captured ",name," ",image.get_size())
+
+func settle_drag(drag) -> void:
+    var active: bool = drag.is_physics_processing()
+    drag.set_physics_process(true)
+    for i in range(45): await physics_frame
+    drag.set_physics_process(active)
+
+func arm_drag(drag) -> bool:
+    drag._arm()
+    if drag.run.phase!="countdown":
+        push_error("Cannot capture an unstaged race: "+str(drag.message))
+        quit(1)
+        return false
+    return true
 
 func run() -> void:
     if DisplayServer.get_name() == "headless":
@@ -83,6 +97,7 @@ func run() -> void:
     change_scene_to_file("res://scenes/drag.tscn")
     await process_frame
     await process_frame
+    await settle_drag(current_scene)
     await picture("11-drag-staging")
     var drag = current_scene
     drag.paused = true
@@ -96,7 +111,7 @@ func run() -> void:
     var driver = DragDriver.new()
     drag.input_provider = func() -> Dictionary: return driver.controls(drag.car.powertrain,drag.run.clock,drag.get_physics_process_delta_time())
     driver.controls(drag.car.powertrain,0,1.0/60.0)
-    drag._arm()
+    if not arm_drag(drag): return
     Engine.time_scale = 3.0
     while drag.run.clock < 1.0:
         await physics_frame
@@ -124,10 +139,11 @@ func run() -> void:
     drag._refresh_hud()
     await picture("15-drag-ticket")
     drag._recover()
+    await settle_drag(drag)
     driver.reaction_delay = -1.0
     driver.shift_hold = 0.0
     driver.controls(drag.car.powertrain,0,1.0/60.0)
-    drag._arm()
+    if not arm_drag(drag): return
     drag.set_physics_process(true)
     while drag.run.phase not in ["finished","invalid"]:
         await physics_frame
@@ -160,7 +176,7 @@ func run() -> void:
     await process_frame
     await process_frame
     current_scene._change_tab("inicio")
-    for entry in [["Fiat 147 Vivace","18-147-showroom"],["Fiat Uno Fire 3 puertas","19-uno-showroom"],["Volkswagen Gol Power 3 puertas","20-gol-showroom"]]:
+    for entry in [["Fiat 147 Vivace","18-147-showroom"],["Fiat Uno Fire 3 puertas","19-uno-showroom"],["Volkswagen Gol Power 3 puertas","20-gol-showroom"],["Fiat 128 Súper Europa 1.5","28-128-super-showroom"],["Fiat 133","29-133-showroom"],["Fiat 128 estándar","30-128-standard-showroom"]]:
         current_scene._feature(entry[0])
         await picture(entry[1])
     current_scene._change_tab("taller")
@@ -174,6 +190,7 @@ func run() -> void:
     await process_frame
     await process_frame
     drag = current_scene
+    await settle_drag(drag)
     drag.set_physics_process(false)
     drag.camera.mode = 1
     drag.camera.snap()
@@ -181,7 +198,7 @@ func run() -> void:
     var gol_driver := DragDriver.new()
     drag.input_provider = func() -> Dictionary: return gol_driver.controls(drag.car.powertrain,drag.run.clock,drag.get_physics_process_delta_time())
     gol_driver.controls(drag.car.powertrain,0,1.0/60.0)
-    drag._arm()
+    if not arm_drag(drag): return
     drag.set_physics_process(true)
     Engine.time_scale = 3.0
     while -drag.car.position.z<140 and drag.run.phase not in ["finished","invalid"]:
@@ -225,11 +242,12 @@ func run() -> void:
     await process_frame
     await process_frame
     drag = current_scene
+    await settle_drag(drag)
     await picture("25-duel-staging")
     var duel_driver := DragDriver.new()
     drag.input_provider = func() -> Dictionary: return duel_driver.controls(drag.car.powertrain,drag.run.clock,drag.get_physics_process_delta_time())
     duel_driver.controls(drag.car.powertrain,0,1.0/60.0)
-    drag._arm()
+    if not arm_drag(drag): return
     Engine.time_scale = 3.0
     while -drag.car.position.z<140 and not drag.duel.finished:
         await physics_frame
@@ -247,6 +265,42 @@ func run() -> void:
         return
     drag._refresh_hud()
     await picture("27-duel-result")
+    Engine.time_scale = 1.0
+    drag.input_provider = Callable()
+    drag._back_to_garage()
+    await process_frame
+    await process_frame
+    session.reset()
+    session.game.buy(15)
+    for component in session.game.find_car(15)["health"]:
+        session.game.find_car(15)["health"][component] = 100.0
+    session.start_drag(15,"duel","technical","1")
+    change_scene_to_file("res://scenes/drag.tscn")
+    await process_frame
+    await process_frame
+    drag = current_scene
+    var classic_driver := DragDriver.new()
+    drag.input_provider = func() -> Dictionary: return classic_driver.controls(drag.car.powertrain,drag.run.clock,drag.get_physics_process_delta_time())
+    await settle_drag(drag)
+    await picture("31-133-duel-staging")
+    if not arm_drag(drag): return
+    Engine.time_scale = 3.0
+    while -drag.car.position.z<100 and not drag.duel.finished:
+        await physics_frame
+    drag.set_physics_process(false)
+    drag.camera.snap()
+    drag._refresh_hud()
+    await picture("32-133-duel-driving")
+    drag.set_physics_process(true)
+    while not drag.duel.finished:
+        await physics_frame
+    drag.set_physics_process(false)
+    if drag.run.phase!="finished" or drag.opponent_run.phase!="finished" or drag.car.powertrain.config.drivetrain!="RWD":
+        push_error("The supplied rear-drive 133 did not complete a two-car physical race.")
+        quit(1)
+        return
+    drag._refresh_hud()
+    await picture("33-133-duel-result")
     Engine.time_scale = 1.0
     drag.input_provider = Callable()
     drag._back_to_garage()

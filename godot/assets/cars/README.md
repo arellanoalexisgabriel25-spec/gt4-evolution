@@ -68,3 +68,64 @@ Textura 147 SHA-256: `217633bf0a962f2c22006ab8f35bef939b63daad53b5244a21189a4df7
 Los recursos nuevos no identifican licencia o autor verificable en sus metadatos.
 Se registran como aportes del usuario para su integración y conservan los derechos
 de sus autores; no se atribuyen al proyecto ni se relicencian bajo MIT.
+
+
+## Fiat 128 y 133 / incorporación 0.18
+
+Se incorporan tres recursos adicionales aportados por el usuario, sin reemplazar
+los GLB anteriores de 147, Uno y Gol:
+
+| Adjunto | Recurso integrado | Identificación |
+| --- | --- | --- |
+| `128 super europa.zip` | `fiat_128/fiat_128.glb` | Fiat 128 Súper Europa, sedán crema de cuatro puertas. El nombre del adjunto y la inspección visual coinciden; el GLB no certifica año o motor. |
+| `133.zip` | `fiat_133/fiat_133.glb` | Fiat 133 rojo de dos puertas. |
+| `2e941ec7-839f-449b-959e-b4393ae14972.zip` | `fiat_128_standard/fiat_128_standard.glb` | Sedán negro de cuatro puertas, identificado posteriormente por el usuario como **Fiat 128 estándar**. No se atribuye un año o una motorización al recurso a partir de su apariencia. |
+
+Los originales se conservan intactos fuera del proyecto, en el directorio de
+referencias de la entrega. Los tres contienen una malla, una superficie y una
+textura RGB de 2048×2048 almacenada en emisión sobre albedo negro. Su orientación
+original tiene el frente hacia +Z y el piso en y=0. No declaran autor o licencia
+verificable en sus metadatos, únicamente el exportador Blender/glTF; se mantienen
+como recursos aportados, con los derechos de sus autores, sin relicenciarlos bajo MIT.
+
+Los derivados se prepararon con Blender 4.3.2: soldadura de posiciones coincidentes
+a 1e-7 unidades, fijación de los vértices de costura UV y Decimate Collapse con
+objetivo de 80.000 triángulos. Conservan **los bytes originales de las imágenes PNG**,
+sin remuestreo ni repintado. Las comparativas reales de frente, atrás y perfil en
+Godot conservaron siluetas y superficies sin artefactos de costura. La partición
+posterior de ruedas se realiza en memoria; no modifica estos GLB.
+
+| Modelo | Triángulos originales | Triángulos del derivado | Bytes del derivado |
+| --- | ---: | ---: | ---: |
+| 128 Súper Europa | 500.000 | 79.998 | 5.866.600 |
+| 133 | 1.000.000 | 79.998 | 7.282.936 |
+| 128 estándar | 500.000 | 79.996 | 6.473.388 |
+
+| Modelo | GLB original SHA-256 | Derivado SHA-256 |
+| --- | --- | --- |
+| 128 Súper Europa | `b5ceaf48f17308aa10a3e5a12501e439569d84fe914bcab267721fc7039fd4a8` | `1676f8e9bbeb591748da289bdb5854bb149d50b853bdf4130d1c6c123f0e2fc3` |
+| 133 | `b3b179c108ad4f3488363bf1ae69657ffff6bb3c73341a13614d93aae4286033` | `3a60fabda6f147b8bd5dec4113347cbaf9125ab9dff615528c3999278acd24f5` |
+| 128 estándar | `d09fdc01a258e3cb2bdb7ca8d2d58312abb158801969968b5f8430bbf74f0274` | `4d29587428ffe65c44fef99b95bfb66b9234ace0f993760c59137655bda501c7` |
+
+SHA-256 de las texturas originales, conservadas dentro de los derivados:
+
+- 128 Súper Europa: `27ace6a02eb7ed306f7bbd3375b12ed2035dc4ffc8956426c7639a7eadb16355`.
+- 133: `d8ffc57691fbf2f4b70fab8781ace05866f06d691832f64343cbe2aefb707a32`.
+- 128 estándar: `f8b449fb8156a5329effff363f95eae243958c0419cea6c9e2c5cf28600392cc`.
+
+El tercer ZIP contiene además `texture_emissive.png`, de 32.344 bytes, SHA-256
+`c294d9fcae241b027a67f3adc2ace238d96a011de3c5eb034c8e88f95cd709a4`.
+No está referenciado por el GLB; se conserva aparte como recurso de referencia y
+no sustituye la imagen shaded embebida.
+
+La escala, posición de ejes y tamaño visual se normalizan a los parámetros del
+catálogo. Esos parámetros siguen siendo estimados donde no hay ficha dimensional:
+**el GLB no es una medición métrica del vehículo ni acredita su configuración de
+fábrica**. Los detalles e iluminación están horneados en las texturas; la importación
+no crea cristales transparentes, un interior completo o deformación de carrocería.
+La colisión utiliza volúmenes simples independientes de las mallas visuales.
+
+Estos recursos se incluyen tanto en el proyecto fuente como en el PCK de la
+exportación de juego. El paquete Windows de esta entrega utiliza una plantilla
+oficial de exportación; no necesita distribuir el editor completo para ejecutar
+los modelos. Los originales permanecen separados de ambos paquetes jugables.

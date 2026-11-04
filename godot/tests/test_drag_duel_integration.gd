@@ -94,6 +94,7 @@ func run() -> void:
     driver.reaction_delay=-1.0
     driver.shift_hold=0.0
     driver.controls(scene.car.powertrain,0,1.0/60.0)
+    for i in range(45): await physics_frame
     scene._arm()
     for i in range(8000):
         await physics_frame

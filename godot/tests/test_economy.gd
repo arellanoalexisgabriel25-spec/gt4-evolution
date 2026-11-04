@@ -6,7 +6,7 @@ var checks := 0
 func _initialize() -> void:
     var game: EvolutionEconomy = Economy.new()
     game.seed_demo()
-    _check(game.cars.size() == 13, "ten legacy offers and three flagship cars")
+    _check(game.cars.size() == Economy.MODELS.size(), "ten legacy offers, three flagships and three classic Fiats")
     _check(game.balance == 12000, "starting capital")
     var car := game.find_car(1)
     var price := int(car["price"])

@@ -6,6 +6,62 @@ extends RefCounted
 # deliberately separate: these detailed visual triangles are never colliders.
 static var cache: Dictionary = {}
 
+# Fit the lower tire outline, where neither the fender nor the sill covers it.
+# These are render-only estimates: the physical wheel radius remains in config.
+# Sampling one lowest point per longitudinal bin avoids weighting dense scan
+# patches more heavily than sparse patches of the same tire.
+static func _wheel_contour(vertices: PackedVector3Array, approximate: Vector3, radius: float, width: float, visual_scale: Vector3) -> Dictionary:
+    const BINS := 24
+    var lows := PackedFloat32Array()
+    var positions := PackedFloat32Array()
+    lows.resize(BINS)
+    positions.resize(BINS)
+    lows.fill(INF)
+    for vertex in vertices:
+        if absf(vertex.x)<width*0.31 or signf(vertex.x)!=signf(approximate.x):
+            continue
+        var along := vertex.z-approximate.z
+        if absf(along)>radius*0.85 or vertex.y>approximate.y-radius*0.15:
+            continue
+        var bin := clampi(int((along/(radius*1.7)+0.5)*BINS),0,BINS-1)
+        if vertex.y<lows[bin]:
+            lows[bin] = vertex.y
+            positions[bin] = vertex.z
+    # Fit in the pre-normalization Y/Z scale. A circle fit to the stretched
+    # lower arc biases the hub upward and can include the fender; undoing the
+    # known visual scale keeps the scan's original circular tire envelope.
+    var count := 0.0
+    var uu := 0.0
+    var uv := 0.0
+    var vv := 0.0
+    var u := 0.0
+    var v := 0.0
+    var rhs := Vector3.ZERO
+    for index in range(BINS):
+        if not is_finite(lows[index]): continue
+        var point := Vector2((positions[index]-approximate.z)/visual_scale.z,(lows[index]-approximate.y)/visual_scale.y)
+        var squared := point.length_squared()
+        uu += point.x*point.x
+        uv += point.x*point.y
+        vv += point.y*point.y
+        u += point.x
+        v += point.y
+        count += 1.0
+        rhs -= Vector3(point.x*squared,point.y*squared,squared)
+    var fallback := {"center":approximate,"radius":radius,"radii":Vector2(radius,radius),"fitted":false}
+    var system := Basis(Vector3(uu,uv,u),Vector3(uv,vv,v),Vector3(u,v,count))
+    if count<8.0 or absf(system.determinant())<0.00000001: return fallback
+    var coefficients := system.inverse()*rhs
+    var offset := Vector2(-coefficients.x*0.5,-coefficients.y*0.5)
+    var squared_radius := offset.length_squared()-coefficients.z
+    if squared_radius<=0.0: return fallback
+    var fitted_radius := sqrt(squared_radius)
+    var radii := Vector2(fitted_radius*visual_scale.y,fitted_radius*visual_scale.z)
+    var center_delta := Vector3(0,offset.y*visual_scale.y,offset.x*visual_scale.z)
+    if radii.x<radius*0.65 or radii.x>radius*1.5 or radii.y<radius*0.65 or radii.y>radius*1.5 or absf(center_delta.z)>radius*0.6 or absf(center_delta.y)>radius*0.6:
+        return fallback
+    return {"center":approximate+center_delta,"radius":radii.x,"radii":radii,"fitted":true}
+
 static func _render_material(source: Material) -> Material:
     if not source is BaseMaterial3D or source.albedo_texture!=null or not source.emission_enabled or source.emission_texture==null:
         return source
@@ -35,7 +91,8 @@ static func build(profile: Dictionary) -> Dictionary:
     if typeof(wheelbase_value) not in [TYPE_INT,TYPE_FLOAT] or not is_finite(float(wheelbase_value)) or float(wheelbase_value)<=0.0:
         return {}
     # One source may be normalized for more than one configured variant.
-    var cache_key := [path,size_value,float(radius_value),float(wheelbase_value)]
+    var segmentation := str(profile.get("wheel_segmentation","color"))
+    var cache_key := [path,size_value,float(radius_value),float(wheelbase_value),segmentation]
     if cache.has(cache_key):
         return cache[cache_key]
     if path.is_empty() or not ResourceLoader.exists(path):
@@ -82,6 +139,9 @@ static func build(profile: Dictionary) -> Dictionary:
     for x in [-1.0,1.0]:
         for z in [-1.0,1.0]:
             centers.append(Vector3(x*size.x*0.42,radius-0.5,z*wheelbase*0.5))
+    var contours: Array = []
+    for wheel in range(4):
+        contours.append(_wheel_contour(transformed,centers[wheel],radius,size.x,scale) if segmentation=="contour" else {"center":centers[wheel],"radius":radius,"radii":Vector2(radius,radius),"fitted":false})
     var groups: Array = [[],[],[],[],[]]
     var source_material: Material = mesh_node.mesh.surface_get_material(0)
     var material: Material = _render_material(source_material)
@@ -103,7 +163,28 @@ static func build(profile: Dictionary) -> Dictionary:
             wheel_surface = color.get_luminance()<0.40 and maxf(color.r,maxf(color.g,color.b))-minf(color.r,minf(color.g,color.b))<0.22
         for wheel in range(4):
             var delta: Vector3 = midpoint-centers[wheel]
-            if wheel_surface and absf(midpoint.x)>size.x*0.31 and signf(midpoint.x)==signf(centers[wheel].x) and Vector2(delta.y,delta.z).length()<radius*1.15:
+            var candidate := wheel_surface and Vector2(delta.y,delta.z).length()<radius*1.15
+            if segmentation=="contour":
+                var contour: Dictionary = contours[wheel]
+                var offset: Vector3 = midpoint-contour.center
+                var radial := Vector2(offset.y/contour.radii.x,offset.z/contour.radii.y).length()
+                # Bright wheel centers belong to the wheel too. Color alone
+                # cannot distinguish a white hubcap from white paint, or black
+                # rubber from a black fender. The fitted circular envelope keeps
+                # the upper fender fixed while retaining the hubcap interior.
+                # The lower scan contains tread thickness and small contour
+                # irregularities. Above the hub the tighter envelope protects
+                # the fender lip, particularly on the supplied black car.
+                var outer_limit := 1.10 if offset.y<float(contour.radius)*0.10 else 1.01
+                candidate = radial<0.80 or (wheel_surface and radial<outer_limit)
+                if candidate:
+                    for corner in range(3):
+                        var edge: Vector3 = transformed[indices[triangle+corner]]-contour.center
+                        var corner_limit := 1.15 if edge.y<0.0 else 1.08
+                        if Vector2(edge.y/contour.radii.x,edge.z/contour.radii.y).length()>corner_limit:
+                            candidate = false
+                            break
+            if candidate and absf(midpoint.x)>size.x*0.31 and signf(midpoint.x)==signf(centers[wheel].x):
                 group = wheel+1
                 break
         groups[group].append_array([indices[triangle],indices[triangle+1],indices[triangle+2]])
@@ -139,6 +220,6 @@ static func build(profile: Dictionary) -> Dictionary:
         meshes.append(surface.commit())
         counts.append(int(groups[group].size()/3))
     source.free()
-    var result := {"meshes":meshes,"centers":centers,"triangle_counts":counts,"source_triangles":int(indices.size()/3),"size":size,"material_mode":"baked_lit" if material!=source_material else "source"}
+    var result := {"meshes":meshes,"centers":centers,"triangle_counts":counts,"source_triangles":int(indices.size()/3),"size":size,"material_mode":"baked_lit" if material!=source_material else "source","wheel_segmentation":segmentation,"contours":contours}
     cache[cache_key] = result
     return result

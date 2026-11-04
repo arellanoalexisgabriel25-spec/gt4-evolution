@@ -8,7 +8,7 @@ const Tire = preload("res://scripts/tire_model.gd")
 
 const SCHEMA_VERSION := 1
 const START_BALANCE := 12000
-const MODELS := ["Mazda MX-5 NA", "Honda Civic EK", "Toyota Corolla Levin AE86", "Nissan Silvia S13", "Toyota MR2 SW20", "Honda Prelude", "Mitsubishi FTO", "Mazda RX-7 FC", "Subaru Impreza GC8", "Nissan Skyline R32", "Fiat 147 Vivace", "Fiat Uno Fire 3 puertas", "Volkswagen Gol Power 3 puertas"]
+const MODELS := ["Mazda MX-5 NA", "Honda Civic EK", "Toyota Corolla Levin AE86", "Nissan Silvia S13", "Toyota MR2 SW20", "Honda Prelude", "Mitsubishi FTO", "Mazda RX-7 FC", "Subaru Impreza GC8", "Nissan Skyline R32", "Fiat 147 Vivace", "Fiat Uno Fire 3 puertas", "Volkswagen Gol Power 3 puertas", "Fiat 128 Súper Europa 1.5", "Fiat 133", "Fiat 128 estándar"]
 const TIRE_PRICES := {"street":320,"sport":650,"slick":1400}
 const WEIGHTS := {"motor": 0.25, "transmision": 0.15, "suspension": 0.15, "frenos": 0.15, "neumaticos": 0.10, "chasis": 0.15, "electrico": 0.05}
 const WEAR := {"motor": 0.0010, "transmision": 0.0008, "suspension": 0.0012, "frenos": 0.0030, "neumaticos": 0.0090, "chasis": 0.0003, "electrico": 0.0004}
@@ -32,21 +32,22 @@ func seed_demo() -> void:
         if i % 3 == 2:
             faults["motor" if i % 2 == 0 else "frenos"] = true
         var price := calculate_market_price(i, km, health, faults)
-        var flagship: Dictionary = Catalog.definition(MODELS[i])
-        if not flagship.is_empty():
+        var preset: Dictionary = Catalog.definition(MODELS[i])
+        if not preset.is_empty():
             faults.clear()
             for component in health:
                 health[component] = maxf(55.0,float(health[component]))
-            price = int(flagship["price"])
+            price = int(preset["price"])
         cars.append({"id": i + 1, "model": MODELS[i], "km": km, "health": health, "faults": faults, "owner": "seller", "listed": true, "inspected": false, "price": price, "upgrades": [], "history": []})
 
-# Bring the flagship offers to pre-existing saves without changing old IDs,
-# balances, ownership or records. A player-created high ID is never overwritten.
+# Add supported Argentine offers to old saves without changing balances, owned
+# cars or records. Keep the original API name for save/menu compatibility.
+# Existing occupied IDs are never overwritten and repeated migration is harmless.
 func ensure_flagship_offers() -> void:
     var seeded = load("res://scripts/economy.gd").new()
     seeded.seed_demo()
     for offer in seeded.cars:
-        if not Catalog.flagship(str(offer["model"])):
+        if not Catalog.has_definition(str(offer["model"])):
             continue
         var exists := false
         var next_id := 1

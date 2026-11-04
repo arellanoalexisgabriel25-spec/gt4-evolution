@@ -39,7 +39,7 @@ func _initialize() -> void:
 func run() -> void:
     var game = Economy.new()
     game.seed_demo()
-    check(game.cars.size()==13 and game.find_car(1).model=="Mazda MX-5 NA" and game.find_car(10).model=="Nissan Skyline R32","New flagship offers preserve every legacy vehicle ID")
+    check(game.cars.size()==Economy.MODELS.size() and game.find_car(1).model=="Mazda MX-5 NA" and game.find_car(10).model=="Nissan Skyline R32","New flagship offers preserve every legacy vehicle ID")
     check(game.find_car(1).price==4100,"Adding national cars does not re-roll the existing used market")
     var ordered: Array = Catalog.market_order(game.cars)
     var times: Array[float] = []
@@ -62,7 +62,7 @@ func run() -> void:
     var first: Dictionary = restored.find_car(1).duplicate(true)
     restored.ensure_flagship_offers()
     restored.ensure_flagship_offers()
-    check(restored.cars.size()==13 and restored.balance==balance and restored.find_car(1)==first,"Flagship migration is idempotent and preserves finances and old vehicles")
+    check(restored.cars.size()==Economy.MODELS.size() and restored.balance==balance and restored.find_car(1)==first,"Flagship migration is idempotent and preserves finances and old vehicles")
     var occupied: Dictionary = old.duplicate(true)
     var custom: Dictionary = occupied.cars[0].duplicate(true)
     custom.id=11
@@ -72,7 +72,7 @@ func run() -> void:
     restored.ensure_flagship_offers()
     var ids: Dictionary = {}
     for car in restored.cars: ids[car.id]=true
-    check(restored.find_car(11).model=="Unidad conservada" and ids.size()==14,"Migration allocates new IDs rather than overwriting an occupied ID")
+    check(restored.find_car(11).model=="Unidad conservada" and ids.size()==Economy.MODELS.size()+1,"Migration allocates new IDs rather than overwriting an occupied ID")
     var visual = Visual.new()
     visual.model_name = Catalog.FLAGSHIPS[2]
     root.add_child(visual)

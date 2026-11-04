@@ -79,7 +79,10 @@ static func from_vehicle(vehicle: Dictionary, factory: bool = false):
         result.final_drive = float(local["final_drive"])
         result.torque_rpm = PackedFloat32Array(local["torque_rpm"])
         result.torque_curve = PackedFloat32Array(local["torque_factors"])
-        result.drag_area = 0.69
+        result.drivetrain = str(local.get("drivetrain",result.drivetrain))
+        result.front_weight_bias = float(local.get("front_weight_bias",result.front_weight_bias))
+        result.drivetrain_efficiency = 0.91 if result.drivetrain=="FWD" else (0.83 if result.drivetrain=="AWD" else 0.88)
+        result.drag_area = float(local.get("drag_area_m2",0.69))
         result.cg_height = 0.48
         result.profile_id = str(local["id"])
         result.variant_label = str(local["variant"])

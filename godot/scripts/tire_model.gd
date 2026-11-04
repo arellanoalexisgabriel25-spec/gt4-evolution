@@ -51,11 +51,16 @@ func step(delta: float, demand: float, speed: float, on_road: bool = true) -> vo
 func step_contact(delta: float, slip_power: float, normal_load: float, force: float, speed: float, on_road: bool = true) -> void:
     if not is_finite(delta) or delta<=0.0 or not is_finite(slip_power) or not is_finite(normal_load) or not is_finite(force) or not is_finite(speed):
         return
+    if normal_load<=0.0:
+        # A spinning airborne wheel still cools in the airflow, but there is no
+        # road-contact heat or tread abrasion, including the usual baseline wear.
+        _advance(delta,0.0,absf(speed),on_road,0.0,false)
+        return
     var load_demand := clampf(maxf(absf(force)/maxf(normal_load,100.0),sqrt(maxf(0,slip_power)/maxf(normal_load*8.0,100.0))),0,2)
     var heat := maxf(0,slip_power)/3500.0+0.2*load_demand*load_demand
     _advance(delta,load_demand,absf(speed),on_road,heat)
 
-func _advance(delta: float, load_demand: float, speed: float, on_road: bool, heat: float) -> void:
+func _advance(delta: float, load_demand: float, speed: float, on_road: bool, heat: float, wear_contact: bool = true) -> void:
     var data: Dictionary = COMPOUNDS[compound]
     var airflow := clampf(speed, 0.0, 100.0)
     var cooling := 0.03 + 0.002 * airflow
@@ -65,7 +70,8 @@ func _advance(delta: float, load_demand: float, speed: float, on_road: bool, hea
     demand_integral += load_demand * delta
     elapsed += delta
     var surface := 1.0 if on_road else 2.0
-    wear = clampf(wear + float(data["wear_rate"]) * delta * (0.2 + 3.0 * load_demand * load_demand) * surface * (1.0 + overheat), 0.0, 1.0)
+    if wear_contact:
+        wear = clampf(wear + float(data["wear_rate"]) * delta * (0.2 + 3.0 * load_demand * load_demand) * surface * (1.0 + overheat), 0.0, 1.0)
 
 func mean_demand() -> float:
     return demand_integral / elapsed if elapsed > 0.0 else 0.0
