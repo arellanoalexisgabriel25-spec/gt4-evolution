@@ -4,7 +4,7 @@ Estado de investigación al 4 de noviembre de 2026. Este registro distingue
 fuentes consultables, intentos bloqueados y parámetros de desarrollo. No hay
 una validación de fabricante ni una homologación deportiva de esta entrega.
 
-## Referencia compartida por el usuario
+## Consulta web histórica anterior a 0.17
 
 El usuario indicó <http://cuartodemilla.com.ar/> como referencia de la actividad
 en Argentina. Se intentó acceder por la ruta de red configurada del entorno:
@@ -24,7 +24,7 @@ estas variantes o del reglamento indicado. Los registros locales de los
 intentos están en `/workspace/artifacts/quarter-mile-reference*`,
 `fiat-reference.html` y `vw-reference.html` cuando la respuesta produjo archivo.
 
-**No se pudieron verificar** categorías, pisos de tiempo, tolerancias, caídas,
+En esa investigación anterior a recibir los textos, **no se pudieron verificar** categorías, pisos de tiempo, tolerancias, caídas,
 secuencia de semáforo, clasificación, reglamento vigente ni especificaciones
 de fábrica a través de estas fuentes. Una categoría configurable del juego
 debe identificarse como propia del juego hasta contrastarla con un reglamento
@@ -36,6 +36,11 @@ Para continuar la consulta directa se requieren los dominios
 `www.volkswagen.com.ar`, además de cualquier dominio documental al que realmente
 redirijan. Las redirecciones adicionales deben identificarse al recibirlas,
 sin suponer que esta lista es suficiente ni reemplazar otros permisos de red.
+
+Desde 0.17 los textos completos aportados permiten transcribir los pisos y reglas
+en [REGULATIONS-REFERENCE.md](REGULATIONS-REFERENCE.md). La descripción posterior
+del Uno 2014 transcribe datos de fabricante y se registra al final de este documento.
+Esos nuevos aportes no están sujetos al fallo de acceso web histórico.
 
 ## Identificación y trazabilidad de cada auto
 
@@ -76,3 +81,27 @@ tiempos de ensayo del prototipo no son mediciones de vehículos reales.
 Los ensayos deterministas del juego sirven para comprobar estas identidades,
 regresiones y diferencias entre configuraciones. La calibración contra valores
 de fábrica o pista real sigue pendiente mientras no haya fuentes contrastables.
+
+
+## Referencia de fabricante aportada para Uno Fire 2014 (0.17)
+
+El usuario identifica la variante argentina **Uno Fire 1.3 8V de tres puertas, año
+2014**, primera generación con restyling regional de 2004 e importación brasileña.
+Aclara que los datos proceden de informes de fabricantes; se registran como
+transcripción aportada, sin afirmar que el entorno abrió el documento primario.
+
+- Potencia: **68 CV a 5.250 RPM**; torque: **11,3 kgf·m a 2.250 RPM**, equivalente
+  a **110,815145 N·m** (gravedad estándar 9,80665).
+- Referencias declaradas: máxima **158 km/h**, **0–100 en 13,2 s** y cinco marchas.
+- Sin ABS ni airbags. La configuración de fábrica del duelo mantiene ABS apagado.
+- El perfil nuevo ancla la curva en ambos pares de torque/potencia y régimen;
+  la interpolación, limitador, masa, caja/diferencial, radios y aerodinámica siguen
+  estimados. No se inventan relaciones a partir del número de marchas.
+- Los 13,2 s y 158 km/h son **objetivos de contraste**, no resultados simulados.
+  El juego no impone una velocidad o aceleración para alcanzar esos números.
+- Se preservan el nombre estable del catálogo, ID de unidad y partidas anteriores;
+  la etiqueta de variante identifica 2014 en la ficha. El recurso 3D de cinco puertas
+  sigue siendo provisional para esta variante.
+
+El informe PDF aportado se revisó por separado en [FIAT-REPORT-REVIEW.md](FIAT-REPORT-REVIEW.md).
+Su entrada Uno diésel no sustituye esta ficha Fire de nafta.

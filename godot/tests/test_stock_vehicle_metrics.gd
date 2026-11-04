@@ -39,6 +39,8 @@ func benchmark(config) -> Dictionary:
     return {"et":run.elapsed if run.phase=="finished" else -1.0,"zero_to_hundred":zero_to_hundred,"trap_kmh":run.trap_speed}
 
 func _initialize() -> void:
+    check(is_equal_approx(EngineTorque.kgfm_to_nm(11.3),110.815145),"Kilogram-force metre converts to Newton metre without treating kgm as Nm")
+    check(EngineTorque.torque_for_cv_at_rpm(68,NAN)==0.0,"Malformed power anchors cannot poison a curve")
     check(is_equal_approx(EngineTorque.power_kw(100.0,6000),62.8318530717959),"Torque times angular speed gives crank power in kW")
     check(is_equal_approx(EngineTorque.kw_to_cv(73.549875),100.0),"Metric CV uses 735.49875 W per CV")
     check(EngineTorque.kw_to_hp(73.549875)<100.0,"Mechanical hp and metric CV are not silently interchanged")
@@ -60,13 +62,18 @@ func _initialize() -> void:
         var standard = Config.from_vehicle(car,true)
         var report: Dictionary = standard.metrics()
         check(is_equal_approx(standard.mass,standard.curb_mass+75.0),"The test mass explicitly includes a 75 kg driver")
-        check(report.status=="development_estimate" and not report.manufacturer_verified and report.sources.is_empty(),"Unsupported model estimates are never labelled verified factory specifications")
+        check(report.status=="development_estimate" and not report.manufacturer_verified and (not report.sources.is_empty() if id==12 else report.sources.is_empty()),"Unsupported model estimates are never labelled verified factory specifications")
         check(standard.factory_class and not standard.abs_assist and standard.tire_compound=="street","The baseline protocol excludes gameplay assists and non-stock tire compounds")
         check(is_equal_approx(standard.cg_height,0.48),"An unmodified flagship retains its configured centre of gravity")
         var sampled := 0.0
         for rpm in range(900,int(standard.redline_rpm)+1):
             sampled=maxf(sampled,EngineTorque.power_kw(standard.peak_torque*EngineTorque.curve_factor(rpm,standard),rpm))
         check(absf(sampled-float(report.calculated_peak_power_kw))<0.001,"Dense torque-curve sampling agrees with the reported analytical power maximum")
+        if id==12:
+            check(absf(standard.peak_torque*EngineTorque.curve_factor(2250,standard)-110.815145)<0.0001,"The identified Uno anchors torque at 11.3 kgf m and 2250 RPM")
+            check(absf(float(report.calculated_peak_power_cv)-68.0)<0.0001 and absf(float(report.calculated_peak_power_rpm)-5250.0)<0.01,"The Uno power curve peaks at the supplied 68 CV / 5250 RPM")
+            check(report.reference_targets.zero_to_hundred_s==13.2 and report.reference_targets.top_speed_kmh==158.0 and not report.reference_targets.manufacturer_verified,"Reference acceleration and speed remain targets rather than fabricated test results")
+            check(not bool(report.sources[0].primary_document_verified),"A supplied description is not silently promoted to an inspected factory document")
         var modified: Dictionary = car.duplicate(true)
         modified.upgrades=["ecu","escape","suspension","brakes","tires"]
         modified.tire_compound="slick"

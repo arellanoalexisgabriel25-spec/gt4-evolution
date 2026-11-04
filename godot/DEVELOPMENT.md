@@ -8,7 +8,45 @@ Develop functional increments on descriptive branches, preserve user work and sa
 
 Current priority: develop a compact quarter-mile environment, manual shifting, measurable driving skill, persistent mechanical use and original visuals. Large-circuit expansion is deferred. Existing circuit, career and AI modes remain available. A simulated result must always be labelled as such.
 
-## Architecture through 0.16
+## Current increment: 0.17
+
+See [RELEASE-0.17.md](RELEASE-0.17.md) for implementation scope and the validation
+status of this exact source state. New user-supplied plain texts enable Article 21
+quarter-mile floors and an Article 12 false-start exception; earlier network failures
+are historical, not evidence that the newly supplied regulations were unavailable.
+[REGULATIONS-REFERENCE.md](REGULATIONS-REFERENCE.md) records the source hashes,
+article references, mixed distances, contradictory eighth-mile class 6 values,
+unspecified tree timing and the absence of a run-level tie rule.
+
+The exact garage entry is **DUELO ¼ DE MILLA / FÁBRICA**. The menu selects a rival
+and a quarter-mile class, defaults to class 1 / 18.00 s ET, and offers a free
+first-arrival option. Official L1 admission is deliberately not exposed as that
+free option: its sporting-text admission conditions are not modelled. The selected
+class reaches the scene through GameSession; legacy `start_drag(id)` remains
+individual practice. Only indexed duels use the `argentina_reference` judging
+profile. ET determines breakout; RT + ET determines valid arrival order. A single
+false start grants the other lane victory regardless of its ET, as Article 12
+specifies. Double-invalid runs do not fabricate a winning time. This is one free
+exhibition round, without championship, entry-fee settlement, cash awards, repechage,
+final reruns or trophies. Documentation of those rules does not implement them.
+
+Factory configuration is an explicit game restriction, separate from the technical
+regulation's Serie definition, which permits mechanical preparation. Existing
+health, usage settlement, manual saves and separate stock records are retained.
+Do not present estimated engine/gear/mass presets as manufacturer specifications;
+V6 data has not been obtained and performance calibration remains future work.
+
+New supplied 147 and Uno GLBs have roughly one million triangles each; render
+derivatives are optimized with UV/material preservation, while originals are
+retained separately. Both final derivatives contain 79,998 triangles, with byte-identical source textures.
+Their hashes and visual checks are recorded in the release report. The supplied Gol is unchanged. Visual inspection
+identifies the Uno mesh as five-door, although the catalogue's intended variant
+remains three-door. This is an asset limitation, not evidence of a different
+manufacturer powertrain or a reason to silently alter the catalogue variant.
+Final asset counts and source-state test/capture results belong in the release
+report after measurement; no previous release's passing count certifies 0.17.
+
+## Architecture through 0.17
 
 | Module | Responsibility |
 | --- | --- |
@@ -17,9 +55,11 @@ Current priority: develop a compact quarter-mile environment, manual shifting, m
 | `drag_vehicle_config.gd`, `manual_powertrain.gd` | Original approximate per-car data; 480 Hz maximum substeps for engine/clutch, torque and driveline efficiency; wires independent axles and session wear |
 | `engine_torque.gd`, `axle_traction.gd` | RPM torque interpolation and transient turbo; independent front/rear rotation, slip, load, tire force, heat, brake torque and ABS modulation |
 | `tire_model.gd`, `damage_model.gd` | Adapted supplied modules: per-axle slip-energy temperature/tread, compound windows, actual collision damage and validated settlement |
-| `car_catalog.gd`, `imported_car.gd`, `assets/cars/` | Three flagship presets and stable market order; original supplied Gol GLB, cached render-only body/wheel partition with original UV/material |
+| `car_catalog.gd`, `imported_car.gd`, `assets/cars/` | Three flagship presets and stable market order; supplied Gol and optimized supplied 147/Uno render meshes, normalization, UV/material preservation and independent colliders |
 | `drag_actor.gd`, `drag_strip.gd`, `drag_mode.gd` | Real collision body, original two-lane strip and manual input/timing/garage integration; directional assistance is explicit |
 | `drag_run.gd`, `drag_records.gd`, `drag_garage_session.gd` | Interpolated beams, tree/false starts, validated personal tickets and once-only cumulative usage settlement |
+| `drag_class_rules.gd` | Independent quarter/eighth-mile Article 21 tables and strict ET floor evaluation; source metadata makes admission/safety limits explicit |
+| `drag_duel.gd`, `drag_rival_driver.gd` | Two-lane adjudication with explicit legacy/reference profiles and reproducible pedal/clutch/shift-only rival policy |
 | `drag_hud.gd`, `engine_audio.gd` | Measured manual telemetry/ticket and original provisional synthesized engine sound |
 | `handling.gd` | Garage condition and installed parts translated into vehicle parameters |
 | `vehicle_actor.gd` | Character body, collision, original provisional visual, measured distance and normalized controls |
@@ -212,7 +252,11 @@ actual audio/preferences and controller-driven purchases/settings/scene changes.
 The current capture wrapper requires seventeen PNGs, including the pause overlay.
 Focused buttons use explicit dark text on the light theme to retain contrast.
 
-## Version 0.15: flagship cars and reviewed mechanics
+## Historical version 0.15: flagship cars and reviewed mechanics
+
+This section records the 0.15 delivery. Its 147/Uno transfer and placeholder limits
+were superseded by the supplied ZIP integration in 0.17; keep them as provenance,
+not as the current asset state.
 
 See [RELEASE-0.15.md](RELEASE-0.15.md) and the specific technical decision in
 [INTEGRATION-CLAUDE-0.11d.md](INTEGRATION-CLAUDE-0.11d.md). The supplied originals
@@ -271,10 +315,13 @@ the uploaded GLB is unchanged. Packaging also supports explicit `.png` assets.
 Use the current complete suite and fresh-package checks; historical release counts
 and the stored setup description are not evidence for this new source state.
 
-## Version0.16
+## Historical version 0.16
 
-See RELEASE-0.16.md and STOCK-SOURCES.md. Official sites are blocked: profiles remain development estimates. UI default drag entry is a physical factory-class duel. Legacy start_drag(id) stays practice; start_drag(id,"duel",profile) selects two cars on a shared tree, independent interpolated tickets and pure RT+ET adjudication. Separate lamps preserve the rival green after player disqualification. Pause/recovery cover both cars; AI only writes pedal/clutch/shift inputs. No fees/prizes.
+See [RELEASE-0.16.md](RELEASE-0.16.md) and [STOCK-SOURCES.md](STOCK-SOURCES.md). At the 0.16 delivery, official sites were blocked and regulations had not been supplied as readable text. Profiles remain development estimates. The UI default drag entry introduced a physical factory-configuration duel. Legacy start_drag(id) stays practice; start_drag(id,"duel",profile) selects two cars on a shared tree, independent interpolated tickets and pure RT+ET adjudication. Separate lamps preserve the rival green after player disqualification. Pause/recovery cover both cars; AI only writes pedal/clutch/shift inputs. No fees/prizes.
 
 Factory ignores upgrades while retaining garage health and equipment. Optional stock_drag_records preserve legacy saves and isolate prepared/old times. Actor0–100 starts at0.1m/s, interpolates crossings and resets on arming so staging cannot pollute it. Peer camera framing only affects chase mode0.
 
 Net torque avoids double friction at WOT; negative/backdrive efficiency must dissipate energy. Engine, shaft and contact power are separate. Analytical power peaks and game benchmarks do not establish manufacturer performance. Fuel basis and exact variants remain unverified. Capture wrapper requires27 PNGs.
+
+
+The Uno Fire 1.3 8V 3-door 2014 now uses two manufacturer-report claims transcribed by the user: 68 metric CV at 5250 rpm and 11.3 kgf·m at 2250 rpm. Explicit unit conversions constrain the full-load curve; 13.2 s 0–100 and 158 km/h are reference targets, never a velocity/acceleration override. Remaining engine points, mass and gearing remain estimates. See STOCK-SOURCES.md and FIAT-REPORT-REVIEW.md.

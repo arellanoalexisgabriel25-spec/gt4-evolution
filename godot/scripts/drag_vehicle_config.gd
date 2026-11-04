@@ -51,6 +51,7 @@ var profile_id := "generic_development"
 var variant_label := "Variante no identificada"
 var specification_status := "development_estimate"
 var specification_sources: Array = []
+var reference_targets: Dictionary = {}
 
 static func from_vehicle(vehicle: Dictionary, factory: bool = false):
     var result = load("res://scripts/drag_vehicle_config.gd").new()
@@ -83,7 +84,8 @@ static func from_vehicle(vehicle: Dictionary, factory: bool = false):
         result.profile_id = str(local["id"])
         result.variant_label = str(local["variant"])
         result.specification_status = str(local["status"])
-        result.specification_sources = local["sources"].duplicate()
+        result.specification_sources = local["sources"].duplicate(true)
+        result.reference_targets = local.get("reference_targets",{}).duplicate(true)
     if name.contains("Civic") or name.contains("Levin") or name.contains("FTO"):
         result.redline_rpm = 7800.0
         result.torque_rpm = PackedFloat32Array([900,1800,2800,3800,4800,6000,7000,7800])

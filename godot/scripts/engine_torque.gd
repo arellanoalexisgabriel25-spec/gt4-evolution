@@ -6,6 +6,14 @@ var boost := 0.0
 const WATTS_PER_CV := 735.49875
 const WATTS_PER_MECHANICAL_HP := 745.6998715822702
 
+static func kgfm_to_nm(value: float) -> float:
+    return value*9.80665
+
+static func torque_for_cv_at_rpm(cv: float, rpm: float) -> float:
+    if not is_finite(cv) or not is_finite(rpm) or cv<0.0 or rpm<=0.0:
+        return 0.0
+    return cv*WATTS_PER_CV/(rpm*TAU/60.0)
+
 static func kw_to_cv(power_kw: float) -> float:
     return power_kw*1000.0/WATTS_PER_CV
 

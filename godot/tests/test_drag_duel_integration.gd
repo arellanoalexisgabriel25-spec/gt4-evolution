@@ -26,6 +26,8 @@ func run() -> void:
     vehicle.tire_compound="slick"
     var balance: int=session.game.balance
     check(not session.start_drag(13,"unknown") and session.selected_vehicle==0,"Malformed format cannot mutate garage selection")
+    check(not session.start_drag(13,"duel","technical","L1") and not session.start_drag(13,"duel","technical","bogus") and session.selected_vehicle==0,"Unknown and restricted classes are rejected before garage selection")
+    check(not session.start_drag(13,"practice","technical","1"),"Individual practice cannot masquerade as a class duel")
     change_scene_to_file("res://scenes/main.tscn")
     await process_frame
     await process_frame
@@ -33,7 +35,7 @@ func run() -> void:
     current_scene.duel_profile="conservative"
     var button: Button
     for node in current_scene.content.find_children("*","Button",true,false):
-        if node.text=="DUELO ¼ DE MILLA / SERIE":
+        if node.text=="DUELO ¼ DE MILLA / FÁBRICA":
             button=node
             break
     var found := button!=null
@@ -42,6 +44,7 @@ func run() -> void:
     await process_frame
     var scene=current_scene
     check(found and scene.name=="QuarterMile" and scene.is_duel,"The real garage entry opens a two-car race")
+    check(scene.class_data.get("id")=="1" and scene.class_data.get("minimum_et")==18.0,"Garage class selection carries the reference floor into the physical duel")
     check(scene.opponent!=null and scene.opponent.position.x>0 and scene.car.position.x<0,"Two separate physical cars stage in opposite lanes")
     check(scene.opponent_name=="Akira Sato" and scene.opponent_driver.profile=="conservative","The selected driver's identity and control policy reach the track")
     scene.camera.snap()
@@ -71,6 +74,8 @@ func run() -> void:
     var result: Dictionary=scene.duel_result
     check(not result.is_empty() and scene.run.phase=="finished" and scene.opponent_run.phase=="finished","Both physical cars reach the actual finish and produce a complete duel result")
     if not result.is_empty():
+        check(result.rules_profile=="argentina_reference" and result.minimum_et==18.0,"The measured duel uses the selected Argentine reference rules")
+        check(scene.hud.ticket_label.text.contains("PISO ET 18.00"),"The result exposes the ET floor separately from reaction")
         var a: float=result.entries.player.ticket.total
         var b: float=result.entries.rival.ticket.total
         check(result.winner==("player" if a<b else "rival"),"Winner follows the measured RT plus ET of the two lanes")

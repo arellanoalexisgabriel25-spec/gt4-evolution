@@ -67,18 +67,21 @@ def main():
 - [Descargar proyecto para Godot]({base}/{names[1]})
 
 Extraé TODO el ZIP Windows y abrí **JUGAR.cmd**. El motor está incluido.
-**GARAJE → DUELO ¼ DE MILLA / SERIE** corre contra otro auto físico.
-Elegí piloto rival. Gana la primera llegada válida por reacción + ET.
-Serie conserva salud/equipamiento del garaje y excluye preparaciones; la práctica
-individual anterior sigue disponible. Sin inscripción ni premios; récords de serie separados.
-Las métricas son estimaciones de desarrollo, aún sin calibración de fabricante;
-la red bloqueó la referencia argentina y fabricantes, por lo que no se afirman categorías oficiales.
-Los autos insignia son 147 Vivace, Uno Fire 3 puertas y Gol Power 3 puertas.
-El Gol usa el modelo texturizado aportado. Los otros dos modelos adjuntos aún
-requieren acceso; sus carrocerías siguen provisionales, con configuraciones propias.
-En Inicio podés elegir 147 / UNO / GOL; en el garaje, VER MODELO cambia la vista.
-El taller ofrece calle, deportivos o slick. Los impactos en el ¼ de milla dejan
-daño mecánico persistente y reducen rendimiento. Recuperar no repara el auto.
+**GARAJE → DUELO ¼ DE MILLA / FÁBRICA** corre contra otro auto físico.
+Elegí piloto y clase (Clase 1: piso ET 18,00 s) o LIBRE, sin piso.
+Clases de ¼ según el art. 21 del texto aportado; caída por ET bajo el piso.
+La reacción cuenta para llegar primero. Un falso individual concede al rival
+la excepción del art. 12 aunque su ET caiga. Exhibición sin inscripción ni premios.
+Fábrica conserva salud del garaje y excluye preparaciones; «serie» oficial tiene
+otro alcance. La práctica individual y sus marcas anteriores siguen disponibles.
+147 Vivace y Uno Fire usan derivados optimizados de los nuevos modelos aportados,
+con texturas conservadas y ruedas animadas. El Uno suministrado tiene cinco puertas,
+referencia visual provisional de la variante de tres puertas del catálogo.
+El Gol conserva el modelo aportado original. Las métricas físicas todavía son
+estimaciones pendientes de fuentes de fabricante. Ver STOCK-SOURCES.md.
+En Inicio podés elegir 147 / UNO / GOL; en garaje, VER MODELO cambia la vista.
+El taller ofrece calle, deportivos o slick. Los impactos dejan daño mecánico
+persistente; recuperar no repara. Ver RELEASE-0.17.md y REGULATIONS-REFERENCE.md.
 
 Comprá un auto y abrí **GARAJE → ¼ DE MILLA / MANUAL**. Mantené C, tocá E
 para primera, iniciá el árbol con Enter y esperá el verde. Regulá W para las RPM,
@@ -113,7 +116,7 @@ Los archivos .sha256 permiten verificar los ZIP.
         readme += "Capturas reales del juego en Linux con OpenGL por software. No son renders conceptuales.\n\n"
         readme += "Tab / RB cambia entre seguimiento, cercana, capó y paragolpes; Shift / Y permite mirar atrás.\n"
         readme += "AJUSTES conserva la cámara inicial y permite suavizar la dirección del teclado.\n\n"
-        for title, shot in [("Dos autos de serie / Semáforo común", "25-duel-staging"), ("Carrera física contra un rival", "26-duel-driving"), ("Resultado por reacción más ET", "27-duel-result"), ("Gol Power / Modelo aportado", "20-gol-showroom"), ("Gol en una pasada manual real", "24-gol-driving"), ("Impacto real / Daños mecánicos", "23-impact-damage"), ("Taller / Compuestos de neumáticos", "21-tire-workshop"), ("147 Vivace / Carrocería provisional", "18-147-showroom"), ("Uno Fire / Carrocería provisional", "19-uno-showroom"), ("Inicio y autos insignia", "01-home"), ("Música, mando y ayudas", "04-settings"), ("Ticket de llegada real", "15-drag-ticket"), ("Pausa con mando", "17-controller-pause")]:
+        for title, shot in [("Dos autos de fábrica / Semáforo común", "25-duel-staging"), ("Carrera física contra un rival", "26-duel-driving"), ("Resultado por reacción más ET", "27-duel-result"), ("Gol Power / Modelo aportado", "20-gol-showroom"), ("Gol en una pasada manual real", "24-gol-driving"), ("Impacto real / Daños mecánicos", "23-impact-damage"), ("Taller / Compuestos de neumáticos", "21-tire-workshop"), ("147 Vivace / Modelo aportado", "18-147-showroom"), ("Uno Fire / Modelo aportado", "19-uno-showroom"), ("Inicio y autos insignia", "01-home"), ("Música, mando y ayudas", "04-settings"), ("Ticket de llegada real", "15-drag-ticket"), ("Pausa con mando", "17-controller-pause")]:
             readme += f"### {title}\n\n![{title}](captura-{shot}.png)\n\n"
     blob = git("hash-object", "-w", "--stdin", data=readme.encode())
     rows = [f"100644 blob {blob}\tREADME.md\n"]

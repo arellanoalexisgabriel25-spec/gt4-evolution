@@ -6,10 +6,38 @@ extends RefCounted
 # deliberately separate: these detailed visual triangles are never colliders.
 static var cache: Dictionary = {}
 
+static func _render_material(source: Material) -> Material:
+    if not source is BaseMaterial3D or source.albedo_texture!=null or not source.emission_enabled or source.emission_texture==null:
+        return source
+    # The supplied shaded scans store their baked appearance in emission over a
+    # black base. Reuse that unchanged texture as lit albedo in a material copy:
+    # the car then reacts to scene light/shadows instead of illuminating itself.
+    # Never mutate the imported resource; the Gol's actual PBR material is kept.
+    var material: BaseMaterial3D = source.duplicate()
+    material.albedo_color = Color.WHITE
+    material.albedo_texture = source.emission_texture
+    material.emission_enabled = false
+    material.emission_texture = null
+    material.emission = Color.BLACK
+    material.metallic = 0.0
+    material.roughness = 0.8
+    return material
+
 static func build(profile: Dictionary) -> Dictionary:
     var path := str(profile.get("asset",""))
-    if cache.has(path):
-        return cache[path]
+    var size_value = profile.get("size")
+    var radius_value = profile.get("radius")
+    var wheelbase_value = profile.get("wheelbase")
+    if typeof(size_value)!=TYPE_VECTOR3 or not size_value.is_finite() or size_value.x<=0.0 or size_value.y<=0.0 or size_value.z<=0.0:
+        return {}
+    if typeof(radius_value) not in [TYPE_INT,TYPE_FLOAT] or not is_finite(float(radius_value)) or float(radius_value)<=0.0:
+        return {}
+    if typeof(wheelbase_value) not in [TYPE_INT,TYPE_FLOAT] or not is_finite(float(wheelbase_value)) or float(wheelbase_value)<=0.0:
+        return {}
+    # One source may be normalized for more than one configured variant.
+    var cache_key := [path,size_value,float(radius_value),float(wheelbase_value)]
+    if cache.has(cache_key):
+        return cache[cache_key]
     if path.is_empty() or not ResourceLoader.exists(path):
         return {}
     var scene = load(path)
@@ -29,6 +57,9 @@ static func build(profile: Dictionary) -> Dictionary:
         transform = cursor.transform*transform
         cursor = cursor.get_parent()
     var bounds: AABB = transform*mesh_node.mesh.get_aabb()
+    if not bounds.position.is_finite() or not bounds.size.is_finite() or bounds.size.x<=0.0 or bounds.size.y<=0.0 or bounds.size.z<=0.0:
+        source.free()
+        return {}
     var size: Vector3 = profile["size"]
     var scale: Vector3 = size/bounds.size
     # The provided model faces +Z; the game's forward direction is -Z.
@@ -52,7 +83,8 @@ static func build(profile: Dictionary) -> Dictionary:
         for z in [-1.0,1.0]:
             centers.append(Vector3(x*size.x*0.42,radius-0.5,z*wheelbase*0.5))
     var groups: Array = [[],[],[],[],[]]
-    var material: Material = mesh_node.mesh.surface_get_material(0)
+    var source_material: Material = mesh_node.mesh.surface_get_material(0)
+    var material: Material = _render_material(source_material)
     var diffuse: Image
     if material is BaseMaterial3D and material.albedo_texture!=null:
         diffuse = material.albedo_texture.get_image()
@@ -101,12 +133,12 @@ static func build(profile: Dictionary) -> Dictionary:
             surface.add_vertex(transformed[vertex]-offset)
         if normals.size()!=vertices.size():
             surface.generate_normals()
-        if uv.size()==vertices.size():
+        if uv.size()==vertices.size() and material is BaseMaterial3D and material.normal_enabled and material.normal_texture!=null:
             surface.generate_tangents()
         surface.index()
         meshes.append(surface.commit())
         counts.append(int(groups[group].size()/3))
     source.free()
-    var result := {"meshes":meshes,"centers":centers,"triangle_counts":counts,"source_triangles":indices.size()/3,"size":size}
-    cache[path] = result
+    var result := {"meshes":meshes,"centers":centers,"triangle_counts":counts,"source_triangles":int(indices.size()/3),"size":size,"material_mode":"baked_lit" if material!=source_material else "source"}
+    cache[cache_key] = result
     return result

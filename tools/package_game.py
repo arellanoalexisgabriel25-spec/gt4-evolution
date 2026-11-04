@@ -6,131 +6,63 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.16"
+VERSION = "0.17"
 ENGINE = "Godot_v4.6.3-stable_win64.exe"
-README = """GT4 EVOLUTION — PROTOTIPO 0.16 / DUELOS DE SERIE Y AUDITORÍA FÍSICA
+README = """GT4 EVOLUTION — PROTOTIPO 0.17 / MODELOS Y CLASES ARGENTINAS
 
-NUEVO: GARAJE -> DUELO ¼ DE MILLA / SERIE corre contra otro auto físico.
-Elegí a Nico, Claire o Akira. Gana por reacción + ET desde el verde común;
-falsos y fuera de carril invalidan. Pausa congela ambos autos; R reinicia ambos.
-Serie ignora preparaciones/compuestos deportivos y conserva la salud/piezas del garaje.
-Sin inscripción ni premios; récords de serie separados de los tiempos anteriores.
-El botón ¼ DE MILLA / MANUAL conserva la práctica con las mejoras existentes.
-Torque neto, peso del piloto y pérdidas de transmisión corregidos; 0-100 medido.
-Las prestaciones siguen siendo estimaciones, no cifras verificadas de fabricante.
-La red impidió consultar el sitio oficial argentino y fabricantes: no se afirman
-categorías reglamentarias oficiales. Ver juego/STOCK-SOURCES.md y RELEASE-0.16.md.
+Extraé TODO el ZIP. Windows 10/11 de 64 bits: doble clic en JUGAR.cmd.
+El motor está incluido y el primer inicio importa el proyecto.
+El ZIP Proyecto requiere Godot 4.6.3: abrí juego/project.godot.
 
-Extraé TODO el ZIP antes de abrir el juego.
-Windows 10/11 de 64 bits: doble clic en JUGAR.cmd. El primer inicio importa
-el proyecto; puede tardar unos segundos. No requiere instalar Godot aparte.
-Si descargaste el ZIP de código, abrí juego/project.godot con Godot 4.6.3.
+NUEVO: modelos aportados del 147 Vivace y Uno Fire integrados con ruedas animadas.
+Derivados optimizados conservan las texturas; fuentes originales preservadas aparte.
+El Uno suministrado tiene cinco puertas: es una referencia visual provisional para la
+variante de tres puertas del catálogo. El Gol conserva su modelo original. Ver assets/cars/README.md.
 
-AUTOS INSIGNIA: Fiat 147 Vivace, Fiat Uno Fire 3 puertas y Gol Power 3 puertas.
-Encabezan el concesionario; Inicio permite verlos con 147 / UNO / GOL.
-En GARAJE, VER MODELO selecciona la vista si tenés varias unidades.
-El Gol usa el GLB texturizado suministrado, con sus ruedas animadas.
-Los modelos adjuntos del 147 y del Uno todavía no pudieron descargarse;
-usan carrocerías originales provisionales y configuraciones de manejo propias.
-Ver juego/assets/cars/README.md e informe RELEASE-0.15.md.
+Comprá un auto en CONCESIONARIO y abrí GARAJE → DUELO ¼ DE MILLA / FÁBRICA.
+Elegí rival y clase: por defecto Clase 1 / piso 18,00 s; LIBRE no aplica piso.
+Los pisos de ¼ provienen del art. 21 del reglamento aportado. Ir por debajo del piso
+es caída; la reacción NO se suma al ET para evaluarlo. La llegada usa reacción+ET.
+Excepción art. 12: el falso individual entrega victoria al rival aunque caiga de tiempo.
+El ticket conserva ambos tiempos y señala la excepción; ambos falsos/caídas no
+generan un ganador. Es exhibición sin inscripción, premios ni campeonato oficial.
+Fábrica ignora preparaciones y compuestos deportivos, conservando salud del auto.
+La categoría oficial «serie» permite mecánica preparada y tiene otro alcance.
+Los récords de fábrica se guardan separados de los de práctica.
+GARAJE → ¼ DE MILLA / MANUAL conserva práctica individual con mejoras existentes.
 
-TALLER: montar calle ($320.000 ARS), deportivos ($650.000 ARS) o slick ($1.400.000 ARS).
-El juego de neumáticos restaura su salud y queda guardado al guardar la partida.
-Calle funciona desde frío; los slick exigen temperatura y se desgastan más.
-El contacto y el patinamiento generan el calor, por separado para cada eje.
-Los impactos reales en el cuarto de milla dañan componentes y reducen rendimiento.
-R no repara: volvé al taller. El ticket diferencia daños y desgaste.
-Se conserva el cronometraje, los cambios manuales y la liquidación existentes.
-La evaluación del aporte de Claude está en juego/INTEGRATION-CLAUDE-0.11d.md.
+CONTROLES DEL ¼: mantené C (embrague), tocá E para primera, Enter arma semáforo.
+Regulá W para RPM, esperá verde y soltá C. Para subir: soltá W, pisá C, tocá E,
+soltá C y acelerá. Q baja marcha. Cambiar sin embrague se rechaza y desgasta caja.
+R repite conservando desgaste y temperatura; P pausa ambos autos; Esc vuelve a garaje.
+Tab cambia cámara; Shift mira atrás. AJUSTES permite reasignar teclas y ayudas.
+Mando: RT acelera, LT/B frena, LB embrague, A sube, Y baja, X repite, RB cámara.
+Select abre pausa; embrague analógico LT/L2 opcional. Menús: stick/cruceta, A confirma,
+B vuelve, LB/RB cambia pestaña. Desconectar mando activo pausa el juego.
 
-Novedades: ejes delantero/trasero independientes, torque por RPM y carga de turbo,
-pérdidas de transmisión, ABS y TCS opcionales. TCS recorta motor, no añade agarre.
-El embrague y las ruedas conservan inercia; la masa y los neumáticos importan.
-Los importes se muestran en PESOS ARGENTINOS (ARS), conservando las proporciones
-del saldo y de los precios anteriores. Cada unidad histórica equivale a $1.000 ARS;
-el saldo inicial se muestra como $12.000.000 ARS. No es una cotización real.
-La conversión no se vuelve a multiplicar al cargar la partida.
+Motor, embrague, caja, ejes, neumáticos, pérdidas y transferencia de carga se simulan.
+El HUD muestra 0–100 medido, torque, potencia al eje, temperaturas, RT/ET y trampa.
+Uno Fire 1.3 8V 2014: curva anclada en 68 CV/5250 RPM y 11,3 kgfm/2250 RPM,
+según datos de fabricante transcritos por el usuario. 13,2 s de 0–100 es una referencia,
+no una aceleración impuesta por el juego. La calibración completa sigue pendiente:
+los reglamentos no demuestran potencia/masa/relaciones reales. Ver STOCK-SOURCES.md.
+El circuito es original de 402,336 m, inspirado en el ambiente del Gálvez.
+Colisiones y agarre lateral simplificados; sin deformación visual ni homologación.
 
-Música de menú: Lezcano Alan — PERRA #Ritmomanijero, Prod Sketchy.
-Archivo original aportado por el usuario con autorización de redistribución.
-Volumen independiente en AJUSTES; se desvanece al entrar en pista y vuelve al garaje.
-Ver juego/assets/audio/README.md. La música no está cubierta por la licencia MIT.
+TALLER: reparaciones y neumáticos calle/deportivos/slick. Recuperar NO repara.
+Los importes están en pesos argentinos ARS; cada unidad contable histórica = $ 1.000 ARS.
+GUARDAR conserva progreso; CARGAR recupera la partida. Mantiene guardados anteriores.
+Música: Lezcano Alan — PERRA #Ritmomanijero, Prod Sketchy, aportada con autorización de
+redistribución. Volumen en AJUSTES; se desvanece en pista. No cubierta por MIT.
+El circuito del club, carrera y modos previos siguen disponibles; los eventos simulados
+se identifican en su interfaz. No se distribuyen recursos comerciales de GT4.
 
-Mando en menús: stick/cruceta mueve el foco; A/Cruz confirma; B/Círculo vuelve;
-LB/RB cambia pestaña. Izquierda/derecha modifica opciones y volumen.
-En pista, Select/Back abre la pausa con botones para continuar, recuperar o salir.
-Desconectar el mando activo pausa la conducción y libera los gatillos.
-AJUSTES permite embrague analógico LT/L2; en ese modo B/Círculo frena.
-
-Nuevo foco: una pista original de 402,336 m con ambiente inspirado en el
-autódromo Gálvez, sin reproducir exactamente su trazado ni sus instalaciones.
-Comprá un auto en CONCESIONARIO, abrí GARAJE y elegí ¼ DE MILLA / MANUAL.
-Es práctica libre, sin inscripción ni premios en pesos; el desgaste sí se conserva.
-
-1. Mantené C (embrague) y tocá E para poner primera. Mantené C presionado.
-2. Enter inicia el semáforo. Regulá W para preparar las RPM y esperá el verde.
-3. Soltá C y acelerá. Cambiar en la banda de potencia mejora la marca.
-4. Para subir: soltá W, pisá C, tocá E, soltá C y volvé a acelerar.
-Q baja una marcha. El cambio sin embrague se rechaza y desgasta la caja.
-El limitador corta potencia; reducir demasiado puede forzar el motor.
-R prepara otra pasada y conserva el uso, el desgaste y la temperatura acumulados.
-P pausa, Tab cambia cámara y Esc regresa al garaje. Guardá el progreso al volver.
-Las teclas son configurables; los controles anteriores migran sin perder sus asignaciones.
-Mando en ¼ de milla: RT acelera, LT o B frena, LB embrague, A sube, Y baja,
-X repite, RB cámara, R3 mirada trasera. Inicio arma en preparación o pausa durante la pasada.
-
-El ticket mide ET, reacción, total, 60 pies, 1/8 de milla y velocidad de trampa.
-Salir de carril o cruzar antes del verde invalida la marca. Las mejores pasadas
-se conservan por unidad de vehículo; ET y reacción se muestran por separado.
-El motor tiene inercia, curva de par, embrague con acople finito y tracción limitada.
-El estado y las mejoras del garaje afectan potencia y agarre; errores, patinamiento
-y deslizamiento del embrague añaden desgaste. Son aproximaciones de desarrollo,
-no mediciones oficiales de los autos. Sonido de motor sintetizado provisional.
-
-El circuito del club conserva CONTRARRELOJ 3D y CARRERA LIBRE 3D.
-La carrera libre no cobra ni da premios.
-Para competir con progreso: MODO CARRERA -> Copa de Debutantes -> CORRER 3D.
-La inscripción cuesta $120.000 ARS. Abandonar consume la inscripción y no da premio.
-Son dos vueltas contra Nico y Claire; la llegada paga $700.000/$400.000/$200.000 ARS.
-Los demás eventos y la prueba de 10 km siguen siendo simulados.
-
-W/flecha arriba: acelerar. S/abajo: frenar y reversa. A/D o flechas: girar.
-ESPACIO: frenar. R: recuperar (tres segundos de detención en carrera).
-TAB / RB: cambiar cámara. SHIFT / Y: mirar atrás. Stick derecho: mirar alrededor.
-AJUSTES permite elegir cámara inicial y suavizar la dirección del teclado.
-P: pausar a todos. ESC: volver al garaje / abandonar la carrera.
-AJUSTES permite cambiar teclas y la zona muerta del mando. Las flechas quedan
-siempre disponibles. Los controles se guardan automáticamente, separados de la partida.
-Mando: stick/cruceta gira, RT/R2 acelera, LT/L2 frena proporcionalmente,
-B/Círculo reversa, X/Cuadrado recupera e Inicio pausa. Se activa al moverlo o pulsarlo.
-Cruzá las ocho puertas en orden. Salir del asfalto invalida la vuelta actual.
-Se guardan mejores tiempos por auto y toda la distancia recorrida, incluso
-menos de 1 km. Volvé al garaje y presioná GUARDAR; el guardado es manual.
-CARGAR recupera la partida anterior. Las partidas viejas siguen siendo compatibles.
-
-Incluye rivales físicos, barreras con colisión, ritmo y adelantamientos básicos,
-cronómetro, posiciones, resultado real de Debutantes, economía y desgaste.
-La aceleración sigue una curva de par por RPM, la carga afecta al agarre de
-cada eje y el frenado está limitado por neumáticos, también al pedir reversa.
-Cuatro cámaras, mirada trasera y brazo de seguimiento con prevención de obstáculos.
-Menú con mapa de servicios, garaje 3D y HUD de carrera; gráficos propios.
-La dirección de teclado entra progresivamente y vuelve al centro con mayor rapidez.
-La dirección del ¼ de milla tiene asistencia; aún no hay un modelo lateral completo.
-Salvo el Gol importado, los modelos siguen siendo provisionales, al igual que
-las temperaturas y el audio de motor. Hay daños mecánicos por impacto en el
-cuarto de milla, sin deformación visual ni simulación térmica/mecánica completa.
-Se consultó gt4-decomp como referencia para RPM y cambios secuenciales.
-La IA y el circuito son implementaciones originales. No se han incluido
-recursos del juego comercial. Ver juego/REFERENCES.md y juego/README.md.
-
-Validación: Godot 4.6.3 en Linux, pruebas headless y capturas reales con OpenGL por software.
-Las capturas no constituyen una prueba de rendimiento o compatibilidad con tu GPU.
-El paquete Windows no ha sido ejecutado en Windows en este entorno.
-Si no abre, ejecutá DIAGNOSTICO.cmd y compartí los archivos importacion.log y juego.log.
-Godot: https://godotengine.org/license/ (motor oficial, licencia MIT).
-Tipografía Barlow Condensed: licencia SIL OFL en juego/assets/fonts/OFL-Barlow.txt.
-Créditos y licencia del proyecto en LICENSE y README-proyecto.md.
+Ver RELEASE-0.17.md y REGULATIONS-REFERENCE.md para alcance y reglas no implementadas.
+Validación en Linux con Godot 4.6.3, headless y capturas OpenGL por software.
+Windows, mando físico y GPU real requieren prueba en esos equipos. Si no abre, ejecutá
+DIAGNOSTICO.cmd y compartí importacion.log/juego.log. Licencias incluidas.
 """
+
 LAUNCH = r'''@echo off
 setlocal
 cd /d "%~dp0"
@@ -187,11 +119,11 @@ def main():
         if actual != expected:
             raise ValueError("Official engine SHA-512 mismatch")
     source = args.output / f"GT4-Evolution-{VERSION}-Proyecto.zip"
-    with zipfile.ZipFile(source, "w", zipfile.ZIP_DEFLATED) as archive:
+    with zipfile.ZipFile(source, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         write_project(archive)
     if args.windows_engine:
         windows = args.output / f"GT4-Evolution-{VERSION}-Windows.zip"
-        with zipfile.ZipFile(windows, "w", zipfile.ZIP_DEFLATED) as archive:
+        with zipfile.ZipFile(windows, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
             write_project(archive)
             with zipfile.ZipFile(args.windows_engine) as engine:
                 for name in [ENGINE, ENGINE.replace(".exe", "_console.exe")]:

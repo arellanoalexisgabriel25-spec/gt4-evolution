@@ -220,7 +220,7 @@ func run() -> void:
     session.game.buy(13)
     for component in session.game.find_car(13)["health"]:
         session.game.find_car(13)["health"][component] = 100.0
-    session.start_drag(13,"duel","technical")
+    session.start_drag(13,"duel","technical","1")
     change_scene_to_file("res://scenes/drag.tscn")
     await process_frame
     await process_frame

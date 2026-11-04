@@ -143,12 +143,13 @@ func refresh(data: Dictionary) -> void:
     var run = data["run"]
     var settings = data["settings"]
     var is_duel: bool = data.get("duel",false)
-    model_label.text = data["name"] + (" / SERIE · DUELO" if is_duel else " / MANUAL · PRÁCTICA")
+    model_label.text = data["name"] + (" / FÁBRICA" if is_duel else " / MANUAL")
     opponent_label.get_parent().get_parent().visible = is_duel
     if is_duel:
         var other = data["opponent_run"]
         var gap := float(data.get("opponent_gap",0.0))
         opponent_label.text = "VS " + str(data["opponent_name"]).to_upper()+"\n"+("RIVAL %.1f m DETRÁS" % gap if gap>=0 else "RIVAL %.1f m DELANTE" % -gap)+"\nET %s · RT %s" % [("%.3f" % other.elapsed) if other.launch_time>=0 else "—",("%.3f" % other.reaction) if other.launch_time>=0 else "—"]
+    var category: Dictionary = data.get("class_data",{})
     clock_label.text = "%.3f s" % run.elapsed
     reaction_label.text = "REACCIÓN  %s" % ("%.3f s" % run.reaction if run.launch_time >= 0 else "—")
     gear_label.text = "N" if model.gear == 0 else str(model.gear)
@@ -165,6 +166,8 @@ func refresh(data: Dictionary) -> void:
     staged = data["staged"]
     arm_button.disabled = not data["can_arm"]
     best_label.text = "MEJOR UNIDAD  " + ("%.3f s" % data["best"]["et"] if not data["best"].is_empty() else "—") + " · SIN PREMIOS"
+    if is_duel:
+        best_label.text = ("CLASE %s · PISO ET %.2f s" % [category.id,category.minimum_et] if not category.is_empty() else "LIBRE") + " · MEJOR " + ("%.3f s" % data["best"]["et"] if not data["best"].is_empty() else "—")
     var status := "PREPARACIÓN · Primera, embrague y Enter"
     if run.phase == "preparation" and model.feedback_time>0.0:
         status = model.shift_hint()
@@ -192,7 +195,7 @@ func refresh(data: Dictionary) -> void:
         var heading := "VICTORIA" if duel_result["winner"]=="player" else ("DERROTA" if duel_result["winner"]=="rival" else ("EMPATE" if duel_result["outcome"]=="tie" else "SIN GANADOR"))
         status_label.text = heading + " · " + str(duel_result["reason"])
         ticket_panel.visible = true
-        ticket_label.text = heading+" / DUELO DE SERIE\n"+_lane_result("VOS",duel_result["entries"]["player"])+"\n"+_lane_result(str(data["opponent_name"]),duel_result["entries"]["rival"])+"\nRT + ET determina la llegada\nSin inscripción ni premios"
+        ticket_label.text = heading+" / DUELO DE FÁBRICA\n"+_lane_result("VOS",duel_result["entries"]["player"])+"\n"+_lane_result(str(data["opponent_name"]),duel_result["entries"]["rival"])+"\n"+("CLASE %s · PISO ET %.2f s\n" % [category.id,category.minimum_et] if not category.is_empty() else "")+("EXCEPCIÓN ART. 12 / FALSO RIVAL\n" if duel_result.get("exception","")=="art12_single_false_start" else "")+"Sin inscripción ni premios"
         if data["paused"]: status_label.text = "PAUSA · "+heading
     var start: Dictionary = data["wear_start"]
     wear_label.text = "DESGASTE ADICIONAL / ESTA PASADA\nMotor %.3f · Caja %.3f · Gomas %.3f" % [float(model.wear.motor)-float(start.get("motor",0.0)),float(model.wear.transmision)-float(start.get("transmision",0.0)),float(model.wear.neumaticos)-float(start.get("neumaticos",0.0))]
@@ -203,10 +206,10 @@ func refresh(data: Dictionary) -> void:
     queue_redraw()
 
 func _lane_result(name: String, entry: Dictionary) -> String:
-    if entry["status"]!="finished":
+    if entry["ticket"].is_empty():
         return name+": "+str(entry["reason"])
     var ticket: Dictionary = entry["ticket"]
-    return "%s\nET %.3f · RT %.3f\nTOTAL %.3f s" % [name,ticket["et"],ticket["reaction"],ticket["total"]]
+    return "%s%s\nET %.3f · RT %.3f\nTOTAL %.3f s" % [name," · CAÍDA" if entry["status"]=="breakout" else "",ticket["et"],ticket["reaction"],ticket["total"]]
 
 func _draw() -> void:
     for i in range(24):

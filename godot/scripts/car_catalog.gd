@@ -12,7 +12,7 @@ const DATA := {
         "asset":"res://assets/cars/fiat_147/fiat_147.glb"
     },
     "Fiat Uno Fire 3 puertas": {
-        "key":"uno_fire", "price":4600, "mass":910.0, "torque":111.0,
+        "key":"uno_fire", "price":4600, "mass":910.0, "torque":110.815145,
         "redline":6300.0, "wheelbase":2.36, "radius":0.285,
         "gears":[3.91,2.16,1.48,1.12,0.90], "final_drive":3.73,
         "size":Vector3(1.63,1.44,3.69), "paint":Color("a32d2b"),

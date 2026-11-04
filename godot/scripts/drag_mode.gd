@@ -11,6 +11,7 @@ const Audio = preload("res://scripts/engine_audio.gd")
 const Controls = preload("res://scripts/control_settings.gd")
 const PauseMenu = preload("res://scripts/pause_menu.gd")
 const Duel = preload("res://scripts/drag_duel.gd")
+const Classes = preload("res://scripts/drag_class_rules.gd")
 const RivalDriver = preload("res://scripts/drag_rival_driver.gd")
 var strip
 var car
@@ -32,6 +33,7 @@ var pause_menu
 var last_pad := -1
 var controller_lost := false
 var is_duel := false
+var class_data: Dictionary = {}
 var opponent
 var opponent_run = Run.new()
 var opponent_driver
@@ -45,6 +47,7 @@ func _ready() -> void:
     var vehicle: Dictionary = GameSession.game.find_car(GameSession.selected_vehicle)
     enabled = GameSession.driving_mode == "drag" and garage.begin(GameSession.game,GameSession.career,GameSession.selected_vehicle)
     is_duel = GameSession.drag_format=="duel"
+    class_data = Classes.class_by_id(GameSession.drag_class_id) if is_duel else {}
     opponent_name = {"technical":"Nico Vega","aggressive":"Claire Moreau","conservative":"Akira Sato"}.get(GameSession.drag_rival_profile,"Nico Vega")
     strip = Strip.new()
     strip.dual_lanes = is_duel
@@ -157,7 +160,7 @@ func _arm() -> void:
         return
     if run.arm(-car.position.z,car.powertrain.speed_mps):
         if is_duel:
-            if not opponent_run.arm(-opponent.position.z,opponent.powertrain.speed_mps) or not duel.begin(run,opponent_run):
+            if not opponent_run.arm(-opponent.position.z,opponent.powertrain.speed_mps) or not duel.begin(run,opponent_run,float(class_data.get("minimum_et",0.0)),123.0,"argentina_reference" if not class_data.is_empty() else "legacy_practice"):
                 run = Run.new()
                 opponent_run = Run.new()
                 message = "El rival no está alineado. Recuperá con R."
@@ -217,7 +220,7 @@ func _physics_process(delta: float) -> void:
 
 func _refresh_hud() -> void:
     var best: Dictionary = (GameSession.career.stock_drag_records if is_duel else GameSession.career.drag_records).best(GameSession.selected_vehicle)
-    hud.refresh({"model":car.powertrain,"run":run,"settings":GameSession.controls,"name":car.model_name,"position":-car.position.z,"best":best,"staged":_staged(),"can_arm":_can_arm(),"message":message,"paused":paused,"personal_best":personal_best,"wear_start":attempt_wear_start,"impacts":car.damage.impacts,"damage":car.damage.cumulative,"duel":is_duel,"opponent_name":opponent_name,"opponent_run":opponent_run,"opponent_gap":opponent.position.z-car.position.z if is_duel else 0.0,"duel_result":duel_result,"zero_to_hundred":car.zero_to_hundred})
+    hud.refresh({"model":car.powertrain,"run":run,"settings":GameSession.controls,"name":car.model_name,"position":-car.position.z,"best":best,"staged":_staged(),"can_arm":_can_arm(),"message":message,"paused":paused,"personal_best":personal_best,"wear_start":attempt_wear_start,"impacts":car.damage.impacts,"damage":car.damage.cumulative,"duel":is_duel,"opponent_name":opponent_name,"opponent_run":opponent_run,"opponent_gap":opponent.position.z-car.position.z if is_duel else 0.0,"duel_result":duel_result,"zero_to_hundred":car.zero_to_hundred,"class_data":class_data})
 
 func _shift(direction: int) -> void:
     if enabled and not leaving and not paused and run.phase not in ["finished","invalid"]:

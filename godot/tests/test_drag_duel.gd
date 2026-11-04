@@ -11,20 +11,20 @@ func check(ok: bool, message: String) -> void:
         failed = true
         push_error(message)
 
-func pair(index: float = 0.0, limit: float = 125.0) -> Dictionary:
+func pair(index: float = 0.0, limit: float = 125.0, rules_profile: String = "legacy_practice") -> Dictionary:
     var player = Run.new()
     var rival = Run.new()
     player.arm(0,0)
     rival.arm(0,0)
     var duel = Duel.new()
-    if not duel.begin(player,rival,index,limit):
+    if not duel.begin(player,rival,index,limit,rules_profile):
         push_error("Test fixture could not begin")
         failed = true
     return {"player":player,"rival":rival,"duel":duel}
 
 # Advance actual beam models on one shared clock, rather than fabricating times.
-func run_pair(player_wait: float, rival_wait: float, player_speed: float = 20.0, rival_speed: float = 20.0, index: float = 0.0) -> Dictionary:
-    var race := pair(index)
+func run_pair(player_wait: float, rival_wait: float, player_speed: float = 20.0, rival_speed: float = 20.0, index: float = 0.0, rules_profile: String = "legacy_practice") -> Dictionary:
+    var race := pair(index,125.0,rules_profile)
     var clock := 0.0
     var positions := Vector2.ZERO
     for i in range(5000):
@@ -120,5 +120,50 @@ func _initialize() -> void:
     reset_lane.rival.invalidate("ABANDONO")
     reset_lane.duel.advance(0.01)
     check(reset_lane.duel.report().outcome=="no_winner" and reset_lane.duel.report().entries.player.reason=="CRONOMETRAJE REINICIADO","Resetting a timer during a race is an explicit invalid result")
+    check(not invalid.begin(same,unstaged,0,123,"unknown") and not invalid.started,"Unknown rules profiles are rejected before binding either lane")
+    var legacy_red_breakout := run_pair(1.0,2.25,20.0,21.0,19.5)
+    check(legacy_red_breakout.duel.report().outcome=="no_winner" and legacy_red_breakout.duel.report().rules_profile=="legacy_practice","Existing practice calls retain the old false-start versus breakout behavior")
+    var arg_red_breakout := run_pair(1.0,2.25,20.0,21.0,19.5,"argentina_reference")
+    var arg_report: Dictionary = arg_red_breakout.duel.report()
+    check(arg_report.winner=="rival" and arg_report.exception=="art12_single_false_start","Supplied Art.12 awards the measured non-red finisher even when its ET falls below the class floor")
+    check(arg_report.entries.rival.status=="breakout" and arg_report.entries.rival.index_exempt and arg_report.entries.rival.ticket.et<19.5,"The exception preserves the actual under-index ticket instead of rewriting ET or hiding the breakout")
+    check(arg_red_breakout.rival.phase=="finished" and arg_red_breakout.player.reason=="LARGADA EN FALSO","The Art.12 case comes from actual interpolated timing sensors")
+    check(arg_report.ruleset=="argentina_reference" and arg_report.source_status=="user_supplied_reference_not_live" and arg_report.rules_source_sha256.length()==64,"Results identify the supplied reference and never claim live official verification")
+    check(arg_report.distance_m==402.336 and arg_report.entries.rival.ticket.distance==402.336,"The source's rounded 402 m wording does not alter the persistent quarter-mile course")
+    var arg_player_exempt := run_pair(2.25,1.0,21.0,20.0,19.5,"argentina_reference")
+    check(arg_player_exempt.duel.report().winner=="player" and arg_player_exempt.duel.report().entries.player.index_exempt,"Art.12 applies symmetrically when the player is the under-index finisher")
+    var arg_single_red := run_pair(1.0,2.25,20.0,20.0,19.5,"argentina_reference")
+    check(arg_single_red.duel.report().winner=="rival" and not arg_single_red.duel.report().entries.rival.index_exempt,"A legal above-floor finisher also wins a single-red race without fabricating an index violation")
+    var arg_both_red := run_pair(1.0,1.0,20.0,20.0,19.5,"argentina_reference")
+    check(arg_both_red.duel.report().outcome=="no_winner" and arg_both_red.duel.report().reason=="AMBOS ADELANTADOS · ART.12","Both red lights eliminate both racers in a normal round")
+    check(arg_both_red.duel.report().competition_scope=="single_normal_round" and not invalid.begin(same,unstaged,0,123,"argentina_final"),"Final reruns, championship brackets and prize rules are outside this normal-round profile")
+    var arg_double_breakout := run_pair(2.25,2.25,21.0,22.0,25.0,"argentina_reference")
+    check(arg_double_breakout.duel.report().outcome=="no_winner" and arg_double_breakout.duel.report().reason=="AMBOS CAÍDOS DE TIEMPO · ART.20","Two below-floor passes leave the normal round without a winner")
+    var arg_lane := pair(19.5,125,"argentina_reference")
+    arg_lane.player.advance(1.0,0,0)
+    arg_lane.rival.advance(1.0,0,0)
+    arg_lane.duel.advance(1.0)
+    arg_lane.player.advance(0.1,0.3,3)
+    arg_lane.rival.advance(0.1,0,0,false)
+    arg_lane.duel.advance(0.1)
+    check(arg_lane.duel.report().outcome=="no_winner" and arg_lane.duel.report().exception.is_empty(),"Art.12 does not waive an opponent's independently measured lane infringement")
+    var arg_no_finish := pair(19.5,3.0,"argentina_reference")
+    var no_finish_position := 0.0
+    for i in range(301):
+        if i>=100: no_finish_position+=0.03
+        arg_no_finish.player.advance(0.01,no_finish_position,3.0 if i>=100 else 0.0)
+        arg_no_finish.rival.advance(0.01,0,0)
+        arg_no_finish.duel.advance(0.01)
+        if arg_no_finish.duel.finished: break
+    check(arg_no_finish.player.reason=="LARGADA EN FALSO" and arg_no_finish.duel.report().outcome=="no_winner" and arg_no_finish.duel.report().entries.rival.status=="timeout","A sole red light cannot invent a finish for an opponent that never completes the course")
+    var boundary_measurement := run_pair(2.25,2.25)
+    var measured_et: float = boundary_measurement.duel.report().entries.player.ticket.et
+    var arg_boundary := run_pair(2.25,2.25,20.0,20.0,measured_et,"argentina_reference")
+    check(arg_boundary.duel.report().outcome=="tie" and arg_boundary.duel.report().entries.player.status=="finished","ET exactly at the class floor is legal under the supplied strict comparison")
+    var arg_just_below := run_pair(2.25,2.25,20.0,20.0,measured_et+0.0000005,"argentina_reference")
+    var legacy_just_below := run_pair(2.25,2.25,20.0,20.0,measured_et+0.0000005)
+    check(arg_just_below.duel.report().entries.player.status=="breakout" and legacy_just_below.duel.report().entries.player.status=="finished","Only legacy practice retains the former one-microsecond class-floor allowance")
+    var arg_holeshot := run_pair(3.0,2.10,21.0,20.5,18.0,"argentina_reference")
+    check(arg_holeshot.duel.report().winner=="rival" and arg_holeshot.duel.report().entries.player.ticket.et<arg_holeshot.duel.report().entries.rival.ticket.et,"Two legal class passes are still decided by measured arrival from the common green")
     if not failed: print("PASS: %d drag duel assertions" % checks)
     quit(1 if failed else 0)

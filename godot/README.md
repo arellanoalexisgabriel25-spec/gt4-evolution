@@ -1,16 +1,26 @@
-# GT4 Evolution · v0.16 / Duelos de serie y métricas físicas
+# GT4 Evolution · v0.17 / Modelos y clases de ¼ de milla
 
-Prototipo independiente de automovilismo en Godot 4.6.3. El desarrollo se centra ahora en un **¼ de milla de 402,336 m**, con largada, cambios manuales, marcas y desgaste en un entorno original inspirado en el ambiente del autódromo Gálvez. Conserva mercado, garaje, taller, tuning y los modos anteriores. La investigación de GT4 se consulta como referencia; no se incluyen su ejecutable, modelos, texturas ni circuitos comerciales.
+Prototipo independiente de automovilismo en Godot 4.6.3. El desarrollo se centra en un **¼ de milla de 402,336 m contra otro auto físico**, con largada, cambios manuales, marcas y desgaste en un entorno original inspirado en el ambiente del autódromo Gálvez. Conserva mercado, garaje, taller, tuning y los modos anteriores. La investigación de GT4 se consulta como referencia; no se incluyen su ejecutable, modelos, texturas ni circuitos comerciales.
 
-## Novedades v0.16
+## Novedades v0.17
 
-**GARAJE → DUELO ¼ DE MILLA / SERIE** corre contra otro auto físico. Elegí a Nico, Claire o Akira; prepará primera y embrague, armá el árbol y esperá el verde. Gana la primera llegada válida por **RT + ET**. El ticket muestra ambos carriles; falso y fuera de carril descalifican. Pausa detiene a ambos y R los vuelve a alinear. La práctica individual conserva su botón anterior.
+**GARAJE → DUELO ¼ DE MILLA / FÁBRICA** permite elegir rival y clase antes de correr. Nico es técnico, Claire agresiva y Akira conservador. Por defecto se usa **Clase 1, piso de 18,00 s ET**; también podés elegir los demás pisos de ¼ del art. 21 del reglamento aportado, incluidos **4i y 5i**, o **LIBRE / PRIMERA LLEGADA** para correr sin piso. La opción LIBRE es una exhibición propia; no representa admisión a la clase oficial L1.
 
-Serie utiliza configuración sin preparaciones, neumáticos de calle y protocolo sin ayudas, conservando la condición mecánica y piezas de tu unidad. Exhibición sin inscripción ni premios; uso y récord de serie se guardan por separado de marcas antiguas. GUARDAR conserva el progreso manualmente.
+Ambos carriles tienen vehículo, semáforo y ticket independientes. Entre llegadas válidas gana el menor **RT + ET**, mientras que la caída de clase se evalúa sólo sobre **ET**. En el perfil de referencia argentino, un adelantamiento individual da la victoria al otro carril sin importar su ET, conforme al art. 12; dos adelantamientos o dos caídas no inventan un ganador. Esta ronda es una **exhibición sin inscripción, premios ni campeonato**. Las excepciones de finales, llaves, repechaje y trofeos están documentadas y no se presentan como sistemas ya implementados.
 
-Se corrigieron torque neto, masa con piloto y pérdidas de transmisión en retención. Ficha provisional en garaje y 0–100/potencia al eje en HUD. **Los perfiles aún son estimaciones:** la red bloqueó cuartodemilla.com.ar y fabricantes; no se afirman cifras de fábrica ni categorías oficiales verificadas. [Fuentes](STOCK-SOURCES.md) · [Informe de entrega](RELEASE-0.16.md).
+El duelo usa configuración de fábrica, neumáticos de calle y protocolo sin ayudas, conservando el estado mecánico de tu unidad. Es una restricción propia de Evolution: el reglamento técnico permite preparación mecánica en vehículos de «serie». El botón **¼ DE MILLA / MANUAL** conserva la práctica individual anterior y sus preparaciones. Pausa detiene ambos autos; R los vuelve a alinear manteniendo desgaste. Los récords de configuración de fábrica permanecen separados de los anteriores y el progreso sigue requiriendo **GUARDAR**.
 
-## Incorporado en v0.15
+Se incorporan los modelos aportados del **147 y del Uno**, con derivados de render optimizados a partir de originales de aproximadamente un millón de triángulos, preservando UV y materiales; el conteo final y la revisión gráfica se registran en el informe de entrega. Los originales se archivan por separado. El Gol mantiene su GLB aportado sin modificar. **El modelo del Uno recibido es de cinco puertas**, aunque la variante objetivo del catálogo sigue siendo Uno Fire de tres puertas: la diferencia visual permanece explícita y su corrección requiere un modelo adecuado.
+
+El Uno se identifica como **Fire 1.3 8V de tres puertas, año 2014**. Su curva respeta los **68 CV a 5.250 RPM** y **11,3 kgf·m a 2.250 RPM** de la referencia de fabricante transcrita por el usuario. Los **13,2 s de 0–100 y 158 km/h** se registran como objetivos de contraste, sin imponerlos a la física. Los demás puntos de curva, masas, relaciones y prestaciones continúan siendo **estimaciones de desarrollo**. Los nuevos textos permiten transcribir reglas, pero no verifican datos de fabricante; no se obtuvieron fichas de V6 para calibrarlos. [Reglamentos, artículos y límites](REGULATIONS-REFERENCE.md) · [Fuentes de vehículos](STOCK-SOURCES.md) · [Revisión del PDF Fiat](FIAT-REPORT-REVIEW.md) · [Informe de entrega y estado de validación](RELEASE-0.17.md) · [Procedencia de modelos](assets/cars/README.md).
+
+## Estado histórico: incorporado en v0.16
+
+La v0.16 introdujo los dos autos físicos, IA por controles, reloj común, tickets independientes, pausa y recuperación compartidas. Su regla inicial era duelo directo sin categorías verificadas; v0.17 añade la selección de pisos y la excepción de adelantamiento del texto aportado. También corrigió torque neto, masa con piloto y pérdidas de transmisión en retención, y añadió ficha provisional y 0–100/potencia al eje. Sus benchmarks son resultados del modelo de esa versión, no mediciones de autos reales. [Informe histórico](RELEASE-0.16.md).
+
+## Estado histórico: incorporado en v0.15
+
+Los siguientes puntos describen la entrega 0.15. La importación pendiente del 147 y del Uno se resuelve en 0.17 con los nuevos ZIP; la limitación de cinco puertas del Uno se mantiene documentada arriba.
 
 - **147 Vivace, Uno Fire de tres puertas y Gol Power de tres puertas** encabezan el concesionario y se eligen en Inicio con los botones 147 / UNO / GOL. Tienen precios, masas, torque, relaciones de caja y colisiones diferenciados. GARAJE → VER MODELO permite elegir la vista cuando tenés varios autos.
 - El **Gol usa el GLB texturizado aportado por el usuario**, con ruedas delanteras/traseras animadas. El archivo original conserva sus 40.000 triángulos, UV y material. Los modelos adjuntos del 147 y del Uno aún requieren acceso: esos dos ZIP exceden 32 MiB y Drive está bloqueado por la red del entorno. Ambos usan por ahora carrocerías procedurales originales, además de sus configuraciones propias.
@@ -51,7 +61,7 @@ Las diez acciones de teclado se reasignan en AJUSTES. Las preferencias anteriore
 
 Mando en este modo: RT/R2 acelera, LT/L2 o B/Círculo frena, LB/L1 sostiene embrague, A/Cruz sube, Y/Triángulo baja, X/Cuadrado recupera, RB/R1 cambia cámara y R3 mira atrás. Inicio arma el árbol durante preparación y pausa/reanuda durante la pasada; Select/Back abre la pausa en cualquier momento. AJUSTES permite usar **LT/L2 como embrague analógico**: en ese modo B/Círculo frena, también si se mantiene el acelerador. LB sigue disponible. La opción solo afecta al ¼ de milla. El stick izquierdo conserva asistencia de dirección; el mando físico sigue pendiente de prueba.
 
-El escenario se llama **Autódromo Sur**: tribuna, boxes, control, colores argentinos, semáforo y una escapatoria de más de 250 m. Es un diseño original inspirado en un ambiente de autódromo porteño; no es una reproducción exacta ni homologada del Gálvez. El sonido de motor es sintetizado y provisional. El Gol utiliza el modelo aportado; las demás carrocerías siguen siendo geometría original de desarrollo.
+El escenario se llama **Autódromo Sur**: tribuna, boxes, control, colores argentinos, semáforo y una escapatoria de más de 250 m. Es un diseño original inspirado en un ambiente de autódromo porteño; no es una reproducción exacta ni homologada del Gálvez. El sonido de motor es sintetizado y provisional. El 147, el Uno y el Gol utilizan los modelos aportados; las demás carrocerías siguen siendo geometría original de desarrollo. El Uno recibido tiene cinco puertas, frente a la variante objetivo de tres puertas.
 
 ## Probar el juego
 
@@ -106,7 +116,7 @@ La recuperación conserva las vueltas ya completadas y la distancia realmente re
 
 ## Límites actuales
 
-La conducción del circuito sigue siendo arcade. El ¼ de milla añade un modelo longitudinal con embrague, cambios manuales y daños mecánicos, asistencia lateral y temperaturas simplificadas. El 147 y el Uno tienen gráficos provisionales hasta importar sus adjuntos; el Gol conserva detalles y luces horneados de su GLB. No hay deformación visual ni simulación completa de neumáticos, suspensión o embrague. Las colisiones usan cuerpos de personaje, sin intercambio realista de impulsos. El ¼ de milla es una contrarreloj individual; no incluye todavía rivales físicos ni campeonatos propios. Se revisan capturas reales a 1280×720 con Mesa/llvmpipe en Linux; faltan conducción humana, Windows, mando físico y mediciones de rendimiento en GPU real.
+La conducción del circuito sigue siendo arcade. El ¼ de milla usa un modelo longitudinal con embrague, cambios manuales y daños mecánicos, asistencia lateral y temperaturas simplificadas. Hay duelos físicos y práctica individual; no hay campeonato de picadas, premios, llaves, finales ni verificación técnica homologada. Los pisos transcritos del reglamento no validan las prestaciones estimadas de los autos. El Uno aportado tiene cinco puertas, el catálogo apunta a tres; los GLB contienen detalles y luces horneados. No hay deformación visual ni simulación completa de neumáticos, suspensión, embrague o diferencial izquierda/derecha. Las colisiones usan cuerpos de personaje, sin intercambio realista de impulsos. Faltan conducción humana, Windows, mando físico y mediciones de rendimiento en GPU real. La evidencia y el estado de comprobación de esta versión se registran en [RELEASE-0.17.md](RELEASE-0.17.md).
 
 ## Desarrollo y pruebas
 
@@ -129,7 +139,7 @@ Los parámetros siguen siendo de balance arcade, no medidas extraídas de GT4. L
 
 La estética toma como referencia los menús clásicos de automovilismo, usando gráficos y geometría originales. Las preferencias anteriores y las partidas siguen siendo compatibles. Regresar de la pista abre directamente el garaje y recuerda guardar; no cambia las reglas de premios ni el guardado manual.
 
-Las pruebas cubren las vistas, dirección, preferencias, navegación, transacciones y HUD; también pasadas manuales completas, diferencias de cambio y desgaste, semáforo, reacción, parciales, marca única por intento y compatibilidad de guardado. v0.15 añade los tres autos, la migración de ofertas, el GLB, compuestos, montaje pagado, colisiones, daños y reparaciones. Para producir veinticuatro capturas en un entorno con pantalla OpenGL:
+Las pruebas cubren las vistas, dirección, preferencias, navegación, transacciones y HUD; también pasadas manuales completas, diferencias de cambio y desgaste, semáforo, reacción, parciales, marca única por intento y compatibilidad de guardado. v0.15 añade los tres autos, la migración de ofertas, el GLB, compuestos, montaje pagado, colisiones, daños y reparaciones. Para generar las capturas de presentación en un entorno con pantalla OpenGL:
 
 ```sh
 LIBGL_ALWAYS_SOFTWARE=1 bash tools/capture_presentation.sh /ruta/absoluta/capturas
