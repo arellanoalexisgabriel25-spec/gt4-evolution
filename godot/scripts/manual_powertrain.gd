@@ -37,6 +37,16 @@ var clutch_loss_kw := 0.0
 var engine_torque_nm := 0.0
 var wheel_torque_nm := 0.0
 var driveline_loss_kw := 0.0
+var engine_power_kw := 0.0
+var shaft_power_kw := 0.0
+var contact_power_kw := 0.0
+var road_load_n := 0.0
+var engine_work_j := 0.0
+var clutch_heat_j := 0.0
+var driveline_heat_j := 0.0
+var tire_heat_j := 0.0
+var brake_heat_j := 0.0
+var road_work_j := 0.0
 var traction_control := false
 var tcs_cut := 1.0
 
@@ -60,6 +70,10 @@ func reset(keep_heat: bool = true) -> void:
     engine_torque_nm = 0.0
     wheel_torque_nm = 0.0
     driveline_loss_kw = 0.0
+    engine_power_kw = 0.0
+    shaft_power_kw = 0.0
+    contact_power_kw = 0.0
+    road_load_n = 0.0
     feedback = "Punto muerto · Embrague + subir marcha para engranar primera"
     if not keep_heat:
         engine_temperature = 88.0
@@ -69,6 +83,19 @@ func torque_at(engine_rpm: float) -> float:
     var health := clampf((config.engine_health-float(wear["motor"]))/100.0,0,1)
     var thermal := clampf(1.0-maxf(0,engine_temperature-105.0)*0.015,0.55,1.0)
     return config.peak_torque*factor*(0.65+0.35*health)*thermal
+
+static func transmitted_torque(clutch_torque: float, ratio: float, efficiency: float) -> float:
+    var eta := clampf(efficiency,0.05,1.0)
+    # Positive torque flows engine -> axle. Negative torque flows axle -> engine;
+    # the wheels must lose MORE power than the crankshaft receives, not less.
+    return clutch_torque*ratio*(eta if clutch_torque>=0.0 else 1.0/eta)
+
+func road_load_force(speed: float) -> float:
+    return 0.5*config.air_density*config.drag_area*speed*speed+config.rolling_resistance*config.mass*9.81
+
+func kinetic_energy_j() -> float:
+    var engine_omega := rpm*TAU/60.0
+    return 0.5*config.mass*speed_mps*speed_mps+0.5*config.engine_inertia*engine_omega*engine_omega+0.5*config.wheel_inertia*axles.omega.length_squared()
 
 func shift(direction: int, clutch: float) -> bool:
     if direction not in [-1,1] or shift_timer > 0.0:
@@ -125,35 +152,48 @@ func _integrate(dt: float, accelerator: float, clutch: float, brake: float, on_r
     var slip: float = axles.drive_slip(config)
     var wanted_cut := clampf(0.18/maxf(slip,0.18),0.15,1.0) if traction_control and speed_mps>2.0 and accelerator>0.05 else 1.0
     tcs_cut = lerpf(tcs_cut,wanted_cut,1.0-exp(-14.0*dt))
-    var combustion := torque_at(rpm)*throttle*pressure_factor*tcs_cut if engine_running and not limiter else 0.0
-    engine_torque_nm = combustion
-    if engine_running:
-        combustion += idle
     var friction := 7.0+engine_omega*0.025
-    engine_omega = maxf(0,engine_omega+(combustion-clutch_torque-friction)*dt/config.engine_inertia)
+    var rated_net := torque_at(rpm)*throttle*pressure_factor*tcs_cut if engine_running and not limiter else 0.0
+    # Catalog/full-load torque is already net at the crankshaft. Subtracting
+    # internal drag again at WOT understated all stock engines. Retain drag on
+    # lift/fuel cut for genuine engine braking; idle control supplies only idle.
+    var pumping_loss := friction*(1.0-throttle) if engine_running and not limiter else friction
+    var engine_net := rated_net-pumping_loss+(idle if engine_running else 0.0)
+    engine_torque_nm = engine_net
+    engine_power_kw = EngineTorque.power_kw(engine_net,rpm)
+    engine_work_j += engine_net*engine_omega*dt
+    engine_omega = maxf(0,engine_omega+(engine_net-clutch_torque)*dt/config.engine_inertia)
     rpm = engine_omega*60.0/TAU
     if engine_running and rpm < 420.0:
         engine_running = false
         feedback = "MOTOR CALADO · R recupera y vuelve a arrancar"
         feedback_time = 5.0
-    wheel_torque_nm = clutch_torque*ratio*config.drivetrain_efficiency
+    wheel_torque_nm = transmitted_torque(clutch_torque,ratio,config.drivetrain_efficiency)
+    shaft_power_kw = wheel_torque_nm*wheel_omega/1000.0
+    wheel_power_kw = maxf(0,shaft_power_kw)
+    driveline_loss_kw = maxf(0,(clutch_torque*ratio-wheel_torque_nm)*wheel_omega/1000.0)
     var tread_before: float = axles.tread_wear_points()
     var tire_force: float = axles.step(dt,speed_mps,wheel_torque_nm,brake,config,config.tire_health-float(wear["neumaticos"]),on_road)
     wheelspin = axles.driven_slip(config)
-    var resistance: float = 0.5*1.225*config.drag_area*speed_mps*speed_mps+config.rolling_resistance*config.mass*9.81
+    var resistance: float = road_load_force(speed_mps)
+    road_load_n = resistance
+    road_work_j += resistance*speed_mps*dt
     var previous := speed_mps
     speed_mps = maxf(0,speed_mps+(tire_force-resistance)*dt/config.mass)
     if speed_mps<0.15 and brake>0.5:
         speed_mps = 0.0
     acceleration = (speed_mps-previous)/dt
     axles.observe_acceleration(acceleration,dt)
-    wheel_power_kw = maxf(0,tire_force*speed_mps/1000.0)
+    contact_power_kw = tire_force*speed_mps/1000.0
     clutch_loss_kw = absf(clutch_torque*difference)/1000.0
-    driveline_loss_kw = absf(clutch_torque*ratio*wheel_omega)*(1.0-config.drivetrain_efficiency)/1000.0
+    clutch_heat_j += clutch_loss_kw*1000.0*dt
+    driveline_heat_j += driveline_loss_kw*1000.0*dt
+    tire_heat_j += axles.slip_power*dt
+    brake_heat_j += axles.brake_power*dt
     engine_temperature += (throttle*0.22-(engine_temperature-85.0)*0.015-speed_mps*0.001)*dt
     wear["neumaticos"] += maxf(0,axles.tread_wear_points()-tread_before)
     wear["transmision"] += absf(clutch_torque*difference)*dt*0.00000004
-    wear["motor"] += (0.001*throttle+0.04*maxf(0,rpm/config.redline_rpm-1.0))*dt*config.engine_wear_factor
+    wear["motor"] += ((0.001*throttle if engine_running else 0.0)+0.04*maxf(0,rpm/config.redline_rpm-1.0))*dt*config.engine_wear_factor
     wear["frenos"] += axles.brake_power*dt*0.000000005
     if rpm > config.redline_rpm*1.10:
         feedback = "SOBRERRÉGIMEN · La reducción fuerza el motor"

@@ -4,8 +4,12 @@ const Manual = preload("res://scripts/manual_powertrain.gd")
 const Damage = preload("res://scripts/damage_model.gd")
 var powertrain = Manual.new()
 var damage = Damage.new()
+var measured_acceleration := 0.0
+var zero_to_hundred := -1.0
+var acceleration_clock := 0.0
 
 func drive_manual(delta: float, controls: Dictionary, road: bool) -> void:
+    var speed_before: float = powertrain.speed_mps
     damage.tick(delta)
     var pedal: float = float(controls.get("throttle",0.0))
     var brake: float = maxf(float(controls.get("brake",0.0)),-pedal)
@@ -26,6 +30,14 @@ func drive_manual(delta: float, controls: Dictionary, road: bool) -> void:
     if is_on_wall() and damage.record(incoming,Vector2(velocity.x,velocity.z),Vector2(forward.x,forward.z))>0.0:
         powertrain.config.apply_damage(damage.latest_damage)
     powertrain.speed_mps = maxf(0,Vector3(velocity.x,0,velocity.z).dot(forward))
+    measured_acceleration = (powertrain.speed_mps-speed_before)/maxf(delta,0.000001)
+    if acceleration_clock==0.0 and speed_before<=0.1 and powertrain.speed_mps>0.1:
+        acceleration_clock = delta*(powertrain.speed_mps-0.1)/maxf(powertrain.speed_mps-speed_before,0.000001)
+    elif acceleration_clock>0.0:
+        acceleration_clock += delta
+    if acceleration_clock>0.0:
+        if zero_to_hundred<0 and speed_before<100.0/3.6 and powertrain.speed_mps>=100.0/3.6:
+            zero_to_hundred = acceleration_clock-delta+delta*(100.0/3.6-speed_before)/maxf(powertrain.speed_mps-speed_before,0.000001)
     physics.velocity = Vector2(velocity.x,velocity.z)
     physics.heading = rotation.y
     physics.gear = powertrain.gear
@@ -40,3 +52,9 @@ func drive_manual(delta: float, controls: Dictionary, road: bool) -> void:
 func recover(location: Vector3, angle: float = 0.0) -> void:
     super.recover(location,angle)
     powertrain.reset()
+    reset_metrics()
+
+func reset_metrics() -> void:
+    measured_acceleration = 0.0
+    zero_to_hundred = -1.0
+    acceleration_clock = 0.0

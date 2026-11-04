@@ -1,8 +1,16 @@
-# GT4 Evolution · v0.15 / Autos insignia, daños y neumáticos
+# GT4 Evolution · v0.16 / Duelos de serie y métricas físicas
 
 Prototipo independiente de automovilismo en Godot 4.6.3. El desarrollo se centra ahora en un **¼ de milla de 402,336 m**, con largada, cambios manuales, marcas y desgaste en un entorno original inspirado en el ambiente del autódromo Gálvez. Conserva mercado, garaje, taller, tuning y los modos anteriores. La investigación de GT4 se consulta como referencia; no se incluyen su ejecutable, modelos, texturas ni circuitos comerciales.
 
-## Novedades v0.15
+## Novedades v0.16
+
+**GARAJE → DUELO ¼ DE MILLA / SERIE** corre contra otro auto físico. Elegí a Nico, Claire o Akira; prepará primera y embrague, armá el árbol y esperá el verde. Gana la primera llegada válida por **RT + ET**. El ticket muestra ambos carriles; falso y fuera de carril descalifican. Pausa detiene a ambos y R los vuelve a alinear. La práctica individual conserva su botón anterior.
+
+Serie utiliza configuración sin preparaciones, neumáticos de calle y protocolo sin ayudas, conservando la condición mecánica y piezas de tu unidad. Exhibición sin inscripción ni premios; uso y récord de serie se guardan por separado de marcas antiguas. GUARDAR conserva el progreso manualmente.
+
+Se corrigieron torque neto, masa con piloto y pérdidas de transmisión en retención. Ficha provisional en garaje y 0–100/potencia al eje en HUD. **Los perfiles aún son estimaciones:** la red bloqueó cuartodemilla.com.ar y fabricantes; no se afirman cifras de fábrica ni categorías oficiales verificadas. [Fuentes](STOCK-SOURCES.md) · [Informe de entrega](RELEASE-0.16.md).
+
+## Incorporado en v0.15
 
 - **147 Vivace, Uno Fire de tres puertas y Gol Power de tres puertas** encabezan el concesionario y se eligen en Inicio con los botones 147 / UNO / GOL. Tienen precios, masas, torque, relaciones de caja y colisiones diferenciados. GARAJE → VER MODELO permite elegir la vista cuando tenés varios autos.
 - El **Gol usa el GLB texturizado aportado por el usuario**, con ruedas delanteras/traseras animadas. El archivo original conserva sus 40.000 triángulos, UV y material. Los modelos adjuntos del 147 y del Uno aún requieren acceso: esos dos ZIP exceden 32 MiB y Drive está bloqueado por la red del entorno. Ambos usan por ahora carrocerías procedurales originales, además de sus configuraciones propias.

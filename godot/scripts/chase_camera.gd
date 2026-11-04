@@ -2,6 +2,7 @@ extends Camera3D
 
 const MODES := ["SEGUIMIENTO", "CERCANA", "CAPÓ", "PARAGOLPES"]
 var target: Node3D
+var race_peer: Node3D
 var mode := 0
 var response := 9.0
 var heading_response := 4.8
@@ -41,7 +42,12 @@ func _offset(speed: float) -> Vector3:
     else:
         distance += clampf(speed,0.0,45.0) * 0.035
         height += clampf(speed,0.0,45.0) * 0.008
-    return Vector3(sin(_heading + _orbit),0,cos(_heading + _orbit)) * distance + Vector3.UP * (height + look_input.y * 0.7)
+    var lateral := 0.0
+    if mode==0 and is_instance_valid(race_peer):
+        distance += 2.5+clampf(absf(race_peer.global_position.z-target.global_position.z),0,20)*0.85
+        height += 0.6
+        lateral = (race_peer.global_position.x-target.global_position.x)*0.5
+    return Vector3(sin(_heading + _orbit),0,cos(_heading + _orbit)) * distance + Vector3.UP * (height + look_input.y * 0.7)+Vector3.RIGHT*lateral
 
 func snap() -> void:
     if not is_instance_valid(target):
@@ -63,7 +69,11 @@ func _aim(speed: float) -> void:
     var back := Vector3(sin(_heading + _orbit),0,cos(_heading + _orbit))
     var height := 0.65 if mode >= 2 else 0.7
     var ahead := 20.0 if mode >= 2 else 2.5 + minf(speed,45.0) * 0.06
-    look_at(target.global_position + Vector3.UP * height - back * ahead,Vector3.UP)
+    var point := target.global_position
+    if mode==0 and is_instance_valid(race_peer):
+        point.x = (point.x+race_peer.global_position.x)*0.5
+        point.z += clampf(race_peer.global_position.z-point.z,-20,20)*0.25
+    look_at(point + Vector3.UP * height - back * ahead,Vector3.UP)
 
 func _process(delta: float) -> void:
     if not is_instance_valid(target) or delta <= 0.0:

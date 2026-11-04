@@ -10,6 +10,8 @@ const HUD = preload("res://scripts/drag_hud.gd")
 const Audio = preload("res://scripts/engine_audio.gd")
 const Controls = preload("res://scripts/control_settings.gd")
 const PauseMenu = preload("res://scripts/pause_menu.gd")
+const Duel = preload("res://scripts/drag_duel.gd")
+const RivalDriver = preload("res://scripts/drag_rival_driver.gd")
 var strip
 var car
 var camera
@@ -29,22 +31,34 @@ var attempt_wear_start: Dictionary = {}
 var pause_menu
 var last_pad := -1
 var controller_lost := false
+var is_duel := false
+var opponent
+var opponent_run = Run.new()
+var opponent_driver
+var duel = Duel.new()
+var duel_result: Dictionary = {}
+var opponent_audio
+var opponent_name := "Nico Vega"
 
 func _ready() -> void:
     GameSession.menu_music.set_menu_active(false)
     var vehicle: Dictionary = GameSession.game.find_car(GameSession.selected_vehicle)
     enabled = GameSession.driving_mode == "drag" and garage.begin(GameSession.game,GameSession.career,GameSession.selected_vehicle)
+    is_duel = GameSession.drag_format=="duel"
+    opponent_name = {"technical":"Nico Vega","aggressive":"Claire Moreau","conservative":"Akira Sato"}.get(GameSession.drag_rival_profile,"Nico Vega")
     strip = Strip.new()
+    strip.dual_lanes = is_duel
     add_child(strip)
     car = Actor.new()
     car.model_name = str(vehicle.get("model",""))
     car.color = Color("963645")
     car.position = Vector3(Strip.LANE_X,0.75,0)
     car.collision_layer = 2
-    car.collision_mask = 1
-    car.powertrain.config = Config.from_vehicle(vehicle)
-    car.powertrain.config.abs_assist = GameSession.controls.abs_assist
-    car.powertrain.traction_control = GameSession.controls.traction_control
+    car.collision_mask = 3 if is_duel else 1
+    car.powertrain.config = Config.from_vehicle(vehicle,is_duel)
+    if not is_duel:
+        car.powertrain.config.abs_assist = GameSession.controls.abs_assist
+        car.powertrain.traction_control = GameSession.controls.traction_control
     car.powertrain.reset(false)
     add_child(car)
     camera = Camera.new()
@@ -63,6 +77,10 @@ func _ready() -> void:
     engine_audio = Audio.new()
     engine_audio.model = car.powertrain
     add_child(engine_audio)
+    if is_duel:
+        _create_opponent(vehicle)
+        camera.race_peer = opponent
+        camera.snap()
     pause_menu = PauseMenu.new()
     pause_menu.mode = self
     canvas.add_child(pause_menu)
@@ -70,6 +88,40 @@ func _ready() -> void:
     if not enabled:
         message = "Seleccioná un auto propio y apto desde el garaje."
     _refresh_hud()
+
+func _create_opponent(vehicle: Dictionary) -> void:
+    opponent = Actor.new()
+    opponent.model_name = str(vehicle.get("model",""))
+    opponent.driver_name = opponent_name
+    opponent.color = Color("345c8a")
+    opponent.position = Vector3(-Strip.LANE_X,0.75,0)
+    opponent.collision_layer = 2
+    opponent.collision_mask = 3
+    var stock: Dictionary = vehicle.duplicate(true)
+    for component in stock.get("health",{}):
+        stock["health"][component] = 100.0
+    opponent.powertrain.config = Config.from_vehicle(stock,true)
+    opponent.powertrain.config.abs_assist = car.powertrain.config.abs_assist
+    opponent.powertrain.traction_control = car.powertrain.traction_control
+    opponent.powertrain.reset(false)
+    add_child(opponent)
+    opponent_driver = RivalDriver.new(GameSession.drag_rival_profile)
+    opponent_driver.controls(opponent.powertrain,0,1.0/60.0)
+    opponent_audio = Audio.new()
+    opponent_audio.model = opponent.powertrain
+    add_child(opponent_audio)
+    opponent_audio.volume_db = -24.0
+
+func _advance_opponent(delta: float) -> void:
+    var controls: Dictionary = opponent_driver.controls(opponent.powertrain,opponent_run.clock,delta)
+    if opponent_run.phase in ["finished","invalid"] or duel.finished:
+        controls = {"throttle":0.0,"clutch":1.0,"brake":0.8,"steer":0.0}
+    opponent.drive_manual(delta,controls,absf(opponent.position.x)<8.5)
+    opponent_run.advance(delta,-opponent.position.z,opponent.powertrain.speed_mps,absf(opponent.position.x+Strip.LANE_X)<=2.7 and not opponent.is_on_wall())
+
+func _duel_result() -> void:
+    if duel.finished and duel_result.is_empty():
+        duel_result = duel.report()
 
 func _controls() -> Dictionary:
     if input_provider.is_valid():
@@ -104,8 +156,18 @@ func _arm() -> void:
         message_time = 3.0
         return
     if run.arm(-car.position.z,car.powertrain.speed_mps):
+        if is_duel:
+            if not opponent_run.arm(-opponent.position.z,opponent.powertrain.speed_mps) or not duel.begin(run,opponent_run):
+                run = Run.new()
+                opponent_run = Run.new()
+                message = "El rival no está alineado. Recuperá con R."
+                message_time = 3.0
+                return
         message = ""
         message_time = 0.0
+        car.reset_metrics()
+        if is_duel:
+            opponent.reset_metrics()
 
 func _physics_process(delta: float) -> void:
     if not enabled or leaving:
@@ -117,6 +179,8 @@ func _physics_process(delta: float) -> void:
         last_pad = GameSession.controls.controller.selected()
     camera.look_back = camera.look_back or GameSession.controls.controller.pressed(JOY_BUTTON_RIGHT_STICK)
     engine_audio.stream_paused = paused
+    if is_duel:
+        opponent_audio.stream_paused = paused
     if paused:
         _refresh_hud()
         return
@@ -130,22 +194,30 @@ func _physics_process(delta: float) -> void:
         controls["clutch"] = 1.0
         message = "MECÁNICA NO APTA · Volvé al taller para reparar"
         message_time = 2.0
-    if run.phase == "finished":
+    if run.phase == "finished" or (is_duel and run.phase=="invalid") or (is_duel and duel.finished):
         controls["throttle"] = 0.0
         controls["brake"] = maxf(0.65,float(controls.get("brake",0.0)))
         controls["clutch"] = 1.0
     car.drive_manual(delta,controls,absf(car.position.x)<8.5)
     garage.measured_distance = car.distance_m
     run.advance(delta,-car.position.z,car.powertrain.speed_mps,_in_lane() and not car.is_on_wall())
+    if is_duel:
+        _advance_opponent(delta)
+        duel.advance(delta)
+        _duel_result()
     if run.phase == "finished" and not handled_finish:
         if garage.settle(car.powertrain.wear,car.damage):
-            personal_best = garage.record_finish(run.report())
+            if is_duel:
+                personal_best = GameSession.career.stock_drag_records.consider(GameSession.selected_vehicle,run.report())
+            else:
+                personal_best = garage.record_finish(run.report())
             handled_finish = true
-    strip.update_tree(run,_staged())
+    strip.update_tree(run,_staged(),opponent_run if is_duel else null,is_duel and absf(opponent.position.z)<0.1 and opponent.powertrain.speed_mps<0.1)
     _refresh_hud()
 
 func _refresh_hud() -> void:
-    hud.refresh({"model":car.powertrain,"run":run,"settings":GameSession.controls,"name":car.model_name,"position":-car.position.z,"best":GameSession.career.drag_records.best(GameSession.selected_vehicle),"staged":_staged(),"can_arm":_can_arm(),"message":message,"paused":paused,"personal_best":personal_best,"wear_start":attempt_wear_start,"impacts":car.damage.impacts,"damage":car.damage.cumulative})
+    var best: Dictionary = (GameSession.career.stock_drag_records if is_duel else GameSession.career.drag_records).best(GameSession.selected_vehicle)
+    hud.refresh({"model":car.powertrain,"run":run,"settings":GameSession.controls,"name":car.model_name,"position":-car.position.z,"best":best,"staged":_staged(),"can_arm":_can_arm(),"message":message,"paused":paused,"personal_best":personal_best,"wear_start":attempt_wear_start,"impacts":car.damage.impacts,"damage":car.damage.cumulative,"duel":is_duel,"opponent_name":opponent_name,"opponent_run":opponent_run,"opponent_gap":opponent.position.z-car.position.z if is_duel else 0.0,"duel_result":duel_result,"zero_to_hundred":car.zero_to_hundred})
 
 func _shift(direction: int) -> void:
     if enabled and not leaving and not paused and run.phase not in ["finished","invalid"]:
@@ -161,6 +233,13 @@ func _recover() -> void:
     car.recover(Vector3(Strip.LANE_X,0.75,0))
     attempt_wear_start = car.powertrain.wear.duplicate(true)
     run = Run.new()
+    if is_duel:
+        opponent.recover(Vector3(-Strip.LANE_X,0.75,0))
+        opponent_run = Run.new()
+        opponent_driver.reset()
+        opponent_driver.controls(opponent.powertrain,0,1.0/60.0)
+        duel = Duel.new()
+        duel_result.clear()
     garage.next_attempt()
     handled_finish = false
     personal_best = false

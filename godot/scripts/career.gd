@@ -25,6 +25,7 @@ var results: Array[Dictionary] = []
 var rivalries: Dictionary = {}
 var lap_records = LapRecords.new()
 var drag_records = DragRecords.new()
+var stock_drag_records = DragRecords.new()
 var _track_entry: Dictionary = {}
 var _track_game
 
@@ -191,9 +192,14 @@ func _promote() -> void:
         license = "A"
 
 func to_dict() -> Dictionary:
-    return {"schema_version":1, "license":license, "reputation":reputation, "completed":completed.duplicate(), "results":results.duplicate(true), "rivalries":rivalries.duplicate(true), "lap_records":lap_records.to_dict(),"drag_records":drag_records.to_dict()}
+    return {"schema_version":1, "license":license, "reputation":reputation, "completed":completed.duplicate(), "results":results.duplicate(true), "rivalries":rivalries.duplicate(true), "lap_records":lap_records.to_dict(),"drag_records":drag_records.to_dict(),"stock_drag_records":stock_drag_records.to_dict()}
 
 func from_dict(data: Dictionary) -> bool:
+    if typeof(data.get("stock_drag_records",{}))!=TYPE_DICTIONARY:
+        return false
+    var candidate_stock = DragRecords.new()
+    if not candidate_stock.from_dict(data.get("stock_drag_records",{})):
+        return false
     if typeof(data.get("drag_records",{})) != TYPE_DICTIONARY:
         return false
     var candidate_drag = DragRecords.new()
@@ -251,4 +257,5 @@ func from_dict(data: Dictionary) -> bool:
     rivalries = data.get("rivalries", {}).duplicate(true)
     lap_records = candidate_records
     drag_records = candidate_drag
+    stock_drag_records = candidate_stock
     return true

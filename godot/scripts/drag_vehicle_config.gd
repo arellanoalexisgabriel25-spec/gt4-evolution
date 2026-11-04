@@ -1,14 +1,19 @@
 extends Resource
-const Catalog = preload("res://scripts/car_catalog.gd")
 const Tire = preload("res://scripts/tire_model.gd")
 const Damage = preload("res://scripts/damage_model.gd")
+const StockSpecs = preload("res://scripts/stock_vehicle_specs.gd")
 
 # Original approximate presets for development, not measured manufacturer data.
-@export var mass := 980.0
+@export var curb_mass := 980.0
+@export var driver_mass := 75.0
+var mass: float:
+    get: return curb_mass+driver_mass
+    set(value): curb_mass=maxf(1.0,value-driver_mass)
+@export var air_density := 1.225
 @export var peak_torque := 145.0
 @export var engine_inertia := 0.26
 @export var clutch_capacity := 230.0
-@export var wheel_inertia := 3.2
+@export var wheel_inertia := 3.2 # kg m² PER AXLE; still an estimated parameter
 @export var drag_area := 0.64
 @export var rolling_resistance := 0.014
 @export var drivetrain := "RWD"
@@ -41,8 +46,13 @@ const Damage = preload("res://scripts/damage_model.gd")
 @export var suspension_health := 100.0
 @export var chassis_health := 100.0
 @export var steering_factor := 1.0
+var factory_class := false
+var profile_id := "generic_development"
+var variant_label := "Variante no identificada"
+var specification_status := "development_estimate"
+var specification_sources: Array = []
 
-static func from_vehicle(vehicle: Dictionary):
+static func from_vehicle(vehicle: Dictionary, factory: bool = false):
     var result = load("res://scripts/drag_vehicle_config.gd").new()
     var handling = load("res://scripts/handling.gd").configuration(vehicle)
     result.drivetrain = handling.drivetrain
@@ -52,24 +62,28 @@ static func from_vehicle(vehicle: Dictionary):
     var presets := {"MX-5":[980.0,145.0],"Civic":[1080.0,155.0],"Levin":[1010.0,148.0],"Silvia":[1180.0,245.0],"MR2":[1240.0,250.0],"Prelude":[1260.0,200.0],"FTO":[1170.0,200.0],"RX-7":[1280.0,265.0],"Impreza":[1250.0,300.0],"Skyline":[1430.0,340.0]}
     for name in presets:
         if str(vehicle.get("model","")).contains(name):
-            result.mass = presets[name][0]
+            result.curb_mass = presets[name][0]
             result.peak_torque = presets[name][1]
             break
     result.drivetrain_efficiency = 0.91 if result.drivetrain=="FWD" else (0.83 if result.drivetrain=="AWD" else 0.88)
     var name := str(vehicle.get("model",""))
-    var local: Dictionary = Catalog.definition(name)
+    var local: Dictionary = StockSpecs.for_model(name)
     if not local.is_empty():
-        result.mass = float(local["mass"])
-        result.peak_torque = float(local["torque"])
-        result.redline_rpm = float(local["redline"])
-        result.wheelbase = float(local["wheelbase"])
-        result.wheel_radius = float(local["radius"])
-        result.gear_ratios = PackedFloat32Array(local["gears"])
+        result.curb_mass = float(local["curb_mass_kg"])
+        result.peak_torque = float(local["peak_torque_nm"])
+        result.redline_rpm = float(local["redline_rpm"])
+        result.wheelbase = float(local["wheelbase_m"])
+        result.wheel_radius = float(local["rolling_radius_m"])
+        result.gear_ratios = PackedFloat32Array(local["gear_ratios"])
         result.final_drive = float(local["final_drive"])
-        result.torque_rpm = PackedFloat32Array([900,1500,2300,3000,3800,4600,5400,result.redline_rpm])
-        result.torque_curve = PackedFloat32Array([0.62,0.78,0.92,1.0,0.98,0.89,0.76,0.60])
+        result.torque_rpm = PackedFloat32Array(local["torque_rpm"])
+        result.torque_curve = PackedFloat32Array(local["torque_factors"])
         result.drag_area = 0.69
         result.cg_height = 0.48
+        result.profile_id = str(local["id"])
+        result.variant_label = str(local["variant"])
+        result.specification_status = str(local["status"])
+        result.specification_sources = local["sources"].duplicate()
     if name.contains("Civic") or name.contains("Levin") or name.contains("FTO"):
         result.redline_rpm = 7800.0
         result.torque_rpm = PackedFloat32Array([900,1800,2800,3800,4800,6000,7000,7800])
@@ -88,18 +102,27 @@ static func from_vehicle(vehicle: Dictionary):
     result.brake_health = float(vehicle.get("health",{}).get("frenos",50.0))
     result.suspension_health = float(vehicle.get("health",{}).get("suspension",100.0))
     result.chassis_health = float(vehicle.get("health",{}).get("chasis",100.0))
-    result.tire_compound = Tire.for_vehicle(vehicle)
-    var upgrades: Array = vehicle.get("upgrades",[])
+    result.factory_class = factory
+    result.tire_compound = "street" if factory else Tire.for_vehicle(vehicle)
+    var upgrades: Array = [] if factory else vehicle.get("upgrades",[])
     result.peak_torque *= (1.10 if upgrades.has("ecu") else 1.0)*(1.05 if upgrades.has("escape") else 1.0)
     result.grip *= 1.04 if upgrades.has("suspension") else 1.0
     result.brake_capacity *= 1.2 if upgrades.has("brakes") else 1.0
-    result.cg_height = 0.43 if upgrades.has("suspension") else 0.46
+    if upgrades.has("suspension"):
+        result.cg_height = 0.43
     result.engine_wear_factor = 1.0+(0.22 if upgrades.has("ecu") else 0.0)+(0.08 if upgrades.has("escape") else 0.0)
     var handicaps: Dictionary = Damage.handicaps(vehicle.get("health",{}))
     result.drivetrain_efficiency *= float(handicaps["acceleration"])
     result.grip *= float(handicaps["grip"])
     result.steering_factor = float(handicaps["steering"])
+    if factory:
+        # Baseline test protocol excludes gameplay assists. Exact factory safety
+        # equipment is not established by the broad model names in old saves.
+        result.abs_assist = false
     return result
+
+func metrics() -> Dictionary:
+    return StockSpecs.metric_snapshot(self)
 
 func apply_damage(points: Dictionary) -> void:
     var previous := Damage.handicaps({"transmision":transmission_health,"suspension":suspension_health,"chasis":chassis_health})

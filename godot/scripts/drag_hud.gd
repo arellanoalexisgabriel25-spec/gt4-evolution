@@ -17,6 +17,7 @@ var condition_label: Label
 var power_label: Label
 var wear_label: Label
 var damage_label: Label
+var opponent_label: Label
 var status_label: Label
 var help_label: Label
 var ticket_label: Label
@@ -66,6 +67,9 @@ func _ready() -> void:
     clock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     reaction_label = label(clock,"REACCIÓN  —",19)
     reaction_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    var rival := VBoxContainer.new()
+    panel(Rect2(-490,20,230,105),Vector2(1,0)).add_child(rival)
+    opponent_label = label(rival,"",19)
     var actions := HBoxContainer.new()
     actions.set_anchors_preset(Control.PRESET_TOP_RIGHT)
     actions.offset_left = -250
@@ -90,7 +94,7 @@ func _ready() -> void:
     add_child(arm_button)
     var numbers := VBoxContainer.new()
     numbers.add_theme_constant_override("separation",3)
-    panel(Rect2(-320,-307,300,285),Vector2.ONE).add_child(numbers)
+    panel(Rect2(-320,-337,300,315),Vector2.ONE).add_child(numbers)
     var row := HBoxContainer.new()
     numbers.add_child(row)
     gear_label = label(row,"N",65)
@@ -138,7 +142,13 @@ func refresh(data: Dictionary) -> void:
     var model = data["model"]
     var run = data["run"]
     var settings = data["settings"]
-    model_label.text = data["name"] + " / MANUAL · PRÁCTICA"
+    var is_duel: bool = data.get("duel",false)
+    model_label.text = data["name"] + (" / SERIE · DUELO" if is_duel else " / MANUAL · PRÁCTICA")
+    opponent_label.get_parent().get_parent().visible = is_duel
+    if is_duel:
+        var other = data["opponent_run"]
+        var gap := float(data.get("opponent_gap",0.0))
+        opponent_label.text = "VS " + str(data["opponent_name"]).to_upper()+"\n"+("RIVAL %.1f m DETRÁS" % gap if gap>=0 else "RIVAL %.1f m DELANTE" % -gap)+"\nET %s · RT %s" % [("%.3f" % other.elapsed) if other.launch_time>=0 else "—",("%.3f" % other.reaction) if other.launch_time>=0 else "—"]
     clock_label.text = "%.3f s" % run.elapsed
     reaction_label.text = "REACCIÓN  %s" % ("%.3f s" % run.reaction if run.launch_time >= 0 else "—")
     gear_label.text = "N" if model.gear == 0 else str(model.gear)
@@ -146,7 +156,8 @@ func refresh(data: Dictionary) -> void:
     rpm_label.text = "KM/H    %.0f RPM" % model.rpm
     pedals_label.text = "ACEL %.0f%%   EMBRAGUE %.0f%%" % [model.throttle*100,(1.0-model.clutch_engagement)*100]
     condition_label.text = "GOMAS DL %.0f°C / TR %.0f°C · MOTOR %.0f°C\n%s · %s · %s" % [model.axles.temperatures.x,model.axles.temperatures.y,model.engine_temperature,model.config.drivetrain,"TCS ACTIVO" if model.tcs_cut<0.95 else ("TCS ON" if model.traction_control else "TCS OFF"),"ABS" if model.axles.abs_active else ("PATINA" if model.wheelspin>0.18 and model.gear>0 else "AGARRE")]
-    power_label.text = "MOTOR %.0f Nm · RUEDAS %.0f kW\n%s · EMBRAGUE PIERDE %.0f kW\n%s · IMPACTOS %d" % [model.engine_torque_nm,model.wheel_power_kw,"TURBO %.0f%%" % (model.engine.boost*100) if model.config.turbo_fraction>0 else "ASPIRADO",model.clutch_loss_kw,preload("res://scripts/tire_model.gd").title(model.config.tire_compound).to_upper(),int(data.get("impacts",0))]
+    var acceleration_time := float(data.get("zero_to_hundred",-1.0))
+    power_label.text = "MOTOR %.0f Nm · EJE %.0f kW\n%s · EMBRAGUE PIERDE %.0f kW\n%s · IMPACTOS %d\nMASA %.0f kg · 0–100 %s" % [model.engine_torque_nm,model.wheel_power_kw,"TURBO %.0f%%" % (model.engine.boost*100) if model.config.turbo_fraction>0 else "ASPIRADO",model.clutch_loss_kw,preload("res://scripts/tire_model.gd").title(model.config.tire_compound).to_upper(),int(data.get("impacts",0)),model.config.mass,"%.2f s" % acceleration_time if acceleration_time>=0 else "—"]
     rpm_fraction = clampf(model.rpm/model.config.redline_rpm,0,1)
     progress = clampf(float(data["position"])/Run.DISTANCE,0,1)
     tree_phase = run.phase
@@ -162,7 +173,7 @@ func refresh(data: Dictionary) -> void:
     elif run.phase == "running":
         status = "¡VERDE! · Soltá el embrague" if run.launch_time < 0 else model.shift_hint()
     elif run.phase == "finished":
-        status = "PASADA VÁLIDA · Frenando"
+        status = "ESPERANDO LA LLEGADA DEL RIVAL" if is_duel and data.get("duel_result",{}).is_empty() else "PASADA VÁLIDA · Frenando"
     elif run.phase == "invalid":
         status = run.reason
     if not str(data["message"]).is_empty():
@@ -176,6 +187,13 @@ func refresh(data: Dictionary) -> void:
         ticket_label.text = "TICKET / 402,336 METROS\nET                 %.3f s\nREACCIÓN       %+.3f s\nTOTAL             %.3f s\n60 PIES           %.3f s\n1/8 MILLA       %.3f s\nTRAMPA          %.1f km/h\n%s" % [result.et,result.reaction,result.total,result.sixty_ft,result.eighth,result.trap_kmh,"MEJOR MARCA PERSONAL" if data["personal_best"] else "R: OTRA PASADA"]
     elif run.phase == "invalid":
         ticket_label.text = "PASADA INVÁLIDA\n\n%s\n\nNo se registra una marca.\nR: volver a preparar\nEl uso mecánico se conserva." % run.reason
+    var duel_result: Dictionary = data.get("duel_result",{})
+    if is_duel and not duel_result.is_empty():
+        var heading := "VICTORIA" if duel_result["winner"]=="player" else ("DERROTA" if duel_result["winner"]=="rival" else ("EMPATE" if duel_result["outcome"]=="tie" else "SIN GANADOR"))
+        status_label.text = heading + " · " + str(duel_result["reason"])
+        ticket_panel.visible = true
+        ticket_label.text = heading+" / DUELO DE SERIE\n"+_lane_result("VOS",duel_result["entries"]["player"])+"\n"+_lane_result(str(data["opponent_name"]),duel_result["entries"]["rival"])+"\nRT + ET determina la llegada\nSin inscripción ni premios"
+        if data["paused"]: status_label.text = "PAUSA · "+heading
     var start: Dictionary = data["wear_start"]
     wear_label.text = "DESGASTE ADICIONAL / ESTA PASADA\nMotor %.3f · Caja %.3f · Gomas %.3f" % [float(model.wear.motor)-float(start.get("motor",0.0)),float(model.wear.transmision)-float(start.get("transmision",0.0)),float(model.wear.neumaticos)-float(start.get("neumaticos",0.0))]
     var damage: Dictionary = data.get("damage",{})
@@ -184,12 +202,18 @@ func refresh(data: Dictionary) -> void:
     help_label.text = "%s acelerar · %s/%s frenar · %s embrague · %s subir / %s bajar\nEnter: semáforo · %s repetir · %s/Select pausa · Esc: garaje\nTab/RB: cámara · Shift/R3: atrás · A sube / Y baja · %s" % [settings.key_label("accelerate"),settings.key_label("reverse"),settings.key_label("brake"),settings.key_label("clutch"),settings.key_label("shift_up"),settings.key_label("shift_down"),settings.key_label("recover"),settings.key_label("pause"),pad_clutch]
     queue_redraw()
 
+func _lane_result(name: String, entry: Dictionary) -> String:
+    if entry["status"]!="finished":
+        return name+": "+str(entry["reason"])
+    var ticket: Dictionary = entry["ticket"]
+    return "%s\nET %.3f · RT %.3f\nTOTAL %.3f s" % [name,ticket["et"],ticket["reaction"],ticket["total"]]
+
 func _draw() -> void:
     for i in range(24):
         var color := Color("728495")
         if float(i)/24.0 < rpm_fraction:
             color = Color("df3445") if i>=21 else Color("f2d78e")
-        draw_rect(Rect2(size.x-320+i*12.5,size.y-319,10,7),color)
+        draw_rect(Rect2(size.x-320+i*12.5,size.y-349,10,7),color)
     var track := Rect2(size.x*0.5-190,size.y-32,380,5)
     draw_rect(track,Color(0.1,0.15,0.2,0.8))
     draw_rect(Rect2(track.position,Vector2(track.size.x*progress,5)),Color("e2ca83"))

@@ -2,7 +2,7 @@ extends Node
 
 const Economy = preload("res://scripts/economy.gd")
 const Career = preload("res://scripts/career.gd")
-const VERSION := "0.15"
+const VERSION := "0.16"
 const ControlSettings = preload("res://scripts/control_settings.gd")
 const Music = preload("res://scripts/menu_music.gd")
 var controls = ControlSettings.new()
@@ -12,6 +12,8 @@ var game: EvolutionEconomy
 var career: EvolutionCareer
 var selected_vehicle: int = 0
 var driving_mode := "practice"
+var drag_format := "practice"
+var drag_rival_profile := "technical"
 var last_notice := ""
 var menu_tab := "inicio"
 var entry_ticket: Dictionary = {}
@@ -40,6 +42,7 @@ func reset() -> void:
     career = Career.new()
     selected_vehicle = 0
     driving_mode = "practice"
+    drag_format = "practice"
     last_notice = ""
     menu_tab = "inicio"
     entry_ticket = {}
@@ -51,10 +54,12 @@ func start_driving(car_id: int, mode: String = "practice") -> bool:
     driving_mode = mode
     return true
 
-func start_drag(car_id: int) -> bool:
-    if not entry_ticket.is_empty() or career.has_pending_track_entry() or not choose_vehicle(car_id):
+func start_drag(car_id: int, format: String = "practice", profile: String = "technical") -> bool:
+    if format not in ["practice","duel"] or profile not in ["technical","aggressive","conservative"] or not entry_ticket.is_empty() or career.has_pending_track_entry() or not choose_vehicle(car_id):
         return false
     driving_mode = "drag"
+    drag_format = format
+    drag_rival_profile = profile
     return true
 
 func enter_track_event(event_id: String, car_id: int) -> String:

@@ -6,6 +6,9 @@ const Run = preload("res://scripts/drag_run.gd")
 const LANE_X := -3.75
 var lamps: Array[StandardMaterial3D] = []
 var stage_lamps: Array[StandardMaterial3D] = []
+var dual_lanes := false
+var opponent_lamps: Array[StandardMaterial3D] = []
+var opponent_stage_lamps: Array[StandardMaterial3D] = []
 
 func box(size: Vector3, location: Vector3, color: Color, solid: bool = false, mat: Material = null) -> Node3D:
     var node: Node3D = StaticBody3D.new() if solid else Node3D.new()
@@ -150,13 +153,24 @@ func _tree() -> void:
     box(Vector3(0.1,3.5,0.1),Vector3(0,1.75,-7.0),Color("5d6970"))
     box(Vector3(0.8,2.8,0.25),Vector3(0,2.4,-6.95),Color("182128"))
     for y in [3.5,3.15]:
-        stage_lamps.append(_lamp(Vector3(0,y,-6.75),Color("d3e7ed")))
+        stage_lamps.append(_lamp(Vector3(-0.22 if dual_lanes else 0.0,y,-6.75),Color("d3e7ed")))
+        if dual_lanes:
+            opponent_stage_lamps.append(_lamp(Vector3(0.22,y,-6.75),Color("d3e7ed")))
     for i in range(5):
-        lamps.append(_lamp(Vector3(0,2.75-float(i)*0.43,-6.75),Color("ecb543") if i < 3 else (Color("43c575") if i == 3 else Color("e73743"))))
+        var color := Color("ecb543") if i < 3 else (Color("43c575") if i == 3 else Color("e73743"))
+        lamps.append(_lamp(Vector3(-0.22 if dual_lanes else 0.0,2.75-float(i)*0.43,-6.75),color))
+        if dual_lanes:
+            opponent_lamps.append(_lamp(Vector3(0.22,2.75-float(i)*0.43,-6.75),color))
 
-func update_tree(run, staged: bool) -> void:
+func update_tree(run, staged: bool, other = null, other_staged: bool = false) -> void:
     for mat in stage_lamps:
         mat.emission_energy_multiplier = 1.3 if staged else 0.03
     for i in range(lamps.size()):
         var active: bool = (run.phase == "countdown" and i < 3 and run.clock>=0.5+float(i)*0.5) or (i==3 and run.phase in ["running","finished"]) or (i==4 and run.phase=="invalid")
         lamps[i].emission_energy_multiplier = 1.5 if active else 0.03
+    if other!=null:
+        for mat in opponent_stage_lamps:
+            mat.emission_energy_multiplier = 1.3 if other_staged else 0.03
+        for i in range(opponent_lamps.size()):
+            var active: bool = (other.phase=="countdown" and i<3 and other.clock>=0.5+float(i)*0.5) or (i==3 and other.phase in ["running","finished"]) or (i==4 and other.phase=="invalid")
+            opponent_lamps[i].emission_energy_multiplier = 1.5 if active else 0.03

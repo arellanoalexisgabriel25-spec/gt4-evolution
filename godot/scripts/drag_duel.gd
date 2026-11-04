@@ -1,0 +1,118 @@
+extends RefCounted
+
+# Pure adjudication of two independently measured lanes. DragRun owns each
+# vehicle's beams and interpolation; the duel never moves cars, changes tickets,
+# awards money or writes progress. Both runs must arm on the same tree clock.
+const Run = preload("res://scripts/drag_run.gd")
+const Records = preload("res://scripts/drag_records.gd")
+const TIE_TOLERANCE := 0.001 # display/timing resolution, seconds
+const CLOCK_TOLERANCE := 0.000001
+const TERMINAL := ["finished","invalid","timeout","breakout"]
+var _runs: Dictionary = {}
+var _entries: Dictionary = {}
+var _result: Dictionary = {}
+var _elapsed := 0.0
+var _minimum_et := 0.0
+var _time_limit := 123.0
+var started: bool:
+    get: return not _runs.is_empty()
+var finished: bool:
+    get: return not _result.is_empty()
+
+# minimum_et is an optional game/practice index, NOT an asserted official class.
+# Default zero is a heads-up race: earliest legal arrival after the common green.
+# A fresh duel is required for the next race, preventing accidental result resets.
+func begin(player_run, rival_run, minimum_et: float = 0.0, time_limit: float = 123.0) -> bool:
+    if started or not is_finite(minimum_et) or minimum_et<0.0 or not is_finite(time_limit) or time_limit<=0.0:
+        return false
+    if not (player_run is RefCounted) or not (rival_run is RefCounted) or player_run==rival_run:
+        return false
+    if player_run.get_script()!=Run or rival_run.get_script()!=Run:
+        return false
+    if player_run.phase!="countdown" or rival_run.phase!="countdown":
+        return false
+    if not is_finite(player_run.clock) or not is_finite(rival_run.clock) or absf(player_run.clock-rival_run.clock)>CLOCK_TOLERANCE:
+        return false
+    if absf(player_run.clock)>CLOCK_TOLERANCE:
+        return false
+    _runs = {"player":player_run,"rival":rival_run}
+    _entries = {"player":_pending(),"rival":_pending()}
+    _minimum_et = minimum_et
+    _time_limit = time_limit
+    return true
+
+func _pending() -> Dictionary:
+    return {"status":"pending","reason":"","ticket":{}}
+
+func _fault(status: String, reason: String) -> Dictionary:
+    return {"status":status,"reason":reason,"ticket":{}}
+
+func _observe(run) -> Dictionary:
+    if not is_finite(run.clock):
+        return _fault("invalid","RELOJ INVÁLIDO")
+    if run.phase=="invalid":
+        return _fault("invalid",str(run.reason))
+    if run.phase=="finished":
+        var ticket: Dictionary = run.report()
+        if not Records.valid_ticket(ticket):
+            return _fault("invalid","TICKET INVÁLIDO")
+        var normalized: Dictionary = Records.normalized(ticket)
+        if _minimum_et>0.0 and float(normalized["et"])<_minimum_et-CLOCK_TOLERANCE:
+            return {"status":"breakout","reason":"BAJO EL ÍNDICE DE PRÁCTICA","ticket":normalized}
+        return {"status":"finished","reason":"","ticket":normalized}
+    if run.phase not in ["countdown","running"]:
+        return _fault("invalid","CRONOMETRAJE REINICIADO")
+    return _pending()
+
+# Call once per unpaused physics step, AFTER advancing both physical DragRuns.
+# Resolution waits for both terminal states, allowing a complete two-car ticket.
+# The deadline closes an unfinished lane explicitly; it never invents its time.
+func advance(delta: float) -> void:
+    if not started or finished or not is_finite(delta) or delta<=0.0:
+        return
+    _elapsed = minf(_elapsed+delta,_time_limit)
+    for id in ["player","rival"]:
+        if not TERMINAL.has(_entries[id]["status"]):
+            _entries[id] = _observe(_runs[id])
+    if _entries["player"]["status"]=="pending" and _entries["rival"]["status"]=="pending":
+        if absf(_runs["player"].clock-_runs["rival"].clock)>CLOCK_TOLERANCE:
+            _entries["player"] = _fault("invalid","ÁRBOL DESINCRONIZADO")
+            _entries["rival"] = _fault("invalid","ÁRBOL DESINCRONIZADO")
+    if _elapsed>=_time_limit:
+        for id in ["player","rival"]:
+            if _entries[id]["status"]=="pending":
+                _entries[id] = _fault("timeout","TIEMPO MÁXIMO AGOTADO")
+    if TERMINAL.has(_entries["player"]["status"]) and TERMINAL.has(_entries["rival"]["status"]):
+        _resolve()
+
+func _resolve() -> void:
+    var player_valid: bool = _entries["player"]["status"]=="finished"
+    var rival_valid: bool = _entries["rival"]["status"]=="finished"
+    var winner := ""
+    var outcome := "no_winner"
+    var reason := "AMBOS CORREDORES SIN LLEGADA VÁLIDA"
+    var margin := 0.0
+    if player_valid and rival_valid:
+        # Total is ET + reaction from the same green. Fastest ET alone is not
+        # enough to win if the other driver reacted and crossed earlier.
+        var difference: float = float(_entries["player"]["ticket"]["total"])-float(_entries["rival"]["ticket"]["total"])
+        margin = absf(difference)
+        if margin<=TIE_TOLERANCE:
+            outcome = "tie"
+            reason = "EMPATE EN LA RESOLUCIÓN DE CRONOMETRAJE"
+        else:
+            winner = "player" if difference<0.0 else "rival"
+            outcome = "win"
+            reason = "PRIMERA LLEGADA VÁLIDA"
+    elif player_valid or rival_valid:
+        winner = "player" if player_valid else "rival"
+        outcome = "win"
+        reason = "ÚNICA LLEGADA VÁLIDA"
+    _result = {"winner":winner,"outcome":outcome,"reason":reason,"margin_s":margin,"elapsed":_elapsed,"minimum_et":_minimum_et,"ruleset":"heads_up" if _minimum_et==0.0 else "indexed_practice","entries":_entries.duplicate(true)}
+
+# Deep copies keep HUD/career consumers from mutating an adjudicated result.
+func report() -> Dictionary:
+    return _result.duplicate(true)
+
+func entries() -> Dictionary:
+    return _entries.duplicate(true)

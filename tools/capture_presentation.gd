@@ -1,7 +1,7 @@
 extends SceneTree
 
 const DragDriver = preload("res://tests/drag_test_driver.gd")
-var output := "/workspace/artifacts/presentation-0.15"
+var output := "/workspace/artifacts/presentation-0.16"
 
 func _initialize() -> void:
     var args := OS.get_cmdline_user_args()
@@ -213,6 +213,42 @@ func run() -> void:
     drag.camera.snap()
     drag._refresh_hud()
     await picture("23-impact-damage")
+    drag._back_to_garage()
+    await process_frame
+    await process_frame
+    session.reset()
+    session.game.buy(13)
+    for component in session.game.find_car(13)["health"]:
+        session.game.find_car(13)["health"][component] = 100.0
+    session.start_drag(13,"duel","technical")
+    change_scene_to_file("res://scenes/drag.tscn")
+    await process_frame
+    await process_frame
+    drag = current_scene
+    await picture("25-duel-staging")
+    var duel_driver := DragDriver.new()
+    drag.input_provider = func() -> Dictionary: return duel_driver.controls(drag.car.powertrain,drag.run.clock,drag.get_physics_process_delta_time())
+    duel_driver.controls(drag.car.powertrain,0,1.0/60.0)
+    drag._arm()
+    Engine.time_scale = 3.0
+    while -drag.car.position.z<140 and not drag.duel.finished:
+        await physics_frame
+    drag.set_physics_process(false)
+    drag.camera.snap()
+    drag._refresh_hud()
+    await picture("26-duel-driving")
+    drag.set_physics_process(true)
+    while not drag.duel.finished:
+        await physics_frame
+    drag.set_physics_process(false)
+    if drag.run.phase!="finished" or drag.opponent_run.phase!="finished":
+        push_error("The rendered two-car race did not produce two physical arrivals.")
+        quit(1)
+        return
+    drag._refresh_hud()
+    await picture("27-duel-result")
+    Engine.time_scale = 1.0
+    drag.input_provider = Callable()
     drag._back_to_garage()
     await process_frame
     await process_frame

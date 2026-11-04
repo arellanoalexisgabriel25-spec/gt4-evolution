@@ -7,6 +7,7 @@ const CityMap = preload("res://scripts/city_map.gd")
 const Navigation = preload("res://scripts/menu_controller.gd")
 const Catalog = preload("res://scripts/car_catalog.gd")
 const Tire = preload("res://scripts/tire_model.gd")
+const DragConfig = preload("res://scripts/drag_vehicle_config.gd")
 
 const Economy = preload("res://scripts/economy.gd")
 const Career = preload("res://scripts/career.gd")
@@ -33,6 +34,7 @@ var controller_label: Label
 var music_label: Label
 var home_featured := ""
 var garage_featured := 0
+var duel_profile := "technical"
 
 func _ready() -> void:
     game = GameSession.game
@@ -241,7 +243,7 @@ func _home() -> void:
     if featured["owner"]!="player":
         intro.add_child(_button("VISITAR EL CONCESIONARIO",_change_tab.bind("mercado")))
     else:
-        intro.add_child(_button("CORRER ¼ DE MILLA",_drag_3d.bind(int(featured["id"]))))
+        intro.add_child(_button("DUELO ¼ DE MILLA / SERIE",_drag_duel.bind(int(featured["id"]))))
     var lineup := HBoxContainer.new()
     intro.add_child(lineup)
     for index in range(Catalog.FLAGSHIPS.size()):
@@ -297,7 +299,14 @@ func _market() -> void:
 
 func _garage() -> void:
     content.add_child(_label("MI GARAJE", 22))
-    content.add_child(_label("¼ de milla: largada, cambios y récords · Circuito del club: práctica y carrera libre", 14))
+    content.add_child(_label("¼ de milla: duelo contra otro auto de serie · Práctica individual disponible", 14))
+    content.add_child(_label("Serie: conserva el estado mecánico del auto. Las preparaciones del taller se reservan para práctica.",13))
+    var rivals := OptionButton.new()
+    for title in ["NICO VEGA / TÉCNICO","CLAIRE MOREAU / AGRESIVA","AKIRA SATO / CONSERVADOR"]:
+        rivals.add_item(title)
+    rivals.select(["technical","aggressive","conservative"].find(duel_profile))
+    rivals.item_selected.connect(func(index): duel_profile=["technical","aggressive","conservative"][index])
+    content.add_child(rivals)
     var selected: Dictionary = {}
     for vehicle in game.cars:
         if vehicle["owner"] == "player":
@@ -324,6 +333,8 @@ func _garage() -> void:
         info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
         layout.add_child(info)
         layout.add_child(_label("Neumáticos: "+Tire.title(Tire.for_vehicle(car)),14))
+        var metrics: Dictionary = DragConfig.from_vehicle(car,true).metrics()
+        layout.add_child(_label("FICHA PROVISIONAL / SERIE · %.0f kg + piloto %.0f kg · potencia base calculada %.1f CV (%.1f kW)" % [metrics["curb_mass_kg"],metrics["driver_mass_kg"],metrics["calculated_peak_power_cv"],metrics["calculated_peak_power_kw"]],13))
         var best := career.lap_records.get_best(int(car["id"]))
         if best > 0.0:
             layout.add_child(_label("Mejor vuelta al club: %.2f s" % best, 15))
@@ -334,6 +345,9 @@ func _garage() -> void:
         actions.add_theme_constant_override("h_separation", 8)
         layout.add_child(actions)
         actions.add_child(_button("VER MODELO",_preview_vehicle.bind(int(car["id"]))))
+        var duel_button := _button("DUELO ¼ DE MILLA / SERIE",_drag_duel.bind(int(car["id"])))
+        duel_button.disabled = not game.eligible(car)
+        actions.add_child(duel_button)
         var drag := _button("¼ DE MILLA / MANUAL",_drag_3d.bind(int(car["id"])))
         drag.disabled = not game.eligible(car)
         actions.add_child(drag)
@@ -483,6 +497,12 @@ func _drive_3d(id: int) -> void:
 
 func _drag_3d(id: int) -> void:
     if not GameSession.start_drag(id):
+        notice.text = "El auto no está disponible o tenés una inscripción pendiente."
+        return
+    get_tree().change_scene_to_file("res://scenes/drag.tscn")
+
+func _drag_duel(id: int) -> void:
+    if not GameSession.start_drag(id,"duel",duel_profile):
         notice.text = "El auto no está disponible o tenés una inscripción pendiente."
         return
     get_tree().change_scene_to_file("res://scenes/drag.tscn")

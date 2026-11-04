@@ -8,7 +8,7 @@ Develop functional increments on descriptive branches, preserve user work and sa
 
 Current priority: develop a compact quarter-mile environment, manual shifting, measurable driving skill, persistent mechanical use and original visuals. Large-circuit expansion is deferred. Existing circuit, career and AI modes remain available. A simulated result must always be labelled as such.
 
-## Architecture through 0.15
+## Architecture through 0.16
 
 | Module | Responsibility |
 | --- | --- |
@@ -270,3 +270,11 @@ inside the imported scene. Only the generated external duplicates were removed;
 the uploaded GLB is unchanged. Packaging also supports explicit `.png` assets.
 Use the current complete suite and fresh-package checks; historical release counts
 and the stored setup description are not evidence for this new source state.
+
+## Version0.16
+
+See RELEASE-0.16.md and STOCK-SOURCES.md. Official sites are blocked: profiles remain development estimates. UI default drag entry is a physical factory-class duel. Legacy start_drag(id) stays practice; start_drag(id,"duel",profile) selects two cars on a shared tree, independent interpolated tickets and pure RT+ET adjudication. Separate lamps preserve the rival green after player disqualification. Pause/recovery cover both cars; AI only writes pedal/clutch/shift inputs. No fees/prizes.
+
+Factory ignores upgrades while retaining garage health and equipment. Optional stock_drag_records preserve legacy saves and isolate prepared/old times. Actor0–100 starts at0.1m/s, interpolates crossings and resets on arming so staging cannot pollute it. Peer camera framing only affects chase mode0.
+
+Net torque avoids double friction at WOT; negative/backdrive efficiency must dissipate energy. Engine, shaft and contact power are separate. Analytical power peaks and game benchmarks do not establish manufacturer performance. Fuel basis and exact variants remain unverified. Capture wrapper requires27 PNGs.

@@ -6,9 +6,20 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.15"
+VERSION = "0.16"
 ENGINE = "Godot_v4.6.3-stable_win64.exe"
-README = """GT4 EVOLUTION — PROTOTIPO 0.15 / AUTOS INSIGNIA, DAÑOS Y NEUMÁTICOS
+README = """GT4 EVOLUTION — PROTOTIPO 0.16 / DUELOS DE SERIE Y AUDITORÍA FÍSICA
+
+NUEVO: GARAJE -> DUELO ¼ DE MILLA / SERIE corre contra otro auto físico.
+Elegí a Nico, Claire o Akira. Gana por reacción + ET desde el verde común;
+falsos y fuera de carril invalidan. Pausa congela ambos autos; R reinicia ambos.
+Serie ignora preparaciones/compuestos deportivos y conserva la salud/piezas del garaje.
+Sin inscripción ni premios; récords de serie separados de los tiempos anteriores.
+El botón ¼ DE MILLA / MANUAL conserva la práctica con las mejoras existentes.
+Torque neto, peso del piloto y pérdidas de transmisión corregidos; 0-100 medido.
+Las prestaciones siguen siendo estimaciones, no cifras verificadas de fabricante.
+La red impidió consultar el sitio oficial argentino y fabricantes: no se afirman
+categorías reglamentarias oficiales. Ver juego/STOCK-SOURCES.md y RELEASE-0.16.md.
 
 Extraé TODO el ZIP antes de abrir el juego.
 Windows 10/11 de 64 bits: doble clic en JUGAR.cmd. El primer inicio importa
