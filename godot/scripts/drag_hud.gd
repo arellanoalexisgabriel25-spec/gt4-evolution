@@ -89,7 +89,7 @@ func _ready() -> void:
     add_child(arm_button)
     var numbers := VBoxContainer.new()
     numbers.add_theme_constant_override("separation",3)
-    panel(Rect2(-320,-252,300,230),Vector2.ONE).add_child(numbers)
+    panel(Rect2(-320,-282,300,260),Vector2.ONE).add_child(numbers)
     var row := HBoxContainer.new()
     numbers.add_child(row)
     gear_label = label(row,"N",65)
@@ -142,8 +142,8 @@ func refresh(data: Dictionary) -> void:
     speed_label.text = "0" if model.speed_mps<0.15 else "%.0f" % (model.speed_mps*3.6)
     rpm_label.text = "KM/H    %.0f RPM" % model.rpm
     pedals_label.text = "ACEL %.0f%%   EMBRAGUE %.0f%%" % [model.throttle*100,(1.0-model.clutch_engagement)*100]
-    condition_label.text = "NEUMÁTICOS %.0f°C  /  MOTOR %.0f°C\n%s" % [model.tire_temperature,model.engine_temperature,"PATINAMIENTO" if model.wheelspin>0.18 and model.gear>0 else "AGARRE ESTABLE"]
-    power_label.text = "RUEDAS %.0f kW / EMBRAGUE PIERDE %.0f kW" % [model.wheel_power_kw,model.clutch_loss_kw]
+    condition_label.text = "GOMAS DL %.0f°C / TR %.0f°C · MOTOR %.0f°C\n%s · %s · %s" % [model.axles.temperatures.x,model.axles.temperatures.y,model.engine_temperature,model.config.drivetrain,"TCS ACTIVO" if model.tcs_cut<0.95 else ("TCS ON" if model.traction_control else "TCS OFF"),"ABS" if model.axles.abs_active else ("PATINA" if model.wheelspin>0.18 and model.gear>0 else "AGARRE")]
+    power_label.text = "MOTOR %.0f Nm · RUEDAS %.0f kW\n%s · EMBRAGUE PIERDE %.0f kW" % [model.engine_torque_nm,model.wheel_power_kw,"TURBO %.0f%%" % (model.engine.boost*100) if model.config.turbo_fraction>0 else "ASPIRADO",model.clutch_loss_kw]
     rpm_fraction = clampf(model.rpm/model.config.redline_rpm,0,1)
     progress = clampf(float(data["position"])/Run.DISTANCE,0,1)
     tree_phase = run.phase
@@ -175,7 +175,8 @@ func refresh(data: Dictionary) -> void:
         ticket_label.text = "PASADA INVÁLIDA\n\n%s\n\nNo se registra una marca.\nR: volver a preparar\nEl uso mecánico se conserva." % run.reason
     var start: Dictionary = data["wear_start"]
     wear_label.text = "DESGASTE ADICIONAL / ESTA PASADA\nMotor %.3f · Caja %.3f · Gomas %.3f" % [float(model.wear.motor)-float(start.get("motor",0.0)),float(model.wear.transmision)-float(start.get("transmision",0.0)),float(model.wear.neumaticos)-float(start.get("neumaticos",0.0))]
-    help_label.text = "%s acelerar · %s/%s frenar · %s embrague · %s subir / %s bajar\nEnter: semáforo · %s repetir · %s pausa · Esc: garaje\nTab/RB: cámara · Shift/R3: mirar atrás · Mando: A sube, Y baja, LB embrague" % [settings.key_label("accelerate"),settings.key_label("reverse"),settings.key_label("brake"),settings.key_label("clutch"),settings.key_label("shift_up"),settings.key_label("shift_down"),settings.key_label("recover"),settings.key_label("pause")]
+    var pad_clutch := "LT/LB embrague · B frena" if settings.analog_clutch else "LB embrague · LT/B frena"
+    help_label.text = "%s acelerar · %s/%s frenar · %s embrague · %s subir / %s bajar\nEnter: semáforo · %s repetir · %s/Select pausa · Esc: garaje\nTab/RB: cámara · Shift/R3: atrás · A sube / Y baja · %s" % [settings.key_label("accelerate"),settings.key_label("reverse"),settings.key_label("brake"),settings.key_label("clutch"),settings.key_label("shift_up"),settings.key_label("shift_down"),settings.key_label("recover"),settings.key_label("pause"),pad_clutch]
     queue_redraw()
 
 func _draw() -> void:
@@ -183,7 +184,7 @@ func _draw() -> void:
         var color := Color("728495")
         if float(i)/24.0 < rpm_fraction:
             color = Color("df3445") if i>=21 else Color("f2d78e")
-        draw_rect(Rect2(size.x-320+i*12.5,size.y-264,10,7),color)
+        draw_rect(Rect2(size.x-320+i*12.5,size.y-294,10,7),color)
     var track := Rect2(size.x*0.5-190,size.y-32,380,5)
     draw_rect(track,Color(0.1,0.15,0.2,0.8))
     draw_rect(Rect2(track.position,Vector2(track.size.x*progress,5)),Color("e2ca83"))

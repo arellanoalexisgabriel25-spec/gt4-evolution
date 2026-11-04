@@ -27,6 +27,7 @@ static func build() -> Theme:
     theme.set_font_size("font_size", "Button", 19)
     theme.set_color("font_color", "Button", BLUE)
     theme.set_color("font_hover_color", "Button", BLUE)
+    theme.set_color("font_focus_color", "Button", BLUE)
     theme.set_color("font_pressed_color", "Button", Color.WHITE)
     theme.set_color("font_disabled_color", "Button", Color("8592a1"))
     theme.set_stylebox("normal", "Button", panel(Color("f4f6f9"), 9))

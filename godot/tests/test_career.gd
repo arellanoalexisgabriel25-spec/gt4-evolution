@@ -51,8 +51,8 @@ func _initialize() -> void:
     poor.buy(1)
     poor.balance = 0
     var new_career: EvolutionCareer = Career.new()
-    _check(new_career.can_enter(poor, "debut", 1).contains("Créditos insuficientes"), "inscription costs funds")
-    _check(new_career.simulate_event(poor, "debut", 1).contains("Créditos insuficientes"), "failed event no mutation")
+    _check(new_career.can_enter(poor, "debut", 1).contains("Saldo insuficiente"), "inscription costs funds")
+    _check(new_career.simulate_event(poor, "debut", 1).contains("Saldo insuficiente"), "failed event no mutation")
     _check(new_career.completed.is_empty(), "failed entry cannot add result")
     if failed:
         quit(1)

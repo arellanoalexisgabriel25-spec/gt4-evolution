@@ -1,7 +1,7 @@
 extends SceneTree
 
 const DragDriver = preload("res://tests/drag_test_driver.gd")
-var output := "/workspace/artifacts/presentation-0.13"
+var output := "/workspace/artifacts/presentation-0.14"
 
 func _initialize() -> void:
     var args := OS.get_cmdline_user_args()
@@ -32,6 +32,10 @@ func run() -> void:
     await process_frame
     await process_frame
     await picture("01-home")
+    if not session.menu_music.player.playing or not session.menu_music.player.stream.loop:
+        push_error("Menu MP3 did not start its real looping playback.")
+        quit(1)
+        return
     current_scene._change_tab("mercado")
     await picture("02-dealer")
     session.game.buy(1)
@@ -47,6 +51,10 @@ func run() -> void:
     for i in range(150):
         await physics_frame
     Input.action_release("evo_accelerate")
+    if session.menu_music.player.playing or session.menu_music.gain>0.001:
+        push_error("Menu music did not fade to silence in the driving scene.")
+        quit(1)
+        return
     # Freeze a real driven instant so the camera comparisons share a location.
     current_scene.set_physics_process(false)
     for mode in range(4):
@@ -130,9 +138,28 @@ func run() -> void:
     drag.set_physics_process(false)
     drag._refresh_hud()
     await picture("16-drag-red-light")
+    var pause_button := InputEventJoypadButton.new()
+    pause_button.button_index = JOY_BUTTON_BACK
+    pause_button.device = 0
+    pause_button.pressed = true
+    Input.parse_input_event(pause_button)
+    Input.flush_buffered_events()
+    await process_frame
+    await process_frame
+    if not drag.paused or not drag.pause_menu.visible:
+        push_error("Controller pause did not open its navigable overlay.")
+        quit(1)
+        return
+    await picture("17-controller-pause")
+    pause_button.pressed = false
+    Input.parse_input_event(pause_button)
+    Input.flush_buffered_events()
     Engine.time_scale = 1.0
     drag.input_provider = Callable()
     drag._back_to_garage()
     await process_frame
     await process_frame
+    session.menu_music.set_menu_active(false)
+    for i in range(20):
+        await process_frame
     quit(0)

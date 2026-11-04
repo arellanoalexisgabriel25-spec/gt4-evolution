@@ -5,11 +5,18 @@ const DRAG_KEYS := {"shift_up":KEY_E,"shift_down":KEY_Q,"clutch":KEY_C}
 const ARROWS := {"accelerate":KEY_UP, "reverse":KEY_DOWN, "left":KEY_LEFT, "right":KEY_RIGHT}
 const TITLES := {"accelerate":"Acelerar", "reverse":"Frenar / reversa", "left":"Girar a la izquierda", "right":"Girar a la derecha", "brake":"Freno", "recover":"Recuperar vehículo", "pause":"Pausar","shift_up":"Subir marcha (¼ milla)","shift_down":"Bajar marcha (¼ milla)","clutch":"Embrague (¼ milla)"}
 const FILE_PATH := "user://controls_v1.json"
+const Controller = preload("res://scripts/controller_state.gd")
+var controller = Controller.new()
 var keys: Dictionary = DEFAULT_KEYS.duplicate()
 var drag_keys: Dictionary = DRAG_KEYS.duplicate()
 var deadzone := 0.18
 var camera_mode := 0
 var keyboard_steering := 0.8
+var trigger_deadzone := 0.04
+var analog_clutch := false
+var traction_control := false
+var abs_assist := true
+var music_volume := 0.35
 
 static func action(name: String) -> String:
     return "evo_" + name
@@ -37,6 +44,11 @@ func restore_defaults() -> void:
     deadzone = 0.18
     camera_mode = 0
     keyboard_steering = 0.8
+    trigger_deadzone = 0.04
+    analog_clutch = false
+    traction_control = false
+    abs_assist = true
+    music_volume = 0.35
     apply()
 
 func apply() -> void:
@@ -64,17 +76,17 @@ static func axis(value: float, zone: float) -> float:
 static func pad_sample(steer: float, accelerator: float, brake: float, reverse: bool, zone: float) -> Dictionary:
     return {"throttle":clampf(maxf(0.0, axis(accelerator, zone)) - (1.0 if reverse else 0.0), -1.0, 1.0), "steer":axis(steer, zone), "brake":maxf(0.0, axis(brake, zone))}
 
-func read_controls() -> Dictionary:
+func read_controls(manual_mode: bool = false) -> Dictionary:
     var throttle := Input.get_action_strength(action("accelerate")) - Input.get_action_strength(action("reverse"))
     var steer := (Input.get_action_strength(action("right")) - Input.get_action_strength(action("left"))) * keyboard_steering
     var brake := Input.get_action_strength(action("brake"))
-    var pads := Input.get_connected_joypads()
-    if not pads.is_empty():
-        var device := pads[0]
-        var sample := pad_sample(Input.get_joy_axis(device, JOY_AXIS_LEFT_X), Input.get_joy_axis(device, JOY_AXIS_TRIGGER_RIGHT), Input.get_joy_axis(device, JOY_AXIS_TRIGGER_LEFT), Input.is_joy_button_pressed(device, JOY_BUTTON_B), deadzone)
-        throttle += float(sample["throttle"])
-        steer += float(sample["steer"]) + (1.0 if Input.is_joy_button_pressed(device, JOY_BUTTON_DPAD_RIGHT) else 0.0) - (1.0 if Input.is_joy_button_pressed(device, JOY_BUTTON_DPAD_LEFT) else 0.0)
-        brake = maxf(brake, float(sample["brake"]))
+    if controller.selected()>=0:
+        throttle += maxf(0,axis(controller.axis_value(JOY_AXIS_TRIGGER_RIGHT),trigger_deadzone))-(1.0 if controller.pressed(JOY_BUTTON_B) and not manual_mode else 0.0)
+        steer += axis(controller.axis_value(JOY_AXIS_LEFT_X),deadzone)+(1.0 if controller.pressed(JOY_BUTTON_DPAD_RIGHT) else 0.0)-(1.0 if controller.pressed(JOY_BUTTON_DPAD_LEFT) else 0.0)
+        if not analog_clutch or not manual_mode:
+            brake = maxf(brake,maxf(0,axis(controller.axis_value(JOY_AXIS_TRIGGER_LEFT),trigger_deadzone)))
+        if manual_mode and controller.pressed(JOY_BUTTON_B):
+            brake = 1.0
     return {"throttle":clampf(throttle, -1.0, 1.0), "steer":clampf(steer, -1.0, 1.0), "brake":brake}
 
 func all_keys() -> Dictionary:
@@ -88,27 +100,36 @@ func key_label(name: String) -> String:
 
 func clutch_input() -> float:
     var value := Input.get_action_strength(action("clutch"))
-    var pads := Input.get_connected_joypads()
-    if not pads.is_empty() and Input.is_joy_button_pressed(pads[0],JOY_BUTTON_LEFT_SHOULDER):
+    if analog_clutch:
+        value = maxf(value,maxf(0,axis(controller.axis_value(JOY_AXIS_TRIGGER_LEFT),trigger_deadzone)))
+    if controller.pressed(JOY_BUTTON_LEFT_SHOULDER):
         value = 1.0
     return value
 
 func camera_look() -> Dictionary:
     var look := Vector2.ZERO
     var back := Input.is_physical_key_pressed(KEY_SHIFT)
-    var pads := Input.get_connected_joypads()
-    if not pads.is_empty():
-        look = Vector2(axis(Input.get_joy_axis(pads[0],JOY_AXIS_RIGHT_X),deadzone),axis(Input.get_joy_axis(pads[0],JOY_AXIS_RIGHT_Y),deadzone))
-        back = back or Input.is_joy_button_pressed(pads[0],JOY_BUTTON_Y)
+    if controller.selected()>=0:
+        look = Vector2(axis(controller.axis_value(JOY_AXIS_RIGHT_X),deadzone),axis(controller.axis_value(JOY_AXIS_RIGHT_Y),deadzone))
+        back = back or controller.pressed(JOY_BUTTON_Y)
     return {"axis":look,"back":back}
 
 func help_text() -> String:
     return "%s/↑ acelerar · %s/↓ reversa · %s/%s girar\n%s freno · %s recuperar · %s pausa · Esc garaje\nMando: RT/LT acelerar/frenar · B reversa\nStick/cruceta girar · X recuperar · Inicio pausa" % [key_label("accelerate"),key_label("reverse"),key_label("left"),key_label("right"),key_label("brake"),key_label("recover"),key_label("pause")]
 
 func to_dict() -> Dictionary:
-    return {"version":1, "keys":keys.duplicate(), "drag_keys":drag_keys.duplicate(),"deadzone":deadzone,"camera_mode":camera_mode,"keyboard_steering":keyboard_steering}
+    return {"version":1, "keys":keys.duplicate(), "drag_keys":drag_keys.duplicate(),"deadzone":deadzone,"camera_mode":camera_mode,"keyboard_steering":keyboard_steering,"trigger_deadzone":trigger_deadzone,"analog_clutch":analog_clutch,"traction_control":traction_control,"abs_assist":abs_assist,"music_volume":music_volume}
 
 func from_dict(data: Dictionary) -> bool:
+    var triggers = data.get("trigger_deadzone",0.04)
+    var music = data.get("music_volume",0.35)
+    if typeof(triggers) not in [TYPE_FLOAT,TYPE_INT] or not is_finite(float(triggers)) or float(triggers)<0.0 or float(triggers)>0.2:
+        return false
+    if typeof(music) not in [TYPE_FLOAT,TYPE_INT] or not is_finite(float(music)) or float(music)<0.0 or float(music)>1.0:
+        return false
+    for flag in ["analog_clutch","traction_control","abs_assist"]:
+        if data.has(flag) and typeof(data[flag])!=TYPE_BOOL:
+            return false
     if data.get("version") != 1 or typeof(data.get("keys")) != TYPE_DICTIONARY or data["keys"].size() != DEFAULT_KEYS.size():
         return false
     var zone = data.get("deadzone")
@@ -152,6 +173,11 @@ func from_dict(data: Dictionary) -> bool:
     deadzone = float(zone)
     camera_mode = int(camera)
     keyboard_steering = float(steering)
+    trigger_deadzone = float(triggers)
+    music_volume = float(music)
+    analog_clutch = data.get("analog_clutch",false)
+    traction_control = data.get("traction_control",false)
+    abs_assist = data.get("abs_assist",true)
     return true
 
 func save_file(path: String = FILE_PATH) -> Error:

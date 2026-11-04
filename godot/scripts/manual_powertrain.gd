@@ -4,11 +4,17 @@ extends RefCounted
 # Scene collision and beam timing use measured actor movement, not this model's
 # integration. Substeps keep clutch and tire coupling stable at normal frame rates.
 const Config = preload("res://scripts/drag_vehicle_config.gd")
+const Axles = preload("res://scripts/axle_traction.gd")
+const EngineTorque = preload("res://scripts/engine_torque.gd")
 var config = Config.new()
+var axles = Axles.new()
+var engine = EngineTorque.new()
 var gear := 0
 var rpm := 900.0
 var speed_mps := 0.0
-var wheel_omega := 0.0
+var wheel_omega: float:
+    get: return axles.driven_omega(config)
+    set(value): axles.omega = Vector2(value,value)
 var clutch_engagement := 0.0
 var throttle := 0.0
 var engine_running := true
@@ -17,7 +23,10 @@ var missed_shifts := 0
 var shifts := 0
 var wheelspin := 0.0
 var acceleration := 0.0
-var tire_temperature := 28.0
+var tire_temperature: float:
+    get:
+        return axles.temperatures.x if config.drivetrain=="FWD" else (axles.temperatures.y if config.drivetrain=="RWD" else (axles.temperatures.x+axles.temperatures.y)*0.5)
+    set(value): axles.temperatures = Vector2(value,value)
 var engine_temperature := 88.0
 var wear := {"motor":0.0,"transmision":0.0,"neumaticos":0.0,"frenos":0.0}
 var feedback := "Punto muerto · C + subir marcha para engranar primera"
@@ -25,8 +34,16 @@ var feedback_time := 0.0
 var limiter := false
 var wheel_power_kw := 0.0
 var clutch_loss_kw := 0.0
+var engine_torque_nm := 0.0
+var wheel_torque_nm := 0.0
+var driveline_loss_kw := 0.0
+var traction_control := false
+var tcs_cut := 1.0
 
 func reset(keep_heat: bool = true) -> void:
+    axles.reset(keep_heat)
+    engine.boost = 0.0
+    tcs_cut = 1.0
     gear = 0
     rpm = config.idle_rpm
     speed_mps = 0.0
@@ -40,15 +57,16 @@ func reset(keep_heat: bool = true) -> void:
     wheelspin = 0.0
     wheel_power_kw = 0.0
     clutch_loss_kw = 0.0
+    engine_torque_nm = 0.0
+    wheel_torque_nm = 0.0
+    driveline_loss_kw = 0.0
     feedback = "Punto muerto · Embrague + subir marcha para engranar primera"
     if not keep_heat:
         tire_temperature = 28.0
         engine_temperature = 88.0
 
 func torque_at(engine_rpm: float) -> float:
-    var position := clampf((engine_rpm-config.idle_rpm)/(config.redline_rpm-config.idle_rpm),0,1)*float(config.torque_curve.size()-1)
-    var index := mini(int(position),config.torque_curve.size()-2)
-    var factor := lerpf(config.torque_curve[index],config.torque_curve[index+1],position-index)
+    var factor := EngineTorque.curve_factor(engine_rpm,config)
     var health := clampf((config.engine_health-float(wear["motor"]))/100.0,0,1)
     var thermal := clampf(1.0-maxf(0,engine_temperature-105.0)*0.015,0.55,1.0)
     return config.peak_torque*factor*(0.65+0.35*health)*thermal
@@ -80,10 +98,10 @@ func shift(direction: int, clutch: float) -> bool:
     return true
 
 func step(delta: float, accelerator: float, clutch: float, brake: float, on_road: bool = true) -> void:
-    if not is_finite(delta) or delta <= 0.0:
+    if not is_finite(delta) or delta <= 0.0 or not is_finite(accelerator) or not is_finite(clutch) or not is_finite(brake):
         return
     var duration := minf(delta,0.1)
-    var count := maxi(1,ceili(duration*240.0))
+    var count := maxi(1,ceili(duration*480.0))
     var dt := duration/float(count)
     feedback_time = maxf(0,feedback_time-duration)
     for i in range(count):
@@ -104,7 +122,12 @@ func _integrate(dt: float, accelerator: float, clutch: float, brake: float, on_r
     elif rpm < config.redline_rpm-220.0:
         limiter = false
     var idle := clampf((config.idle_rpm-rpm)*0.18,0,90)
-    var combustion := torque_at(rpm)*throttle if engine_running and not limiter else 0.0
+    var pressure_factor: float = engine.boost_factor(dt,rpm,throttle,gear>0 and clutch_engagement>0.2,config)
+    var slip: float = axles.drive_slip(config)
+    var wanted_cut := clampf(0.18/maxf(slip,0.18),0.15,1.0) if traction_control and speed_mps>2.0 and accelerator>0.05 else 1.0
+    tcs_cut = lerpf(tcs_cut,wanted_cut,1.0-exp(-14.0*dt))
+    var combustion := torque_at(rpm)*throttle*pressure_factor*tcs_cut if engine_running and not limiter else 0.0
+    engine_torque_nm = combustion
     if engine_running:
         combustion += idle
     var friction := 7.0+engine_omega*0.025
@@ -114,38 +137,24 @@ func _integrate(dt: float, accelerator: float, clutch: float, brake: float, on_r
         engine_running = false
         feedback = "MOTOR CALADO · R recupera y vuelve a arrancar"
         feedback_time = 5.0
-    var weight_shift := clampf(acceleration*config.cg_height/(9.81*config.wheelbase),-0.2,0.2)
-    var driven_load := 1.0
-    if config.drivetrain == "RWD":
-        driven_load = 1.0-config.front_weight_bias+weight_shift
-    elif config.drivetrain == "FWD":
-        driven_load = config.front_weight_bias-weight_shift
-    var temperature_grip := clampf(0.90+(tire_temperature-28.0)*0.003,0.70,1.08)
-    if tire_temperature > 90.0:
-        temperature_grip = maxf(0.65,1.08-(tire_temperature-90.0)*0.012)
-    var health_grip := 0.60+0.40*clampf((config.tire_health-float(wear["neumaticos"]))/100.0,0,1)
-    var tire_limit: float = config.mass*9.81*config.grip*driven_load*temperature_grip*health_grip*(1.0 if on_road else 0.4)
-    var slip_ratio: float = (wheel_omega*config.wheel_radius-speed_mps)/maxf(speed_mps,3.0)
-    wheelspin = absf(slip_ratio)
-    var tire_force := tire_limit*tanh(slip_ratio*8.0)*(1.0-0.18*clampf(absf(slip_ratio)-0.15,0,1))
-    var drive_torque := clutch_torque*ratio*0.90
-    wheel_omega = maxf(0,wheel_omega+(drive_torque-tire_force*config.wheel_radius)*dt/config.wheel_inertia)
+    wheel_torque_nm = clutch_torque*ratio*config.drivetrain_efficiency
+    var tire_force: float = axles.step(dt,speed_mps,wheel_torque_nm,brake,config,config.tire_health-float(wear["neumaticos"]),on_road)
+    wheelspin = axles.driven_slip(config)
     var resistance: float = 0.5*1.225*config.drag_area*speed_mps*speed_mps+config.rolling_resistance*config.mass*9.81
-    var braking: float = brake*config.mass*9.81*config.grip*health_grip
     var previous := speed_mps
-    speed_mps = maxf(0,speed_mps+(tire_force-resistance-braking)*dt/config.mass)
+    speed_mps = maxf(0,speed_mps+(tire_force-resistance)*dt/config.mass)
+    if speed_mps<0.15 and brake>0.5:
+        speed_mps = 0.0
     acceleration = (speed_mps-previous)/dt
-    if brake > 0.0:
-        wheel_omega = move_toward(wheel_omega,speed_mps/config.wheel_radius,brake*dt*180.0)
-    var slip_power := absf(tire_force*(wheel_omega*config.wheel_radius-speed_mps))
+    axles.observe_acceleration(acceleration,dt)
     wheel_power_kw = maxf(0,tire_force*speed_mps/1000.0)
     clutch_loss_kw = absf(clutch_torque*difference)/1000.0
-    tire_temperature += (slip_power*0.000004-(tire_temperature-28.0)*0.025)*dt
+    driveline_loss_kw = absf(clutch_torque*ratio*wheel_omega)*(1.0-config.drivetrain_efficiency)/1000.0
     engine_temperature += (throttle*0.22-(engine_temperature-85.0)*0.015-speed_mps*0.001)*dt
-    wear["neumaticos"] += slip_power*dt*0.00000004
+    wear["neumaticos"] += axles.slip_power*dt*0.00000004
     wear["transmision"] += absf(clutch_torque*difference)*dt*0.00000004
-    wear["motor"] += (0.001*throttle+0.04*maxf(0,rpm/config.redline_rpm-1.0))*dt
-    wear["frenos"] += braking*speed_mps*dt*0.000000005
+    wear["motor"] += (0.001*throttle+0.04*maxf(0,rpm/config.redline_rpm-1.0))*dt*config.engine_wear_factor
+    wear["frenos"] += axles.brake_power*dt*0.000000005
     if rpm > config.redline_rpm*1.10:
         feedback = "SOBRERRÉGIMEN · La reducción fuerza el motor"
         feedback_time = 2.0

@@ -22,6 +22,18 @@ extends Resource
 @export var engine_health := 100.0
 @export var transmission_health := 100.0
 @export var tire_health := 100.0
+@export var torque_rpm := PackedFloat32Array([900,1500,2500,3500,4500,5500,6500,7000])
+@export var drivetrain_efficiency := 0.88
+@export var awd_front_split := 0.40
+@export var brake_front_bias := 0.65
+@export var brake_capacity := 1.4
+@export var peak_slip := 0.12
+@export var abs_assist := true
+@export var turbo_fraction := 0.0
+@export var spool_rpm := 2500.0
+@export var turbo_response := 2.0
+@export var brake_health := 100.0
+@export var engine_wear_factor := 1.0
 
 static func from_vehicle(vehicle: Dictionary):
     var result = load("res://scripts/drag_vehicle_config.gd").new()
@@ -36,11 +48,28 @@ static func from_vehicle(vehicle: Dictionary):
             result.mass = presets[name][0]
             result.peak_torque = presets[name][1]
             break
+    result.drivetrain_efficiency = 0.91 if result.drivetrain=="FWD" else (0.83 if result.drivetrain=="AWD" else 0.88)
+    var name := str(vehicle.get("model",""))
+    if name.contains("Civic") or name.contains("Levin") or name.contains("FTO"):
+        result.redline_rpm = 7800.0
+        result.torque_rpm = PackedFloat32Array([900,1800,2800,3800,4800,6000,7000,7800])
+        result.torque_curve = PackedFloat32Array([0.48,0.62,0.76,0.88,0.96,1.0,0.96,0.82])
+    if name.contains("Silvia") or name.contains("MR2") or name.contains("RX-7") or name.contains("Impreza") or name.contains("Skyline"):
+        result.turbo_fraction = 0.45 if name.contains("RX-7") or name.contains("Skyline") else 0.35
+        result.torque_curve = PackedFloat32Array([0.55,0.65,0.84,1.0,0.99,0.92,0.80,0.66])
+    if name.contains("MR2"):
+        result.front_weight_bias = 0.44
+    if name.contains("Impreza"):
+        result.awd_front_split = 0.50
     result.clutch_capacity = result.peak_torque*1.7
     result.engine_health = float(vehicle.get("health",{}).get("motor",50.0))
     result.transmission_health = float(vehicle.get("health",{}).get("transmision",50.0))
     result.tire_health = float(vehicle.get("health",{}).get("neumaticos",50.0))
+    result.brake_health = float(vehicle.get("health",{}).get("frenos",50.0))
     var upgrades: Array = vehicle.get("upgrades",[])
     result.peak_torque *= (1.10 if upgrades.has("ecu") else 1.0)*(1.05 if upgrades.has("escape") else 1.0)
     result.grip *= (1.12 if upgrades.has("tires") else 1.0)*(1.04 if upgrades.has("suspension") else 1.0)
+    result.brake_capacity *= 1.2 if upgrades.has("brakes") else 1.0
+    result.cg_height = 0.43 if upgrades.has("suspension") else 0.46
+    result.engine_wear_factor = 1.0+(0.22 if upgrades.has("ecu") else 0.0)+(0.08 if upgrades.has("escape") else 0.0)
     return result

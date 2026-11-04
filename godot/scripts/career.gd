@@ -2,6 +2,7 @@ extends RefCounted
 class_name EvolutionCareer
 
 const Tuning = preload("res://scripts/tuning.gd")
+const Money = preload("res://scripts/money.gd")
 const Rivals = preload("res://scripts/rivals.gd")
 const LapRecords = preload("res://scripts/lap_records.gd")
 const DragRecords = preload("res://scripts/drag_records.gd")
@@ -47,7 +48,7 @@ func can_enter(game, event_id: String, vehicle_id: int) -> String:
     if not game.eligible(car):
         return "El vehículo no está apto para competir."
     if game.balance < int(event["fee"]):
-        return "Créditos insuficientes para la inscripción."
+        return "Saldo insuficiente para la inscripción."
     return ""
 
 func simulate_event(game, event_id: String, vehicle_id: int) -> String:
@@ -79,7 +80,7 @@ func simulate_event(game, event_id: String, vehicle_id: int) -> String:
     for opponent in field_result["opponents"]:
         victories[opponent["id"]] = initial_condition > float(opponent["score"])
     _record_result({"id":event_id,"vehicle_id":vehicle_id,"position":position,"fee":fee,"reward":reward,"net":net,"opponents":field_result["opponents"].duplicate(true),"source":"simulated"}, victories)
-    return "%s · Puesto %d · Premio %d Cr. · Neto %+d Cr. · Licencia %s" % [event["name"], position, reward, net, license]
+    return "%s · Puesto %d · Premio %s · Neto %s · Licencia %s" % [event["name"], position, Money.format(reward), Money.format(net,true), license]
 
 # GameSession requests a paid admission before entering the scene. The career
 # owns that admission, so an unpaid or stale report can never award a prize.
@@ -168,7 +169,7 @@ func award_track_result(game, event_id: String, vehicle_id: int, report: Diction
     _record_result({"id":event_id,"vehicle_id":vehicle_id,"position":position,"fee":event["fee"],"reward":reward,"net":reward - int(event["fee"]),"opponents":opponents,"source":"track","laps":2,"time":player["time"]}, victories)
     _track_entry = {}
     _track_game = null
-    return {"ok":true, "message":"%s · Puesto %d · Premio %d Cr. · Licencia %s" % [event["name"], position, reward, license]}
+    return {"ok":true, "message":"%s · Puesto %d · Premio %s · Licencia %s" % [event["name"], position, Money.format(reward), license]}
 
 func _record_result(result: Dictionary, victories: Dictionary) -> void:
     completed.append(str(result["id"]))

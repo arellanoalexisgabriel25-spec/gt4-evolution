@@ -21,9 +21,9 @@ func _initialize() -> void:
     _check(restored.from_dict(game.to_dict()), "save containing inspection loads")
     _check(bool(restored.find_car(1).get("inspected", false)), "inspection state preserved")
     restored.balance = 0
-    _check(restored.inspect(2).begins_with("Créditos insuficientes"), "cannot inspect without funds")
+    _check(restored.inspect(2).begins_with("Saldo insuficiente"), "cannot inspect without funds")
     _check(not bool(restored.find_car(2).get("inspected", false)), "failed inspection unchanged")
-    _check(restored.buy(1).begins_with("Créditos insuficientes"), "cannot buy with zero credits")
+    _check(restored.buy(1).begins_with("Saldo insuficiente"), "cannot buy with zero credits")
     print("PASS: %d inspection assertions" % checks)
     quit(0)
 

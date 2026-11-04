@@ -27,7 +27,7 @@ func drive_manual(delta: float, controls: Dictionary, road: bool) -> void:
         distance_m += measured
     if is_on_wall():
         contact_count += 1
-    visual.update_motion(delta,powertrain.wheel_omega*powertrain.config.wheel_radius,steer,powertrain.acceleration/9.81,brake)
+    visual.update_motion(delta,powertrain.speed_mps,steer,powertrain.axles.filtered_acceleration/9.81,brake,powertrain.axles.omega*powertrain.config.wheel_radius)
 
 func recover(location: Vector3, angle: float = 0.0) -> void:
     super.recover(location,angle)

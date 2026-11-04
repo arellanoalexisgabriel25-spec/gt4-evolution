@@ -2,9 +2,11 @@ extends Node
 
 const Economy = preload("res://scripts/economy.gd")
 const Career = preload("res://scripts/career.gd")
-const VERSION := "0.13"
+const VERSION := "0.14"
 const ControlSettings = preload("res://scripts/control_settings.gd")
+const Music = preload("res://scripts/menu_music.gd")
 var controls = ControlSettings.new()
+var menu_music
 
 var game: EvolutionEconomy
 var career: EvolutionCareer
@@ -21,6 +23,16 @@ func _ready() -> void:
     if not controls.load_file():
         controls.restore_defaults()
         last_notice = "No se pudo leer la configuración de controles. Se usan los valores por defecto."
+    menu_music = Music.new()
+    add_child(menu_music)
+    menu_music.set_volume(controls.music_volume)
+    Input.joy_connection_changed.connect(_controller_connection)
+
+func _controller_connection(device: int, connected: bool) -> void:
+    controls.controller.connection_changed(device,connected)
+
+func _input(event: InputEvent) -> void:
+    controls.controller.feed(event)
 
 func reset() -> void:
     game = Economy.new()
@@ -94,7 +106,7 @@ func abandon_track_event() -> String:
     career.cancel_track_entry(game)
     entry_ticket = {}
     active_race = null
-    return "Abandono sin premio: inscripción de %d Cr. consumida." % fee
+    return "Abandono sin premio: inscripción de %s consumida." % preload("res://scripts/money.gd").format(fee)
 
 func choose_vehicle(car_id: int) -> bool:
     if not entry_ticket.is_empty() and int(entry_ticket["vehicle_id"]) != car_id:

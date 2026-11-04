@@ -1,6 +1,7 @@
 extends Node3D
 
 const Hud = preload("res://scripts/race_hud.gd")
+const PauseMenu = preload("res://scripts/pause_menu.gd")
 const Layout = preload("res://scripts/circuit_layout.gd")
 const CircuitView = preload("res://scripts/circuit_view.gd")
 const Actor = preload("res://scripts/vehicle_actor.gd")
@@ -27,6 +28,9 @@ var distance_m: float:
 var readout: Label
 var race_readout: Label
 var hud
+var pause_menu
+var last_pad := -1
+var controller_lost := false
 var enabled := false
 var paused := false
 var leaving := false
@@ -41,6 +45,8 @@ var opponents: Array[Dictionary] = []
 var input_provider: Callable
 
 func _ready() -> void:
+    GameSession.menu_music.set_menu_active(false)
+    Input.joy_connection_changed.connect(_controller_connection)
     var view = CircuitView.new()
     view.layout = circuit
     add_child(view)
@@ -113,6 +119,14 @@ func _build_hud() -> void:
     hud.camera_requested.connect(_cycle_camera)
     readout = hud.lap_details
     race_readout = hud.ranking
+    pause_menu = PauseMenu.new()
+    pause_menu.mode = self
+    canvas.add_child(pause_menu)
+
+func _controller_connection(device: int, connected: bool) -> void:
+    if not connected and device==last_pad and enabled and not leaving:
+        paused = true
+        controller_lost = true
 
 func _cycle_camera() -> void:
     camera.cycle_mode()
@@ -126,6 +140,8 @@ func _player_controls() -> Dictionary:
 func _physics_process(delta: float) -> void:
     if not enabled or leaving:
         return
+    if GameSession.controls.controller.selected()>=0:
+        last_pad = GameSession.controls.controller.selected()
     var look: Dictionary = GameSession.controls.camera_look()
     camera.look_input = look["axis"]
     camera.look_back = look["back"]
@@ -239,11 +255,14 @@ func _refresh_hud() -> void:
     hud.update_telemetry({"speed":physics.speed()*3.6,"gear":physics.gear,"rpm":physics.rpm,"redline":physics.config.redline_rpm,"time":trial.elapsed,"best":trial.best_time,"camera":camera.MODES[camera.mode],"lap":lap_text,"ranking":ranking_text.strip_edges(),"status":status,"help":help,"positions":positions})
 
 func _input(event: InputEvent) -> void:
+    var fresh: bool = GameSession.controls.controller.feed(event)
+    if event is InputEventJoypadButton or event is InputEventJoypadMotion:
+        last_pad = GameSession.controls.controller.selected()
     if not enabled or leaving:
         return
     if event is InputEventKey and event.echo:
         return
-    var pad_pressed: bool = event is InputEventJoypadButton and event.pressed
+    var pad_pressed: bool = event is InputEventJoypadButton and fresh
     if (event is InputEventKey and event.pressed and event.physical_keycode == KEY_TAB) or (pad_pressed and event.button_index == JOY_BUTTON_RIGHT_SHOULDER):
         _cycle_camera()
         get_viewport().set_input_as_handled()
@@ -251,6 +270,9 @@ func _input(event: InputEvent) -> void:
         _reset_car()
         get_viewport().set_input_as_handled()
     elif event.is_action_pressed(ControlSettings.action("pause")) or (pad_pressed and event.button_index == JOY_BUTTON_START):
+        paused = not paused
+        get_viewport().set_input_as_handled()
+    elif pad_pressed and event.button_index==JOY_BUTTON_BACK:
         paused = not paused
         get_viewport().set_input_as_handled()
     elif event is InputEventKey and event.pressed and event.physical_keycode == KEY_ESCAPE:

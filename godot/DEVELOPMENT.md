@@ -8,13 +8,14 @@ Develop functional increments on descriptive branches, preserve user work and sa
 
 Current priority: develop a compact quarter-mile environment, manual shifting, measurable driving skill, persistent mechanical use and original visuals. Large-circuit expansion is deferred. Existing circuit, career and AI modes remain available. A simulated result must always be labelled as such.
 
-## Architecture through 0.12
+## Architecture through 0.14
 
 | Module | Responsibility |
 | --- | --- |
 | `vehicle_physics.gd`, `vehicle_config.gd`, `resources/*.tres` | Deterministic planar arcade dynamics and configurable handling |
 | `transmission.gd` | Ratio-based RPM and sequential automatic shifting; not a torque/clutch simulation |
-| `drag_vehicle_config.gd`, `manual_powertrain.gd` | Original approximate per-car mass/torque/gear data; substepped longitudinal engine/wheel inertia, finite clutch, grip/load transfer, drag, braking and session heat/stress |
+| `drag_vehicle_config.gd`, `manual_powertrain.gd` | Original approximate per-car data; 480 Hz maximum substeps for engine/clutch, torque and driveline efficiency; wires independent axles and session wear |
+| `engine_torque.gd`, `axle_traction.gd` | RPM torque interpolation and transient turbo; independent front/rear rotation, slip, load, tire force, heat, brake torque and ABS modulation |
 | `drag_actor.gd`, `drag_strip.gd`, `drag_mode.gd` | Real collision body, original two-lane strip and manual input/timing/garage integration; directional assistance is explicit |
 | `drag_run.gd`, `drag_records.gd`, `drag_garage_session.gd` | Interpolated beams, tree/false starts, validated personal tickets and once-only cumulative usage settlement |
 | `drag_hud.gd`, `engine_audio.gd` | Measured manual telemetry/ticket and original provisional synthesized engine sound |
@@ -32,16 +33,18 @@ Current priority: develop a compact quarter-mile environment, manual shifting, m
 | `session.gd` | Runtime selection, race mode and admission lifecycle; rejects stale result callbacks |
 | `career.gd` | Paid admission, validation and unique award for the physical debut event; legacy simulation for other events; licenses and rivalry history |
 | `lap_records.gd` | Best valid lap per persistent car and circuit; validation and serialization |
-| `economy.gd`, `tuning.gd` | Market, workshop, persistent mechanical state, fractional measured distance, wear and parts |
+| `economy.gd`, `tuning.gd`, `money.gd` | Market, workshop, persistent state, wear and parts; consistent ARS formatting and currency metadata without changing ledger proportions |
 | `save_store.gd` | Validates decoded candidates, restores integral JSON numbers and writes via temporary-file replacement |
-| `control_settings.gd` | Configurable physical keyboard bindings, fixed arrows, controller deadzones and normalized analog inputs; separate atomic preferences file |
+| `control_settings.gd`, `controller_state.gd` | Physical bindings, cached actual Godot controller events, normalized analog inputs and active-device changes; separate atomic preferences including aids, clutch and music volume |
+| `menu_controller.gd`, `pause_menu.gd` | Repeated stick/D-pad focus navigation, debounced purchases, settings, tabs and in-race continue/recover/garage overlay |
+| `menu_music.gd`, `assets/audio/` | User-supplied MP3 with redistribution authorization; persistent looping player, independent volume and scene fades |
 | `main.gd` | Garage, market, workshop, career, tuning and save/load interface |
 
 The research source and pinned commit are in REFERENCES.md. The new AI and race rules are original implementations, not ports of GT4's controller. Original research files remain unchanged.
 
 ## Economic and timing rules
 
-Debutantes uses two physical laps against Nico and Claire, 120 Cr. admission, and one prize of 700 / 400 / 200 Cr. from the measured finish order. The career owns the paid entry; GameSession attaches it to the active race instance. Unpaid, unstarted, stale, malformed and duplicate awards are rejected. A scene that fails before attachment can refund admission once. Abandonment after attachment consumes it, pays nothing and leaves the event available for another paid attempt. The other four events remain explicitly simulated, preserving the existing progression.
+Debutantes uses two physical laps against Nico and Claire, $ 120,000 ARS admission, and one prize of $ 700,000 / $ 400,000 / $ 200,000 ARS from the measured finish order. The integer ledger retains its old granularity: each stored unit represents ARS 1,000. The career owns the paid entry; GameSession attaches it to the active race instance. Unpaid, unstarted, stale, malformed and duplicate awards are rejected. A scene that fails before attachment can refund admission once. Abandonment after attachment consumes it, pays nothing and leaves the event available for another paid attempt. The other four events remain explicitly simulated, preserving the existing progression.
 
 Every completed valid lap can update a car's record. Off-road driving or a teleport invalidates the current attempt. A recovery starts a fresh attempt at the start, keeps completed laps, never adds teleport distance, and holds a racer for three seconds. Normal AI navigation completes laps without recovery. Stuck AI recovery is explicit and recorded. The race ends when all entrants are terminal, after 30 seconds of waiting following the player's finish, or at the 600-second limit. Unfinished entrants are DNFs, not fabricated finish times.
 
@@ -53,7 +56,7 @@ Use Godot 4.6.3, then run `bash tools/test_game.sh` from the repository root. Th
 
 The suite covers existing economy, career, inspections, tuning and transmission, plus real two-lap races with the same physical controller and collision world, overtaking, traffic decisions, checkpoint shortcuts, recovery, race timeout, fee/refund/award transactions, stale callbacks, fractional wear/distance, real JSON files, legacy saves and personal records. Local results do not establish a GitHub Actions pass. See the release report for counts and execution results.
 
-The source package is validated after fresh extraction. Windows includes the official Godot runtime verified against upstream SHA-512 and its license. Version 0.12 is also rendered at 1280×720 with OpenGL/Mesa llvmpipe on a local Xvfb display; actual screenshots are reviewed for menu layout, lighting, HUD and camera views. Windows execution, physical controllers and GPU performance remain untested. No claim of complete GT4 physics is made.
+The source package is validated after fresh extraction. Windows includes the official Godot runtime verified against upstream SHA-512 and its license. The graphical checks render at 1280×720 with OpenGL/Mesa llvmpipe on a local Xvfb display; actual screenshots are reviewed for menu layout, lighting, HUD and camera views. Windows execution, physical controllers and GPU performance remain untested. No claim of complete GT4 physics is made.
 
 ## Reusable setup and packaging
 
@@ -69,11 +72,11 @@ godot --headless --path godot --editor --import
 
 `python3 tools/package_game.py --output /path/to/output` creates the source ZIP. A portable Windows ZIP additionally requires `--windows-engine /path/to/Godot_v4.6.3-stable_win64.exe.zip --checksums /path/to/SHA512-SUMS.txt --engine-license /path/to/Godot-LICENSE.txt`. Use the official release and tagged source repository. Launchers import a fresh project before running it; caches are not bundled. The application data directory retains the original project name to preserve saved games; the displayed window title uses the current version.
 
-This feature branch depends on the pending 0.8 and 0.8.1 increments; `main` remains unchanged until remote review and required CI can be confirmed.
+The feature branch includes the earlier pending increments; `main` remains unchanged until review and required CI can be confirmed. Git access and GitHub API access are separate: when the API is unavailable, inspect public Actions run/job pages for the exact source commit before reporting CI status.
 
 ## Remaining work
 
-Human driving feedback and testing with physical controllers/GPU hardware; additional original circuits; broader physical career events; AI defending and more robust recovery in arbitrary crowded scenarios; realistic collision response/damage, tires, heat and engine torque; autosave with recovery. Preserve successful physical race tests and transaction guarantees when expanding these systems.
+Human driving feedback and testing with physical controllers/GPU hardware; calibrated tire and engine data, lateral dynamics, left/right differentials and realistic collision response/damage; broader physical career events and robust AI in crowded scenarios; autosave with recovery. Large-circuit expansion remains deferred. Preserve successful race tests and transaction guarantees when expanding these systems.
 
 ## Version 0.10 and distribution
 
@@ -166,3 +169,43 @@ The capture driver is test-only; clear its Callable before changing scene to rel
 the captured script context. Sixteen PNGs are required by the capture wrapper.
 
 Integration corrections: the supplied dynamics test called a missing `speed()` method, now exposed as planar velocity magnitude. The camera uses that magnitude so sideways drift does not incorrectly reduce its speed response. The same grip cap now applies to brake input and braking by selecting the opposite travel direction. Only actual propulsion applies driven-axle penalties; reverse-pedal deceleration is not treated as power. Added native tests cover both braking directions, drivetrain-independent pedal braking with equal axle bias, total speed and the camera's sideways-speed response. Save schemas and input preferences are unchanged. Windows/controller hardware and graphical appearance remain untested.
+
+## Version 0.14: traction, ARS, menu music and controller
+
+See [RELEASE-0.14.md](RELEASE-0.14.md). The new longitudinal model applies only to
+quarter-mile mode; the club circuit retains its tested planar controller. Axle
+normal loads conserve `mass * g`, with filtered acceleration transferring load.
+Tire force peaks near 12% slip and declines toward a sliding plateau. Force
+relaxation is clamped against reversed slip to avoid adding energy. Independent
+axle rotation drives the procedural wheel animation. Brakes apply wheel torque;
+there is no additional artificial chassis braking force. ABS reduces brake torque
+for measured lock slip. Optional TCS cuts combustion for positive driven-wheel
+slip; neither aid increases tire grip. Engine curves have explicit RPM knots,
+turbo builds/decays with load, and driveline losses depend on the preset.
+
+Ledger integers are deliberately preserved, including fees and transaction history.
+`Money.format()` renders one ledger unit as ARS 1,000, using local thousands
+separators. Economy serialization adds optional `currency_code`/`money_unit_ars`;
+legacy saves without either remain valid. Incomplete or incompatible metadata is
+rejected before modifying runtime state. No repeated load can compound balances.
+Prices are fictional game values, not a conversion against an external exchange rate.
+
+`ControllerState` caches SDL/Godot events and clears device state on disconnect.
+Menu navigation consumes input before callbacks that may detach the page. Held A
+cannot repeat a purchase or leak into the next scene as an upshift. Pause callbacks
+release focus synchronously. Disconnecting the active controller pauses both modes;
+the keyboard remains available. Optional LT clutch applies only to drag mode,
+leaving B as an independent brake even while RT is held. New preferences are
+optional in the version-1 format and stored apart from manual game saves.
+
+The menu MP3 is unchanged from the user's upload; its SHA-256, title, credits and
+redistribution authorization are recorded under `assets/audio/`. It is not relicensed
+under MIT. A persistent AudioStreamPlayer loops the MP3, fades out on track entry,
+and returns at its saved position. Volume is independent and validated atomically.
+Headless tests load/decode the real stream; graphical checks assert real playback,
+looping and fade to silence. The package and publisher include and byte-check MP3s.
+
+Four new suites cover axle forces/energy/braking/boost/aids, ARS/legacy JSON,
+actual audio/preferences and controller-driven purchases/settings/scene changes.
+The current capture wrapper requires seventeen PNGs, including the pause overlay.
+Focused buttons use explicit dark text on the light theme to retain contrast.

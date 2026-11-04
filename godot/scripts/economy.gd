@@ -2,6 +2,7 @@ extends RefCounted
 class_name EvolutionEconomy
 
 const Tuning = preload("res://scripts/tuning.gd")
+const Money = preload("res://scripts/money.gd")
 
 const SCHEMA_VERSION := 1
 const START_BALANCE := 12000
@@ -86,7 +87,7 @@ func inspect(id: int) -> String:
         return "Este vehículo ya fue inspeccionado."
     const INSPECTION_COST := 200
     if balance < INSPECTION_COST:
-        return "Créditos insuficientes para la inspección."
+        return "Saldo insuficiente para la inspección."
     balance -= INSPECTION_COST
     car["inspected"] = true
     _record(car, "inspeccion", -INSPECTION_COST)
@@ -98,12 +99,12 @@ func buy(id: int) -> String:
         return "La oferta ya no está disponible."
     var price: int = int(car["price"])
     if price < 0 or balance < price:
-        return "Créditos insuficientes."
+        return "Saldo insuficiente."
     balance -= price
     car["owner"] = "player"
     car["listed"] = false
     _record(car, "compra", -price)
-    return "Compraste %s por %d Cr." % [car["model"], price]
+    return "Compraste %s por %s" % [car["model"], Money.format(price)]
 
 func repair_quote(id: int, component: String) -> int:
     var car := find_car(id)
@@ -125,14 +126,14 @@ func repair(id: int, component: String) -> String:
     if price <= 0:
         return "Componente desconocido o ya reparado."
     if balance < price:
-        return "Créditos insuficientes para reparar."
+        return "Saldo insuficiente para reparar."
     var old := float(car["health"][component])
     balance -= price
     car["health"][component] = minf(100.0, old + 25.0)
     if car.has("faults"):
         car["faults"].erase(component)
     _record(car, "reparacion:" + component, -price)
-    return "Reparación de %s completada por %d Cr." % [component, price]
+    return "Reparación de %s completada por %s" % [component, Money.format(price)]
 
 func drive(id: int, km: int, severity: float = 2.0) -> String:
     var car := find_car(id)
@@ -187,12 +188,14 @@ func sell(id: int) -> String:
     balance += quote
     car["owner"] = "sold"
     _record(car, "venta", quote)
-    return "Vendiste %s por %d Cr." % [car["model"], quote]
+    return "Vendiste %s por %s" % [car["model"], Money.format(quote)]
 
 func to_dict() -> Dictionary:
-    return {"schema_version": SCHEMA_VERSION, "balance": balance, "cars": cars.duplicate(true), "ledger": ledger.duplicate(true)}
+    return {"schema_version": SCHEMA_VERSION,"currency_code":Money.CODE,"money_unit_ars":Money.UNIT_ARS, "balance": balance, "cars": cars.duplicate(true), "ledger": ledger.duplicate(true)}
 
 func from_dict(data: Dictionary) -> bool:
+    if not Money.valid_metadata(data):
+        return false
     if data.get("schema_version") != SCHEMA_VERSION or typeof(data.get("balance")) != TYPE_INT:
         return false
     if int(data["balance"]) < 0 or typeof(data.get("cars")) != TYPE_ARRAY or typeof(data.get("ledger")) != TYPE_ARRAY:

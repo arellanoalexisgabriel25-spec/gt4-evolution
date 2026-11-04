@@ -49,7 +49,7 @@ func run() -> void:
     var button_found := false
     if grid is GridContainer:
         for button in grid.get_child(0).find_children("*","Button",true,false):
-            if button.text == "INSPECCIÓN 200 Cr.":
+            if button.text == "INSPECCIÓN " + preload("res://scripts/money.gd").format(200):
                 button.pressed.emit()
                 button_found = true
                 break

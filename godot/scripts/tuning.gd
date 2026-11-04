@@ -1,5 +1,6 @@
 extends RefCounted
 class_name EvolutionTuning
+const Money = preload("res://scripts/money.gd")
 
 # Small, game-balanced tuning catalog. Does not modify GT4's original physics.
 const PARTS := [
@@ -49,7 +50,7 @@ func can_install(game, car_id: int, part_id: String) -> String:
     if float(car["health"].get(component, 0.0)) < 40.0:
         return "Repará primero el componente %s." % component
     if game.balance < int(part["price"]):
-        return "Créditos insuficientes."
+        return "Saldo insuficiente."
     return ""
 
 func install(game, car_id: int, part_id: String) -> String:
@@ -64,4 +65,4 @@ func install(game, car_id: int, part_id: String) -> String:
         car["upgrades"] = []
     car["upgrades"].append(part_id)
     game._record(car, "tuning:" + part_id, -price)
-    return "Instalaste %s por %d Cr. Bonificación +%.1f." % [part["name"], price, performance_bonus(car)]
+    return "Instalaste %s por %s. Bonificación +%.1f." % [part["name"], Money.format(price), performance_bonus(car)]

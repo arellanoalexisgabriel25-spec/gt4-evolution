@@ -148,9 +148,10 @@ func _ready() -> void:
             hub.material_override = trim
             spin.add_child(hub)
 
-func update_motion(delta: float, speed: float, steering: float, load_shift: float, brake: float) -> void:
-    for wheel in wheels:
-        wheel.rotation.x -= speed * delta / 0.30
+func update_motion(delta: float, speed: float, steering: float, load_shift: float, brake: float, axle_speeds: Vector2 = Vector2.INF) -> void:
+    for index in range(wheels.size()):
+        var linear_speed := axle_speeds[index%2] if axle_speeds.is_finite() else speed
+        wheels[index].rotation.x -= linear_speed * delta / 0.30
     for pivot in front_pivots:
         pivot.rotation.y = -steering * 0.4
     rotation.x = lerp_angle(rotation.x,-load_shift * 0.045,1.0-exp(-8.0*delta))

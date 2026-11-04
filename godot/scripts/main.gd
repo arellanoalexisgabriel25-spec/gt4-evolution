@@ -1,8 +1,10 @@
 extends Control
 
 const Style = preload("res://scripts/racing_theme.gd")
+const Money = preload("res://scripts/money.gd")
 const Preview = preload("res://scripts/car_preview.gd")
 const CityMap = preload("res://scripts/city_map.gd")
+const Navigation = preload("res://scripts/menu_controller.gd")
 
 const Economy = preload("res://scripts/economy.gd")
 const Career = preload("res://scripts/career.gd")
@@ -24,6 +26,9 @@ var pending_binding := ""
 var deadzone_label: Label
 var steering_label: Label
 var controls_path: String = ControlSettings.FILE_PATH
+var navigation
+var controller_label: Label
+var music_label: Label
 
 func _ready() -> void:
     game = GameSession.game
@@ -32,6 +37,13 @@ func _ready() -> void:
     GameSession.menu_tab = "inicio"
     _build_interface()
     _render()
+    navigation = Navigation.new()
+    navigation.page = self
+    navigation.initial_focus = nav_buttons[current_tab]
+    navigation.back_action = _controller_back
+    navigation.tab_action = _controller_tab
+    add_child(navigation)
+    GameSession.menu_music.set_menu_active(true)
     if not GameSession.last_notice.is_empty():
         notice.text = GameSession.last_notice
         GameSession.last_notice = ""
@@ -83,7 +95,7 @@ func _build_interface() -> void:
     license_badge.custom_minimum_size.x = 200
     header_row.add_child(license_badge)
     funds = _label("",26)
-    funds.custom_minimum_size.x = 185
+    funds.custom_minimum_size.x = 260
     funds.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
     funds.add_theme_font_override("font",Style.FONT)
     funds.add_theme_color_override("font_color",Color("f3dfae"))
@@ -128,6 +140,7 @@ VERSION " + GameSession.VERSION,11)
     var scroll := ScrollContainer.new()
     scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
     scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+    scroll.follow_focus = true
     page.add_child(scroll)
     content = VBoxContainer.new()
     content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -149,9 +162,28 @@ func _change_tab(next: String) -> void:
     pending_binding = ""
     current_tab = next
     _render()
+    if navigation!=null:
+        navigation.initial_focus = nav_buttons[current_tab]
+        if GameSession.controls.controller.selected()>=0:
+            navigation.initial_focus.grab_focus()
+
+func _controller_back() -> void:
+    if not pending_binding.is_empty():
+        pending_binding = ""
+        notice.text = "Cambio de tecla cancelado."
+    else:
+        _change_tab("inicio")
+
+func _controller_tab(direction: int) -> void:
+    var tabs := nav_buttons.keys()
+    _change_tab(tabs[wrapi(tabs.find(current_tab)+direction,0,tabs.size())])
+
+func _process(_delta: float) -> void:
+    if is_instance_valid(controller_label):
+        controller_label.text = GameSession.controls.controller.description()+" · A confirma / B vuelve / LB–RB pestañas"
 
 func _render() -> void:
-    funds.text = "%s Cr." % str(game.balance)
+    funds.text = Money.format(game.balance)
     license_badge.text = "GT MODE   /   LICENCIA " + career.license
     var titles := {"inicio":"GT MODE / EVOLUTION HOME","mercado":"USED CAR DEALER / CONCESIONARIO","garaje":"MY GARAGE / COLECCIÓN","carrera":"RACE EVENTS / CARRERA","taller":"SERVICE CENTER / TALLER","tuning":"TUNING SHOP / PREPARACIÓN","historial":"ACCOUNT / MOVIMIENTOS","ajustes":"OPTIONS / AJUSTES"}
     page_title.text = titles.get(current_tab, "GT MODE")
@@ -224,7 +256,7 @@ func _market() -> void:
         column.add_child(_label(car["model"],24))
         var status := "CONDICIÓN %.1f / 100" % game.condition(car) if bool(car.get("inspected",false)) else "CONDICIÓN SIN VERIFICAR"
         column.add_child(_label("%s KM   /   %s" % [car["km"],status],12))
-        var price := _label("%d Cr." % car["price"],30)
+        var price := _label(Money.format(int(car["price"])),30)
         price.add_theme_color_override("font_color",Style.RED)
         column.add_child(price)
         if bool(car.get("inspected",false)):
@@ -232,7 +264,7 @@ func _market() -> void:
         var actions := HFlowContainer.new()
         actions.add_theme_constant_override("h_separation",8)
         column.add_child(actions)
-        var inspect_button := _button("INSPECCIÓN 200 Cr.",_inspect.bind(int(car["id"])))
+        var inspect_button := _button("INSPECCIÓN " + Money.format(200),_inspect.bind(int(car["id"])))
         inspect_button.disabled = bool(car.get("inspected",false)) or game.balance < 200
         actions.add_child(inspect_button)
         var buy := _button("COMPRAR",_buy.bind(int(car["id"])))
@@ -288,7 +320,7 @@ func _garage() -> void:
         var race_3d := _button("CARRERA LIBRE 3D", _race_3d.bind(int(car["id"])))
         race_3d.disabled = not game.eligible(car)
         actions.add_child(race_3d)
-        actions.add_child(_button("VENDER %d Cr." % game.resale_quote(int(car["id"])), _sell.bind(int(car["id"]))))
+        actions.add_child(_button("VENDER " + Money.format(game.resale_quote(int(car["id"]))), _sell.bind(int(car["id"]))))
     if not found:
         content.add_child(_label("No tenés vehículos. Visitá el concesionario."))
 
@@ -307,14 +339,14 @@ func _workshop() -> void:
             state.size_flags_horizontal = Control.SIZE_EXPAND_FILL
             line.add_child(state)
             var price := game.repair_quote(int(car["id"]), component)
-            var b := _button("REPARAR %d Cr." % price, _repair.bind(int(car["id"]), component))
+            var b := _button("REPARAR " + Money.format(price), _repair.bind(int(car["id"]), component))
             b.disabled = price <= 0 or price > game.balance
             line.add_child(b)
 
 func _history() -> void:
     content.add_child(_label("MOVIMIENTOS ECONÓMICOS", 22))
     for entry in game.ledger:
-        content.add_child(_label("Auto #%d · %s · %+d Cr." % [entry["car_id"], entry["event"], entry["amount"]], 16))
+        content.add_child(_label("Auto #%d · %s · %s" % [entry["car_id"], entry["event"], Money.format(int(entry["amount"]),true)], 16))
 
 func _tuning() -> void:
     content.add_child(_label("TUNING Y PREPARACIÓN", 22))
@@ -327,7 +359,7 @@ func _tuning() -> void:
         for part in Tuning.PARTS:
             var row := HBoxContainer.new()
             content.add_child(row)
-            var description := _label("%s · +%.1f · %d Cr." % [part["name"], part["gain"], part["price"]], 15)
+            var description := _label("%s · +%.1f · %s" % [part["name"], part["gain"], Money.format(int(part["price"]))], 15)
             description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
             row.add_child(description)
             var part_id: String = part["id"]
@@ -355,7 +387,7 @@ func _career() -> void:
     for event in Career.EVENTS:
         var event_id: String = event["id"]
         var distance := "2 vueltas al circuito del club" if event_id == "debut" else "%d km simulados" % event["distance"]
-        var summary := "%s · Licencia %s · %d Cr. · %s" % [event["name"],event["license"],event["fee"],distance]
+        var summary := "%s · Licencia %s · %s · %s" % [event["name"],event["license"],Money.format(int(event["fee"])),distance]
         content.add_child(_label(summary, 17))
         if event_id == "debut":
             content.add_child(_label("  Carrera 3D: abandonar consume la inscripción. Otros eventos siguen siendo simulados.", 13))
@@ -453,6 +485,33 @@ func _reset() -> void:
     _render()
 
 func _settings() -> void:
+    content.add_child(_label("MÚSICA DE MENÚ",22))
+    content.add_child(_label(GameSession.menu_music.TITLE,15))
+    music_label = _label("Volumen: %.0f%%" % (GameSession.controls.music_volume*100),15)
+    content.add_child(music_label)
+    var volume_slider := HSlider.new()
+    volume_slider.min_value = 0
+    volume_slider.max_value = 1
+    volume_slider.step = 0.05
+    volume_slider.value = GameSession.controls.music_volume
+    volume_slider.value_changed.connect(_set_music_volume)
+    content.add_child(volume_slider)
+    content.add_child(_label("MANDO Y AYUDAS / ¼ DE MILLA",22))
+    controller_label = _label(GameSession.controls.controller.description(),14)
+    content.add_child(controller_label)
+    var clutch := OptionButton.new()
+    clutch.add_item("EMBRAGUE: LB / L1 · LT / L2 FRENA")
+    clutch.add_item("EMBRAGUE ANALÓGICO: LT / L2 · B / CÍRCULO FRENA")
+    clutch.selected = 1 if GameSession.controls.analog_clutch else 0
+    clutch.item_selected.connect(func(index): GameSession.controls.analog_clutch=index==1; _save_controls())
+    content.add_child(clutch)
+    for entry in [["Control de tracción (TCS)","traction_control"],["Freno antibloqueo (ABS)","abs_assist"]]:
+        var toggle := CheckButton.new()
+        toggle.text = entry[0]
+        toggle.button_pressed = GameSession.controls.get(entry[1])
+        toggle.toggled.connect(func(value): GameSession.controls.set(entry[1],value); _save_controls())
+        content.add_child(toggle)
+    content.add_child(_label("Stick/cruceta navega; A confirma; B vuelve; LB/RB cambia pestaña. Izquierda/derecha ajusta opciones y volumen.",14))
     content.add_child(_label("CÁMARA Y DIRECCIÓN",22))
     var camera_choice := OptionButton.new()
     camera_choice.add_theme_font_override("font",Style.FONT)
@@ -486,8 +545,8 @@ func _settings() -> void:
         title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         row.add_child(title)
         row.add_child(_button(GameSession.controls.key_label(name),_request_binding.bind(name)))
-    content.add_child(_label("MANDO · Stick/cruceta: dirección · RT/R2: acelerar · LT/L2: freno
-B/Círculo: reversa · X/Cuadrado: recuperar · Inicio: pausa · Esc o botón en pantalla: garaje", 14))
+    content.add_child(_label("MANDO EN CIRCUITO · Stick/cruceta: dirección · RT/R2: acelerar · LT/L2: freno
+B/Círculo: reversa · X/Cuadrado: recuperar · Inicio/Select: pausa y salida al garaje", 14))
     deadzone_label = _label("Zona muerta del mando (%.0f%%)" % (GameSession.controls.deadzone * 100.0), 16)
     content.add_child(deadzone_label)
     var slider := HSlider.new()
@@ -497,8 +556,8 @@ B/Círculo: reversa · X/Cuadrado: recuperar · Inicio: pausa · Esc o botón en
     slider.value = GameSession.controls.deadzone
     slider.value_changed.connect(_set_deadzone)
     content.add_child(slider)
-    content.add_child(_button("RESTAURAR CONTROLES", _restore_controls))
-    content.add_child(_label("Los ajustes se guardan automáticamente, separados de la partida. Se usa el primer mando conectado.", 14))
+    content.add_child(_button("RESTAURAR AJUSTES", _restore_controls))
+    content.add_child(_label("Los ajustes se guardan automáticamente, separados de la partida. Mové o pulsá el mando para activarlo.", 14))
 
 func _request_binding(name: String) -> void:
     pending_binding = name
@@ -535,8 +594,16 @@ func _set_deadzone(value: float) -> void:
 func _restore_controls() -> void:
     pending_binding = ""
     GameSession.controls.restore_defaults()
+    GameSession.menu_music.set_volume(GameSession.controls.music_volume)
     _save_controls()
     _render()
+
+func _set_music_volume(value: float) -> void:
+    GameSession.controls.music_volume = value
+    GameSession.menu_music.set_volume(value)
+    if is_instance_valid(music_label):
+        music_label.text = "Volumen: %.0f%%" % (value*100)
+    _save_controls()
 
 func _set_camera_mode(value: int) -> void:
     GameSession.controls.camera_mode = value

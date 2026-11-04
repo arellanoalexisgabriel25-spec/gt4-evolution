@@ -23,7 +23,7 @@ func _initialize() -> void:
     var before_failed := game.balance
     game.balance = 0
     var condition_before := game.condition(car)
-    _check(game.repair(3, "motor").begins_with("Créditos insuficientes"), "cannot repair without money")
+    _check(game.repair(3, "motor").begins_with("Saldo insuficiente"), "cannot repair without money")
     _check(game.condition(car) == condition_before, "failed repair keeps health")
     _check(bool(car["faults"].get("motor", false)), "failed repair keeps hidden defect")
     game.balance = before_failed + defect_quote

@@ -16,7 +16,7 @@ mkdir -p "$XDG_DATA_HOME" "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME" "$output"
 timeout 60 "$engine" --path godot --rendering-method gl_compatibility --audio-driver Dummy \
   --script "$PWD/tools/capture_presentation.gd" -- "$output" 2>&1 | tee "$capture_data/render.log"
 if rg -q '^SCRIPT ERROR:|^ERROR:' "$capture_data/render.log"; then exit 1; fi
-for shot in 01-home 02-dealer 03-garage 04-settings 05-camera-0 06-camera-1 07-camera-2 08-camera-3 09-look-back 10-race-grid 11-drag-staging 12-drag-tree 13-drag-driving 14-drag-close 15-drag-ticket 16-drag-red-light; do
+for shot in 01-home 02-dealer 03-garage 04-settings 05-camera-0 06-camera-1 07-camera-2 08-camera-3 09-look-back 10-race-grid 11-drag-staging 12-drag-tree 13-drag-driving 14-drag-close 15-drag-ticket 16-drag-red-light 17-controller-pause; do
   rg -q "^Captured $shot " "$capture_data/render.log"
   test -s "$output/$shot.png"
 done

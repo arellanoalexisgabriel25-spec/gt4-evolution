@@ -17,7 +17,7 @@ def git(*args, data=None):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--artifacts", type=Path, required=True)
-    parser.add_argument("--screenshots", type=Path, help="Directory of the sixteen checked 1280x720 presentation PNGs")
+    parser.add_argument("--screenshots", type=Path, help="Directory of the seventeen checked 1280x720 presentation PNGs")
     parser.add_argument("--push", action="store_true")
     args = parser.parse_args()
     if git("status", "--porcelain"):
@@ -55,7 +55,7 @@ def main():
             if archive.testzip() is not None:
                 raise SystemExit(f"Corrupt package: {name}")
             for source in (ROOT / "godot").rglob("*"):
-                if not source.is_file() or ".godot" in source.parts or source.suffix not in {".gd", ".tscn", ".tres", ".godot", ".md", ".ttf", ".otf", ".txt", ".import"}:
+                if not source.is_file() or ".godot" in source.parts or source.suffix not in {".gd", ".tscn", ".tres", ".godot", ".md", ".ttf", ".otf", ".txt", ".import", ".mp3"}:
                     continue
                 key = "juego/" + source.relative_to(ROOT / "godot").as_posix()
                 if archive.read(key) != source.read_bytes():
@@ -70,9 +70,13 @@ Extraé TODO el ZIP Windows y abrí **JUGAR.cmd**. El motor está incluido.
 Comprá un auto y abrí **GARAJE → ¼ DE MILLA / MANUAL**. Mantené C, tocá E
 para primera, iniciá el árbol con Enter y esperá el verde. Regulá W para las RPM,
 soltá C para largar y usá C+E en cada cambio. Q baja. R prepara otra pasada.
-La práctica no cobra ni da premios en créditos; sí registra uso y desgaste.
+La práctica no cobra ni da premios en pesos; sí registra uso y desgaste.
 Volvé al garaje y presioná GUARDAR para conservar marcas y progreso.
 AJUSTES permite reasignar las teclas. El circuito del club sigue disponible.
+Los importes están en pesos argentinos. Se incluye la música de menú aportada
+por el usuario y autorizada para redistribución; volumen en AJUSTES.
+Mando: stick/cruceta navega, A confirma, B vuelve, LB/RB cambia pestaña.
+Select/Back abre la pausa en pista; embrague analógico LT/L2 opcional.
 
 El paquete incluye LEEME.txt con controles y limitaciones, y DIAGNOSTICO.cmd
 para registrar fallos de arranque. Windows y los mandos físicos requieren
@@ -84,7 +88,7 @@ Esta rama contiene únicamente distribución y no se integra en main.
 Los archivos .sha256 permiten verificar los ZIP.
 """
     if args.screenshots:
-        shots = ["01-home", "02-dealer", "03-garage", "04-settings", "05-camera-0", "06-camera-1", "07-camera-2", "08-camera-3", "09-look-back", "10-race-grid", "11-drag-staging", "12-drag-tree", "13-drag-driving", "14-drag-close", "15-drag-ticket", "16-drag-red-light"]
+        shots = ["01-home", "02-dealer", "03-garage", "04-settings", "05-camera-0", "06-camera-1", "07-camera-2", "08-camera-3", "09-look-back", "10-race-grid", "11-drag-staging", "12-drag-tree", "13-drag-driving", "14-drag-close", "15-drag-ticket", "16-drag-red-light", "17-controller-pause"]
         for shot in shots:
             path = args.screenshots / (shot + ".png")
             header = path.read_bytes()[:24]
@@ -96,7 +100,7 @@ Los archivos .sha256 permiten verificar los ZIP.
         readme += "Capturas reales del juego en Linux con OpenGL por software. No son renders conceptuales.\n\n"
         readme += "Tab / RB cambia entre seguimiento, cercana, capó y paragolpes; Shift / Y permite mirar atrás.\n"
         readme += "AJUSTES conserva la cámara inicial y permite suavizar la dirección del teclado.\n\n"
-        for title, shot in [("Preparación / Autódromo Sur", "11-drag-staging"), ("Semáforo", "12-drag-tree"), ("Pasada con cambios manuales", "13-drag-driving"), ("Carrocería y cámara cercana", "14-drag-close"), ("Ticket de una llegada real", "15-drag-ticket"), ("Largada anticipada invalidada", "16-drag-red-light"), ("Inicio y mapa de servicios", "01-home"), ("Garaje", "03-garage")]:
+        for title, shot in [("Pesos argentinos / Inicio", "01-home"), ("Música, mando y ayudas", "04-settings"), ("Preparación / Autódromo Sur", "11-drag-staging"), ("Torque y tracción por ejes", "13-drag-driving"), ("Ticket de una llegada real", "15-drag-ticket"), ("Largada anticipada invalidada", "16-drag-red-light"), ("Pausa navegable con mando", "17-controller-pause"), ("Garaje", "03-garage")]:
             readme += f"### {title}\n\n![{title}](captura-{shot}.png)\n\n"
     blob = git("hash-object", "-w", "--stdin", data=readme.encode())
     rows = [f"100644 blob {blob}\tREADME.md\n"]

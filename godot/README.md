@@ -1,6 +1,16 @@
-# GT4 Evolution · v0.13 / Cuarto de milla
+# GT4 Evolution · v0.14 / Tracción, pesos y mando
 
 Prototipo independiente de automovilismo en Godot 4.6.3. El desarrollo se centra ahora en un **¼ de milla de 402,336 m**, con largada, cambios manuales, marcas y desgaste en un entorno original inspirado en el ambiente del autódromo Gálvez. Conserva mercado, garaje, taller, tuning y los modos anteriores. La investigación de GT4 se consulta como referencia; no se incluyen su ejecutable, modelos, texturas ni circuitos comerciales.
+
+## Novedades v0.14
+
+- El ¼ de milla calcula por separado la rotación, patinamiento, carga y temperatura de los ejes delantero y trasero. La transferencia de peso reduce la tracción delantera al acelerar y aumenta la carga trasera. FWD, RWD y AWD responden de forma diferente.
+- Curvas de torque por RPM, carga progresiva del turbo, pérdidas de transmisión y frenado por torque en las ruedas. Salud, neumáticos, frenos, suspensión y mejoras existentes afectan el modelo. El control de tracción recorta motor; el ABS modula los frenos. Ambos se eligen en AJUSTES para el ¼ de milla; por defecto TCS está apagado y ABS encendido.
+- **Pesos argentinos:** saldo, precios, reparaciones, premios y movimientos se expresan con `$` y `ARS`. El saldo inicial es **$ 12.000.000 ARS**. Cada unidad contable anterior representa $ 1.000 ARS; se conservan proporciones y partidas sin multiplicar otra vez al cargar. Son precios del juego, sin cotización real.
+- **Música de menú:** Lezcano Alan — PERRA #Ritmomanijero, Prod Sketchy. Se incluye el MP3 original aportado y autorizado para redistribución por el usuario. Se reproduce en bucle, tiene volumen independiente en AJUSTES y se desvanece al entrar en pista. Créditos y alcance de derechos en [assets/audio/README.md](assets/audio/README.md).
+- Mando para menús, compras, ajustes y pausa: stick/cruceta navega, A/Cruz confirma, B/Círculo vuelve y LB/RB cambia pestaña. Izquierda/derecha modifica opciones y volumen. **Select/Back** abre una pausa con Continuar, Recuperar y Volver al garaje. Desconectar el mando activo pausa la conducción y libera los gatillos.
+
+Informe técnico, archivos y resultados: [RELEASE-0.14.md](RELEASE-0.14.md).
 
 ## Nuevo modo: ¼ de milla manual
 
@@ -14,13 +24,13 @@ Comprá un auto y elegí **GARAJE → ¼ DE MILLA / MANUAL**. También hay acces
 
 Cambiar temprano lleva el motor a una zona de menor entrega; quedarse en el corte interrumpe la potencia. Un cambio sin embrague se rechaza y desgasta la transmisión. Una reducción excesiva puede llevar el motor a sobrerégimen; soltar el embrague a bajas RPM contra el freno puede calarlo. R permite recuperar y arrancar de nuevo. El modelo usa masa, par, relaciones, inercia de motor y ruedas, capacidad de embrague, resistencia aerodinámica, agarre y transferencia longitudinal de carga. Los parámetros de cada auto son **aproximaciones de desarrollo**, sin validación contra mediciones reales.
 
-El HUD muestra RPM, marcha, potencia transmitida a las ruedas, pérdidas de embrague, temperaturas y patinamiento. El ticket incluye ET, reacción, total, 60 pies, 1/8 de milla y velocidad media en los últimos 20,1168 m. El reloj parte cuando el auto libera el haz de salida tras 0,20 m de rollout; los tiempos de paso se interpolan entre cuadros físicos. Salirse del carril, saltarse la salida o una discontinuidad de posición invalida el intento.
+El HUD muestra RPM, marcha, torque de motor, potencia transmitida a las ruedas, pérdidas de embrague, carga de turbo, temperaturas de ambos ejes, tracción y ayudas. El ticket incluye ET, reacción, total, 60 pies, 1/8 de milla y velocidad media en los últimos 20,1168 m. El reloj parte cuando el auto libera el haz de salida tras 0,20 m de rollout; los tiempos de paso se interpolan entre cuadros físicos. Salirse del carril, saltarse la salida o una discontinuidad de posición invalida el intento.
 
 El desgaste adicional del motor, transmisión/embrague, neumáticos y frenos se aplica al auto existente. Repetir, abandonar o volver a llamar la liquidación no lo borra ni lo duplica. El tuning existente modifica potencia y agarre. Las temperaturas son una aproximación de sesión; el guardado conserva salud y marcas, sin una simulación térmica persistente.
 
 Las diez acciones de teclado se reasignan en AJUSTES. Las preferencias anteriores migran: si E, Q o C ya estaban ocupadas, se preserva la asignación anterior y se elige otra tecla libre para la nueva acción. Consultá AJUSTES para conocer tus teclas.
 
-Mando en este modo: RT acelera, LT o B frena, LB sostiene embrague, A sube, Y baja, X recupera, RB cambia cámara y R3 mira atrás. Inicio arma el árbol durante preparación y pausa/reanuda durante la pasada. El pedal de embrague es digital, con movimiento progresivo; el mando físico sigue pendiente de prueba. El stick izquierdo conserva asistencia de dirección: esta entrega desarrolla primero la dinámica longitudinal.
+Mando en este modo: RT/R2 acelera, LT/L2 o B/Círculo frena, LB/L1 sostiene embrague, A/Cruz sube, Y/Triángulo baja, X/Cuadrado recupera, RB/R1 cambia cámara y R3 mira atrás. Inicio arma el árbol durante preparación y pausa/reanuda durante la pasada; Select/Back abre la pausa en cualquier momento. AJUSTES permite usar **LT/L2 como embrague analógico**: en ese modo B/Círculo frena, también si se mantiene el acelerador. LB sigue disponible. La opción solo afecta al ¼ de milla. El stick izquierdo conserva asistencia de dirección; el mando físico sigue pendiente de prueba.
 
 El escenario se llama **Autódromo Sur**: tribuna, boxes, control, colores argentinos, semáforo y una escapatoria de más de 250 m. Es un diseño original inspirado en un ambiente de autódromo porteño; no es una reproducción exacta ni homologada del Gálvez. El sonido de motor es sintetizado y provisional. Las carrocerías incorporan bordes achaflanados, llantas, detalles de puertas, luces y matrícula originales; siguen siendo modelos geométricos de desarrollo.
 
@@ -32,8 +42,8 @@ Con el proyecto fuente, abrí `project.godot` en Godot 4.6.3 y presioná F5.
 
 1. Comprá un auto usado en CONCESIONARIO. Podés pagar una inspección para conocer desgaste y defectos ocultos.
 2. En GARAJE, elegí CONTRARRELOJ 3D para practicar, o CARRERA LIBRE 3D para correr dos vueltas contra Nico Vega y Claire Moreau sin inscripción ni premios.
-3. En MODO CARRERA, la **Copa de Debutantes** ahora se disputa en pista. Cuesta 120 Cr.; el resultado real paga 700 / 400 / 200 Cr. según la llegada. Abandonar consume la inscripción y no otorga progreso. El premio solo se cobra una vez.
-4. Regresá al garaje y presioná GUARDAR para conservar créditos, desgaste, carrera, rivalidades y mejores vueltas. CARGAR recupera la partida. El guardado sigue siendo manual.
+3. En MODO CARRERA, la **Copa de Debutantes** se disputa en pista. Cuesta $ 120.000 ARS; el resultado real paga $ 700.000 / $ 400.000 / $ 200.000 ARS según la llegada. Abandonar consume la inscripción y no otorga progreso. El premio solo se cobra una vez.
+4. Regresá al garaje y presioná GUARDAR para conservar saldo, desgaste, carrera, rivalidades y mejores vueltas. CARGAR recupera la partida. El guardado sigue siendo manual.
 
 El resto de los eventos de carrera continúa siendo **simulado**, indicado en sus botones. No se presentan como carreras 3D. La prueba de 10 km del garaje también es una simulación.
 
@@ -53,7 +63,7 @@ El resto de los eventos de carrera continúa siendo **simulado**, indicado en su
 
 En **AJUSTES** podés reasignar las acciones a letras, números o Espacio. Las flechas siguen disponibles; Esc conserva su función de salida/cancelación. Se rechazan teclas duplicadas y combinaciones con modificadores. Restaurar controles recupera la configuración original. Estos ajustes se guardan automáticamente y no se pierden al iniciar una partida nueva; el progreso del juego sigue guardándose manualmente.
 
-Con un mando compatible: stick izquierdo o cruceta para girar, RT/R2 para acelerar, LT/L2 para frenar proporcionalmente, B/Círculo para reversa, X/Cuadrado para recuperar e Inicio para pausar. Se usa el primer mando conectado; permite conexión/desconexión durante la sesión. La zona muerta es ajustable entre 10% y 40%. En esta versión, volver al garaje requiere Esc o el botón en pantalla. La validación usa eventos y muestras simuladas de mando; no se ha probado con hardware físico.
+Con un mando compatible: stick izquierdo o cruceta para girar, RT/R2 para acelerar, LT/L2 para frenar proporcionalmente, B/Círculo para reversa, X/Cuadrado para recuperar e Inicio para pausar. Select/Back abre también la pausa, desde donde se puede volver al garaje. Se selecciona el mando al recibir una entrada significativa; la desconexión del mando activo pausa la sesión. La zona muerta del stick es ajustable entre 10% y 40%; los gatillos descartan el primer 4%. La validación usa eventos y muestras simuladas de mando; no se ha probado con hardware físico.
 
 RB/R1 cambia de cámara, Y/Triángulo permite mirar atrás y el stick derecho mueve la vista. En AJUSTES se guardan la cámara inicial y la intensidad de dirección del teclado (40–100%, por defecto 80%); el mando conserva su rango completo. La entrada de dirección se vuelve más gradual a alta velocidad y el volante recupera el centro con mayor rapidez al soltarlo.
 
@@ -100,11 +110,11 @@ Los parámetros siguen siendo de balance arcade, no medidas extraídas de GT4. L
 
 La estética toma como referencia los menús clásicos de automovilismo, usando gráficos y geometría originales. Las preferencias anteriores y las partidas siguen siendo compatibles. Regresar de la pista abre directamente el garaje y recuerda guardar; no cambia las reglas de premios ni el guardado manual.
 
-Las pruebas cubren las vistas, dirección, preferencias, navegación, transacciones y HUD; también pasadas manuales completas, diferencias de cambio y desgaste, semáforo, reacción, parciales, marca única por intento y compatibilidad de guardado. Para producir dieciséis capturas en un entorno con pantalla OpenGL:
+Las pruebas cubren las vistas, dirección, preferencias, navegación, transacciones y HUD; también pasadas manuales completas, diferencias de cambio y desgaste, semáforo, reacción, parciales, marca única por intento y compatibilidad de guardado. v0.14 añade torque y ejes, frenado, moneda, música y navegación con eventos de mando. Para producir diecisiete capturas en un entorno con pantalla OpenGL:
 
 ```sh
 LIBGL_ALWAYS_SOFTWARE=1 bash tools/capture_presentation.sh /ruta/absoluta/capturas
 # En Linux sin escritorio, anteponer: xvfb-run -a env
 ```
 
-Ejecutá el comando desde la raíz del repositorio. Los datos se aíslan en un directorio temporal. Las capturas muestran los menús, las cámaras, la parrilla del club y una pasada manual de ¼ de milla hasta el ticket, además de una largada en falso. El piloto de ensayo vive en `tests/`, no está activado en el modo del jugador. La captura acelera el reloj para terminar la pasada dentro del límite; no es una prueba de rendimiento ni una medición para comparar récords. GitHub Actions publica las imágenes como artefacto cuando finaliza la comprobación gráfica.
+Ejecutá el comando desde la raíz del repositorio. Los datos se aíslan en un directorio temporal. Las capturas muestran los menús, las cámaras, la parrilla del club y una pasada manual de ¼ de milla hasta el ticket, además de una largada en falso y la pausa con mando. Se comprueban reproducción real del MP3, transición a silencio en pista y pausa del audio de motor. El piloto de ensayo vive en `tests/`, no está activado en el modo del jugador. La captura acelera el reloj para terminar la pasada dentro del límite; no es una prueba de rendimiento ni una medición para comparar récords. GitHub Actions publica las imágenes como artefacto cuando finaliza la comprobación gráfica.

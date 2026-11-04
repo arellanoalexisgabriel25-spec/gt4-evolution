@@ -9,6 +9,7 @@ const Garage = preload("res://scripts/drag_garage_session.gd")
 const HUD = preload("res://scripts/drag_hud.gd")
 const Audio = preload("res://scripts/engine_audio.gd")
 const Controls = preload("res://scripts/control_settings.gd")
+const PauseMenu = preload("res://scripts/pause_menu.gd")
 var strip
 var car
 var camera
@@ -25,8 +26,12 @@ var message := ""
 var message_time := 0.0
 var input_provider: Callable
 var attempt_wear_start: Dictionary = {}
+var pause_menu
+var last_pad := -1
+var controller_lost := false
 
 func _ready() -> void:
+    GameSession.menu_music.set_menu_active(false)
     var vehicle: Dictionary = GameSession.game.find_car(GameSession.selected_vehicle)
     enabled = GameSession.driving_mode == "drag" and garage.begin(GameSession.game,GameSession.career,GameSession.selected_vehicle)
     strip = Strip.new()
@@ -38,6 +43,8 @@ func _ready() -> void:
     car.collision_layer = 2
     car.collision_mask = 1
     car.powertrain.config = Config.from_vehicle(vehicle)
+    car.powertrain.config.abs_assist = GameSession.controls.abs_assist
+    car.powertrain.traction_control = GameSession.controls.traction_control
     car.powertrain.reset(false)
     add_child(car)
     camera = Camera.new()
@@ -56,6 +63,10 @@ func _ready() -> void:
     engine_audio = Audio.new()
     engine_audio.model = car.powertrain
     add_child(engine_audio)
+    pause_menu = PauseMenu.new()
+    pause_menu.mode = self
+    canvas.add_child(pause_menu)
+    Input.joy_connection_changed.connect(_controller_connection)
     if not enabled:
         message = "Seleccioná un auto propio y apto desde el garaje."
     _refresh_hud()
@@ -63,9 +74,16 @@ func _ready() -> void:
 func _controls() -> Dictionary:
     if input_provider.is_valid():
         return input_provider.call()
-    var controls: Dictionary = GameSession.controls.read_controls()
+    var controls: Dictionary = GameSession.controls.read_controls(true)
     controls["clutch"] = GameSession.controls.clutch_input()
     return controls
+
+func _controller_connection(device: int, connected: bool) -> void:
+    if not connected and device==last_pad and enabled and not leaving:
+        paused = true
+        controller_lost = true
+        message = "Mando desconectado · Reconectá o continuá con teclado"
+        message_time = 5.0
 
 func _in_lane() -> bool:
     return absf(car.position.x-Strip.LANE_X) <= 2.7
@@ -74,7 +92,7 @@ func _staged() -> bool:
     return absf(car.position.z)<=0.10 and car.powertrain.speed_mps<0.10 and _in_lane()
 
 func _can_arm() -> bool:
-    return enabled and run.phase == "preparation" and _staged() and car.powertrain.gear == 1 and car.powertrain.engine_running and float(_controls().get("clutch",0.0))>=0.7
+    return enabled and not paused and run.phase == "preparation" and _staged() and car.powertrain.gear == 1 and car.powertrain.engine_running and float(_controls().get("clutch",0.0))>=0.7
 
 func _arm() -> void:
     if not _can_arm():
@@ -91,9 +109,9 @@ func _physics_process(delta: float) -> void:
     var look: Dictionary = GameSession.controls.camera_look()
     camera.look_input = look["axis"]
     camera.look_back = Input.is_physical_key_pressed(KEY_SHIFT)
-    var pads := Input.get_connected_joypads()
-    if not pads.is_empty():
-        camera.look_back = camera.look_back or Input.is_joy_button_pressed(pads[0],JOY_BUTTON_RIGHT_STICK)
+    if GameSession.controls.controller.selected()>=0:
+        last_pad = GameSession.controls.controller.selected()
+    camera.look_back = camera.look_back or GameSession.controls.controller.pressed(JOY_BUTTON_RIGHT_STICK)
     engine_audio.stream_paused = paused
     if paused:
         _refresh_hud()
@@ -147,9 +165,13 @@ func _cycle_camera() -> void:
     GameSession.controls.camera_mode = camera.mode
 
 func _input(event: InputEvent) -> void:
+    var viewport := get_viewport()
+    var fresh: bool = GameSession.controls.controller.feed(event)
+    if event is InputEventJoypadButton or event is InputEventJoypadMotion:
+        last_pad = GameSession.controls.controller.selected()
     if not enabled or leaving or (event is InputEventKey and event.echo):
         return
-    var pad: bool = event is InputEventJoypadButton and event.pressed
+    var pad: bool = event is InputEventJoypadButton and fresh
     if event.is_action_pressed(Controls.action("shift_up")) or (pad and event.button_index==JOY_BUTTON_A):
         _shift(1)
     elif event.is_action_pressed(Controls.action("shift_down")) or (pad and event.button_index==JOY_BUTTON_Y):
@@ -163,6 +185,8 @@ func _input(event: InputEvent) -> void:
             _arm()
         else:
             paused = not paused
+    elif pad and event.button_index==JOY_BUTTON_BACK:
+        paused = not paused
     elif (event is InputEventKey and event.pressed and event.physical_keycode==KEY_TAB) or (pad and event.button_index==JOY_BUTTON_RIGHT_SHOULDER):
         _cycle_camera()
     elif event is InputEventKey and event.pressed and event.physical_keycode==KEY_ESCAPE:
@@ -173,7 +197,7 @@ func _input(event: InputEvent) -> void:
             driving_event = driving_event or event.is_action(Controls.action(name))
         if not driving_event:
             return
-    get_viewport().set_input_as_handled()
+    viewport.set_input_as_handled()
 
 func _back_to_garage() -> void:
     if leaving:

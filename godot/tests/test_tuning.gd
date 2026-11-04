@@ -49,7 +49,7 @@ func _initialize() -> void:
     bad.seed_demo()
     bad.buy(1)
     bad.balance = 0
-    _check(tuning.install(bad, 1, "ecu").contains("insuficientes"), "cannot buy without credits")
+    _check(tuning.install(bad, 1, "ecu").contains("Saldo insuficiente"), "cannot buy without funds")
     _check(not tuning.has_part(bad.find_car(1), "ecu"), "unaffordable part not installed")
     var career: EvolutionCareer = Career.new()
     var score := game.condition(car) + tuning.performance_bonus(car)

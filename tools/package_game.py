@@ -6,19 +6,38 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.13"
+VERSION = "0.14"
 ENGINE = "Godot_v4.6.3-stable_win64.exe"
-README = """GT4 EVOLUTION — PROTOTIPO 0.13 / CUARTO DE MILLA
+README = """GT4 EVOLUTION — PROTOTIPO 0.14 / TRACCIÓN, PESOS Y MANDO
 
 Extraé TODO el ZIP antes de abrir el juego.
 Windows 10/11 de 64 bits: doble clic en JUGAR.cmd. El primer inicio importa
 el proyecto; puede tardar unos segundos. No requiere instalar Godot aparte.
 Si descargaste el ZIP de código, abrí juego/project.godot con Godot 4.6.3.
 
+Novedades: ejes delantero/trasero independientes, torque por RPM y carga de turbo,
+pérdidas de transmisión, ABS y TCS opcionales. TCS recorta motor, no añade agarre.
+El embrague y las ruedas conservan inercia; la masa y los neumáticos importan.
+Los importes se muestran en PESOS ARGENTINOS (ARS), conservando las proporciones
+del saldo y de los precios anteriores. Cada unidad histórica equivale a $1.000 ARS;
+el saldo inicial se muestra como $12.000.000 ARS. No es una cotización real.
+La conversión no se vuelve a multiplicar al cargar la partida.
+
+Música de menú: Lezcano Alan — PERRA #Ritmomanijero, Prod Sketchy.
+Archivo original aportado por el usuario con autorización de redistribución.
+Volumen independiente en AJUSTES; se desvanece al entrar en pista y vuelve al garaje.
+Ver juego/assets/audio/README.md. La música no está cubierta por la licencia MIT.
+
+Mando en menús: stick/cruceta mueve el foco; A/Cruz confirma; B/Círculo vuelve;
+LB/RB cambia pestaña. Izquierda/derecha modifica opciones y volumen.
+En pista, Select/Back abre la pausa con botones para continuar, recuperar o salir.
+Desconectar el mando activo pausa la conducción y libera los gatillos.
+AJUSTES permite embrague analógico LT/L2; en ese modo B/Círculo frena.
+
 Nuevo foco: una pista original de 402,336 m con ambiente inspirado en el
 autódromo Gálvez, sin reproducir exactamente su trazado ni sus instalaciones.
 Comprá un auto en CONCESIONARIO, abrí GARAJE y elegí ¼ DE MILLA / MANUAL.
-Es práctica libre, sin inscripción ni premios en créditos; el desgaste sí se conserva.
+Es práctica libre, sin inscripción ni premios en pesos; el desgaste sí se conserva.
 
 1. Mantené C (embrague) y tocá E para poner primera. Mantené C presionado.
 2. Enter inicia el semáforo. Regulá W para preparar las RPM y esperá el verde.
@@ -43,8 +62,8 @@ no mediciones oficiales de los autos. Sonido de motor sintetizado provisional.
 El circuito del club conserva CONTRARRELOJ 3D y CARRERA LIBRE 3D.
 La carrera libre no cobra ni da premios.
 Para competir con progreso: MODO CARRERA -> Copa de Debutantes -> CORRER 3D.
-La inscripción cuesta 120 Cr. Abandonar consume la inscripción y no da premio.
-Son dos vueltas contra Nico y Claire; la llegada real paga 700/400/200 Cr.
+La inscripción cuesta $120.000 ARS. Abandonar consume la inscripción y no da premio.
+Son dos vueltas contra Nico y Claire; la llegada paga $700.000/$400.000/$200.000 ARS.
 Los demás eventos y la prueba de 10 km siguen siendo simulados.
 
 W/flecha arriba: acelerar. S/abajo: frenar y reversa. A/D o flechas: girar.
@@ -55,7 +74,7 @@ P: pausar a todos. ESC: volver al garaje / abandonar la carrera.
 AJUSTES permite cambiar teclas y la zona muerta del mando. Las flechas quedan
 siempre disponibles. Los controles se guardan automáticamente, separados de la partida.
 Mando: stick/cruceta gira, RT/R2 acelera, LT/L2 frena proporcionalmente,
-B/Círculo reversa, X/Cuadrado recupera e Inicio pausa. Se usa el primer mando conectado.
+B/Círculo reversa, X/Cuadrado recupera e Inicio pausa. Se activa al moverlo o pulsarlo.
 Cruzá las ocho puertas en orden. Salir del asfalto invalida la vuelta actual.
 Se guardan mejores tiempos por auto y toda la distancia recorrida, incluso
 menos de 1 km. Volvé al garaje y presioná GUARDAR; el guardado es manual.
@@ -108,7 +127,7 @@ def write_project(archive):
     for path in sorted((ROOT / "godot").rglob("*")):
         if not path.is_file() or ".godot" in path.parts:
             continue
-        if path.suffix not in {".gd", ".uid", ".tscn", ".tres", ".godot", ".md", ".ttf", ".otf", ".txt", ".import"}:
+        if path.suffix not in {".gd", ".uid", ".tscn", ".tres", ".godot", ".md", ".ttf", ".otf", ".txt", ".import", ".mp3"}:
             continue
         archive.write(path, Path("juego") / path.relative_to(ROOT / "godot"))
     archive.write(ROOT / "LICENSE", "LICENSE")
