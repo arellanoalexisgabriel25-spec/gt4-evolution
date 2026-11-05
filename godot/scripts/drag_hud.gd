@@ -20,6 +20,7 @@ var rpm_label: Label
 var pedals_label: Label
 var condition_label: Label
 var power_label: Label
+var environment_label: Label
 var wear_label: Label
 var damage_label: Label
 var opponent_label: Label
@@ -123,13 +124,14 @@ func _ready() -> void:
     rpm_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     for metric in [gear_label,speed_label,rpm_label,clock_label,reaction_label,best_label]:
         metric.add_theme_font_override("font",Style.MONO)
-    details_panel = panel(Rect2(18,-326,352,206),Vector2(0,1))
+    details_panel = panel(Rect2(18,-380,352,260),Vector2(0,1))
     # The pause menu shades the track; side diagnostics stay above that shade.
     details_panel.z_index = 2
     var details := column(details_panel)
     pedals_label = label(details,"",16)
     condition_label = label(details,"",15)
     power_label = label(details,"",15)
+    environment_label = label(details,"",13)
     help_label = label(self,"",15)
     help_label.z_index = 2
     help_label.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
@@ -170,7 +172,8 @@ func refresh(data: Dictionary) -> void:
     var procedure_remaining := maxf(0.0,float(data.get("procedure_remaining",0.0)))
     var category: Dictionary = data.get("class_data",{})
     var duel_result: Dictionary = data.get("duel_result",{})
-    model_label.text = str(data["name"]) + (" / FÁBRICA" if is_duel else " / MANUAL")
+    var automatic: bool = model.config.transmission_type=="cvt"
+    model_label.text = str(data["name"]) + (" / FÁBRICA" if is_duel else (" / CVT" if automatic else " / MANUAL"))
     model_label.tooltip_text = model_label.text
     opponent_panel.visible = is_duel
     if is_duel:
@@ -181,13 +184,17 @@ func refresh(data: Dictionary) -> void:
     reaction_label.text = "RT %.3f s" % run.reaction if run.launch_time>=0 else ""
     reaction_label.visible = not reaction_label.text.is_empty()
     gear_label.text = "N" if model.gear==0 else ("R" if model.gear<0 else str(model.gear))
+    if automatic and model.gear>0: gear_label.text = "D"
     speed_label.text = "0" if absf(model.speed_mps)<0.15 else "%.0f" % absf(model.speed_mps*3.6)
     rpm_label.text = "%.0f RPM" % model.rpm
     instruments.readings(model.speed_mps*3.6,model.rpm,model.config.redline_rpm)
     pedals_label.text = "ACEL %.0f%%   EMBRAGUE %.0f%%" % [model.throttle*100,(1.0-model.clutch_engagement)*100]
+    if automatic: pedals_label.text = "ACEL %.0f%% · CVT %.2f:1" % [model.throttle*100,model.cvt.ratio]
     condition_label.text = "GOMAS DL %.0f°C / TR %.0f°C · MOTOR %.0f°C\n%s · %s · %s" % [model.axles.temperatures.x,model.axles.temperatures.y,model.engine_temperature,model.config.drivetrain,"TCS ACTIVO" if model.tcs_cut<0.95 else ("TCS ON" if model.traction_control else "TCS OFF"),"ABS" if model.axles.abs_active else ("PATINA" if model.wheelspin>0.18 and model.gear>0 else "AGARRE")]
     var acceleration_time := float(data.get("zero_to_hundred",-1.0))
     power_label.text = "MOTOR %.0f Nm · EJE %.0f kW\n%s · EMBRAGUE PIERDE %.0f kW\n%s · IMPACTOS %d\nMASA %.0f kg · 0–100 %s" % [model.engine_torque_nm,model.wheel_power_kw,"TURBO %.0f%%" % (model.engine.boost*100) if model.config.turbo_fraction>0 else "ASPIRADO",model.clutch_loss_kw,Tire.title(model.config.tire_compound).to_upper(),int(data.get("impacts",0)),model.config.mass,"%.2f s" % acceleration_time if acceleration_time>=0 else "—"]
+    if automatic: power_label.text = power_label.text.replace("EMBRAGUE","ACOPLE CVT")
+    environment_label.text = "FRENOS DL %.0f°C / TR %.0f°C\nAIRE %.3f kg/m³ · VIENTO %+.1f m/s\nAERO %.0f N · RODADURA %.0f N\nGRAVEDAD %.2f m/s² · PENDIENTE %+.1f%%" % [model.brakes.temperatures.x,model.brakes.temperatures.y,model.config.air_density,model.wind_along,model.aerodynamic_force_n,model.rolling_force_n,model.config.gravity_mps2,-model.grade_acceleration/maxf(model.normal_g,0.1)*100.0]
     rpm_fraction = clampf(model.rpm/model.config.redline_rpm,0,1)
     progress = clampf(float(data["position"])/Run.DISTANCE,0,1)
     tree_phase = run.phase
@@ -216,11 +223,13 @@ func refresh(data: Dictionary) -> void:
             guide = "%s+%s: primera · %s.\nPuede avanzar: zona 2,5–35 m · Para parar: %s." % [clutch_key,up_key,technique,stop_keys]
         elif procedure_phase in ["expired","timeout"]:
             guide = "Llamado vencido · %s: otra preparación.\nEl uso y el desgaste se conservan." % settings.key_label("recover")
+        if automatic and procedure_phase not in ["expired","timeout"]:
+            guide = "%s: N → D · %s/L3: freno de mano para calentar.\nCVT automática · Mantené el freno hasta el verde." % [up_key,handbrake_key]
         # The starter's status belongs above; it must never replace the guide.
         preparation_label.text = guide
         preparation_label.text += "\nGOMAS DL %.0f°C · TR %.0f°C" % [model.axles.temperatures.x,model.axles.temperatures.y]
         if bool(data.get("procedure_ready",false)):
-            reaction_label.text = "ALINEADO · MANTENÉ EL EMBRAGUE"
+            reaction_label.text = "ALINEADO · MANTENÉ EL FRENO" if automatic else "ALINEADO · MANTENÉ EL EMBRAGUE"
             reaction_label.visible = true
     elif run.phase=="countdown":
         status = "ESPERÁ EL VERDE"
@@ -264,6 +273,8 @@ func refresh(data: Dictionary) -> void:
     damage_label.visible = not damage_label.text.is_empty()
     var pad_clutch := "LT/LB embrague · B frena" if settings.analog_clutch else "LB embrague · LT/B frena"
     help_label.text = "%s acelerar · %s/%s frenar · %s embrague\n%s subir / %s bajar · %s repetir\n%s/Select pausa · Esc garaje · Tab/RB cámara\nMando: A sube / Y baja · %s\n%s/L3: freno de mano trasero" % [settings.key_label("accelerate"),settings.key_label("reverse"),settings.key_label("brake"),settings.key_label("clutch"),settings.key_label("shift_up"),settings.key_label("shift_down"),settings.key_label("recover"),settings.key_label("pause"),pad_clutch,settings.key_label("handbrake")]
+    if automatic:
+        help_label.text = "%s acelerar · %s/%s frenar\n%s: D / %s: N · Selector con el auto detenido\n%s repetir · %s/Select pausa · Esc garaje\nMando: RT acelera · LT/B frena · A/Y D/N\n%s/L3: freno de mano · Tab/RB cámara" % [settings.key_label("accelerate"),settings.key_label("reverse"),settings.key_label("brake"),settings.key_label("shift_up"),settings.key_label("shift_down"),settings.key_label("recover"),settings.key_label("pause"),settings.key_label("handbrake")]
     var ground: Dictionary = data.get("ground",{})
     if not ground.is_empty():
         power_label.text += "\n%s · APOYO %d/4 RUEDAS" % [ground.label,int(ground.wheels_on_ground)]

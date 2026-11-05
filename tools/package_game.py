@@ -5,17 +5,25 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.22"
-README = """GT4 EVOLUTION — PROTOTIPO 0.22 / PICADAS NOCTURNAS
+VERSION = "0.23"
+README = """GT4 EVOLUTION — PROTOTIPO 0.23 / FUERZAS, GRAVEDAD Y CVT
 
 WINDOWS: extraé TODO el ZIP y abrí GT4Evolution.exe o JUGAR.cmd.
 Es un juego exportado independiente: no necesita Godot instalado ni importar el
 proyecto al iniciar. Conservá GT4Evolution.pck junto al ejecutable.
 El ZIP Proyecto contiene las fuentes: abrí juego/project.godot con Godot 4.6.3.
 
+Gravedad unificada 9,81 m/s², contacto sobre pendientes, viento/densidad del aire
+y frenos con temperatura y pérdida progresiva de eficacia. Se conservan los
+récords anteriores como históricos; la nueva dinámica tiene su propia serie.
+Yaris sedán, Ka 3p, 208, Polo Classic, Virtus, Onix y Corolla Cross se suman.
+En Cross: CVT aproximada, E selecciona D y Q N estando detenido, freno sostenido
+al alinear y soltalo al verde. No requiere embrague; LT siempre frena.
+Ver PHYSICS-0.23.md: no es una simulación hiperrealista completa.
+
 ¼ de milla nocturno con alumbrado cálido, faros y dos instrumentos analógicos.
 Corsa 5p, Amarok, Ranger cabina simple, EcoSport, Corolla y Palio 5p amplían
-la flota a diecinueve modelos aportados. Sus variantes mecánicas son provisionales.
+la flota a veintiséis modelos aportados. Sus variantes mecánicas son provisionales.
 
 Interfaz oscura con azul acero y números monoespaciados, según GT4_UI_System.
 El 147 Vivace representa la referencia 1.4 BIO 1997: 63 CV, 10,4 kgfm y 807 kg antes de
@@ -83,7 +91,7 @@ Música: trece temas aportados con autorización expresa de redistribución.
 AJUSTES permite elegir tema, anterior/siguiente, aleatorio y volumen.
 La música se desvanece en pista y retoma en los menús. No está cubierta por MIT.
 
-Ver juego/RELEASE-0.22.md en el ZIP Proyecto y documentacion/ en Windows para el
+Ver juego/RELEASE-0.23.md en el ZIP Proyecto y documentacion/ en Windows para el
 alcance exacto y resultados de validación. El entorno valida Linux y el mismo PCK;
 Windows y mando físico requieren prueba en esos equipos. Si no inicia, ejecutá
 DIAGNOSTICO.cmd y compartí juego.log. Licencias incluidas. No se distribuyen

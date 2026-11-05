@@ -8,6 +8,8 @@ const EngineTorque = preload("res://scripts/engine_torque.gd")
 const TechnicalReference = preload("res://scripts/technical_reference_data.gd")
 const Additional = preload("res://scripts/additional_vehicle_data.gd")
 const Regional = preload("res://scripts/regional_vehicle_data.gd")
+const Expanded = preload("res://scripts/expanded_vehicle_data.gd")
+const EnvironmentData = preload("res://scripts/driving_environment.gd")
 const TEST_DRIVER_KG := 75.0
 const PROFILES := {
     "Fiat 147 Vivace": {"id":"147_vivace_14_bio_1997_reference","variant":"Vivace 1.4 BIO · 1997 (compendio aportado)","curb_mass_kg":TechnicalReference.VIVACE_MASS_KG,"peak_torque_nm":TechnicalReference.VIVACE_TORQUE_NM,"redline_rpm":6200.0,"wheelbase_m":2.22,"rolling_radius_m":0.275,"gear_ratios":[3.91,2.24,1.47,1.04,0.86],"final_drive":3.76},
@@ -40,6 +42,7 @@ const PROFILES := {
 }
 
 static func for_model(model: String) -> Dictionary:
+    if Expanded.DATA.has(model): return Expanded.profile(model)
     if Regional.DATA.has(model): return Regional.profile(model)
     if Additional.DATA.has(model): return Additional.profile(model)
     var profile: Dictionary = PROFILES.get(model,{}).duplicate(true)
@@ -99,10 +102,11 @@ static func for_model(model: String) -> Dictionary:
             profile["reference_targets"] = {"power_cv":55.0,"curb_mass_kg":830.0,"manufacturer_verified":false}
     return profile
 
-# Only revised profiles opt in. Old records stay readable while new runs are
-# compared exclusively with their current physical data, never an older curve.
+# Engine-sheet and simulation revisions both define a comparable record series.
+# In 0.22 the regional config tag was not propagated to the garage's lookup.
 static func record_revision(model: String) -> String:
-    return TechnicalReference.VIVACE_REVISION if model=="Fiat 147 Vivace" else ""
+    var profile := for_model(model)
+    return EnvironmentData.record_profile(str(profile.get("record_revision",profile.get("id",""))))
 
 # ISO tire-size geometry gives unloaded radius only. A loaded rolling radius
 # still requires a tire/circumference measurement; do not invent its deflection.
@@ -124,9 +128,12 @@ static func metric_snapshot(config) -> Dictionary:
         "calculated_peak_power_kw":peak["kw"],"calculated_peak_power_cv":EngineTorque.kw_to_cv(float(peak["kw"])),
         "calculated_peak_power_rpm":peak["rpm"],"power_basis":"healthy full-load crankshaft curve, not a measured factory result",
         "gear_ratios":config.gear_ratios.duplicate(),"final_drive":config.final_drive,
+        "transmission_type":config.transmission_type,
         "rolling_radius_m":config.wheel_radius,"wheelbase_m":config.wheelbase,
         "drag_area_m2":config.drag_area,"air_density_kg_m3":config.air_density,
         "rolling_resistance":config.rolling_resistance,"drivetrain_efficiency":config.drivetrain_efficiency,
+        "gravity_mps2":config.gravity_mps2,"dynamics_revision":EnvironmentData.REVISION,
+        "brake_heat_capacity_j_k":[config.brake_heat_capacity.x,config.brake_heat_capacity.y],"brake_fade_start_c":config.brake_fade_start_c,
         "engine_inertia_kg_m2":config.engine_inertia,"wheel_inertia_per_axle_kg_m2":config.wheel_inertia,
         "clutch_capacity_nm":config.clutch_capacity,"factory_abs":config.abs_assist,
         "factory_only":config.factory_class,

@@ -20,7 +20,7 @@ func run() -> void:
     check(selectors.size()==1,"Home offers one coherent model selector")
     if selectors.is_empty(): quit(1); return
     var selector: OptionButton=selectors[0]
-    check(selector.item_count==29,"The selector retains all ten legacy and nineteen supplied models")
+    check(selector.item_count==36,"The selector retains all ten legacy and twenty-six supplied models")
     check(selector.get_item_text(selector.selected)==session.game.find_car(1).model,"A selected owned legacy car matches its title and preview")
     var next := -1
     for index in range(selector.item_count):

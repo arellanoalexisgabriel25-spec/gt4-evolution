@@ -15,7 +15,7 @@ func ticket(et: float) -> Dictionary:
     return {"distance":402.336,"et":et,"reaction":0.2,"total":et+0.2,"trap_kmh":110.0,"finish_kmh":111.0,"sixty_ft":3.0,"eighth":12.0}
 func _initialize() -> void: call_deferred("run")
 func run() -> void:
-    var profile: String = Reference.VIVACE_REVISION
+    var profile: String = preload("res://scripts/stock_vehicle_specs.gd").record_revision("Fiat 147 Vivace")
     var records = Records.new()
     var old := ticket(18.0)
     check(records.from_dict({"11":old}),"Old unversioned records load without a migration prompt")

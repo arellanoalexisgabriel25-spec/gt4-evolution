@@ -14,7 +14,14 @@ func controls(model, clock: float, delta: float) -> Dictionary:
     if shift_hold > 0.0:
         shift_hold = maxf(0,shift_hold-delta)
         return {"throttle":0.0,"clutch":1.0,"brake":0.0,"steer":0.0}
-    if model.gear < model.config.gear_ratios.size() and model.rpm >= model.config.redline_rpm*shift_fraction and model.shift_timer == 0.0 and model.clutch_engagement > 0.9:
+    # Wait for the previous gear to synchronize. A still-revving engine after
+    # clutch release is not a new rising shift point; requesting again there
+    # skipped through several gears in physical validation runs.
+    var synchronized := true
+    if model.gear>0 and model.config.transmission_type=="manual":
+        var coupled_rpm: float = model.wheel_omega*model.config.gear_ratios[model.gear-1]*model.config.final_drive*60.0/TAU
+        synchronized = absf(model.rpm-coupled_rpm)<model.config.redline_rpm*0.12
+    if synchronized and model.gear < model.config.gear_ratios.size() and model.rpm >= model.config.redline_rpm*shift_fraction and model.shift_timer == 0.0 and model.clutch_engagement > 0.9:
         model.shift(1,1.0)
         shift_hold = 0.22
         return {"throttle":0.0,"clutch":1.0,"brake":0.0,"steer":0.0}

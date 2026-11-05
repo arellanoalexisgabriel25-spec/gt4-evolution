@@ -77,7 +77,9 @@ func run() -> void:
     if scene.run.phase=="finished":
         var ticket: Dictionary = scene.run.report()
         check(-scene.car.position.z>=402.336 and ticket.et>10 and ticket.et<35,"Recorded time follows more than 402 metres of actual collision-body movement")
-        check(session.career.drag_records.best(1)==ticket,"A valid arrival updates the selected garage unit's persistent record")
+        var tagged := ticket.duplicate(true)
+        tagged["physics_profile"] = scene.garage.record_profile
+        check(session.career.drag_records.best(1)==tagged,"A valid arrival preserves every measured ticket field and its actual simulation revision")
         check(scene.hud.ticket_panel.visible and scene.hud.ticket_label.text.contains("TICKET"),"Measured arrival shows a real timing ticket in the HUD")
         check(scene.hud.wear_label.text.contains("Caja 0.0") and scene.hud.wear_label.text.contains("DESGASTE"),"The ticket exposes actual stress from the pass, including the rejected change")
         check(ticket.reaction>=0 and ticket.sixty_ft<ticket.eighth and ticket.eighth<ticket.et,"Reaction and intermediate beams remain ordered in the complete 3D run")

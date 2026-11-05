@@ -38,8 +38,8 @@ func await_automatic_start(scene) -> bool:
 
 func run() -> void:
     var session = root.get_node("GameSession")
-    check(session.VERSION=="0.22","The exported PCK carries the current game version")
-    check(Catalog.DATA.size()==19,"The export contains all nineteen supplied car models")
+    check(session.VERSION=="0.23","The exported PCK carries the current game version")
+    check(Catalog.DATA.size()==26,"The export contains all twenty-six supplied car models")
     for song in session.menu_music.Playlist.SONGS:
         check(session.menu_music.select_track(song.id),"The exported playlist loads the shipped stream: "+song.id)
         check(session.menu_music.track.get_length()>85.0 and not session.menu_music.player.stream.loop,"The packaged song decodes completely and advances at its end")
@@ -109,10 +109,10 @@ func run() -> void:
         await physics_frame
         if scene.duel.finished: break
     check(scene.run.phase=="finished" and scene.opponent_run.phase=="finished","Both revised factory cars cover the actual measured course")
-    var current: Dictionary = session.career.stock_drag_records.best_for_profile(11,Reference.VIVACE_REVISION)
+    var current: Dictionary = session.career.stock_drag_records.best_for_profile(11,preload("res://scripts/stock_vehicle_specs.gd").record_revision("Fiat 147 Vivace"))
     check(not current.is_empty() and is_equal_approx(current.et,scene.run.elapsed),"The exported result stores a measured profile-specific personal best")
     var decoded: Dictionary = Store.decode(Store.encode(session.game,session.career))
-    check(decoded.error=="" and decoded.career.stock_drag_records.best_for_profile(11,Reference.VIVACE_REVISION).physics_profile==Reference.VIVACE_REVISION,"The exported game can save and load the physical revision metadata")
+    check(decoded.error=="" and decoded.career.stock_drag_records.best_for_profile(11,preload("res://scripts/stock_vehicle_specs.gd").record_revision("Fiat 147 Vivace")).physics_profile==preload("res://scripts/stock_vehicle_specs.gd").record_revision("Fiat 147 Vivace"),"The exported game can save and load the physical revision metadata")
     check(session.game.balance==balance,"The new physical reference cannot generate or lose credits on finish")
     scene.input_provider=Callable()
     scene._back_to_garage()
@@ -137,6 +137,27 @@ func run() -> void:
         if scene.duel.finished: break
     check(scene.run.phase=="finished" and scene.opponent_run.phase=="finished","Both new packaged models physically finish the 402.336 metre night race")
     check(scene.hud.instruments!=null and scene.hud.instruments.rpm>0.0,"The exported analog instruments receive live engine readings")
+    scene.input_provider=Callable()
+    scene._back_to_garage()
+    await process_frame
+    await process_frame
+    session.reset()
+    session.game.buy(36)
+    for part in session.game.find_car(36).health: session.game.find_car(36).health[part]=100.0
+    check(session.start_drag(36,"duel","technical","","Volkswagen Virtus"),"The packaged CVT Cross can race a different manual car")
+    change_scene_to_file("res://scenes/drag.tscn")
+    await process_frame
+    await process_frame
+    scene = current_scene
+    driver = Driver.new("technical")
+    scene.input_provider=func() -> Dictionary: return driver.controls(scene.car.powertrain,scene.run.clock,1.0/60.0)
+    check(scene.car.powertrain.config.transmission_type=="cvt" and scene.car.powertrain.config.gear_ratios.size()==1,"The shipped Cross has the continuous gearbox and launch coupling")
+    check(await await_automatic_start(scene),"The automatic car stages using the brake and actual starter")
+    for frame in range(9000):
+        await physics_frame
+        if scene.duel.finished: break
+    check(scene.run.phase=="finished" and scene.opponent_run.phase=="finished" and scene.hud.gear_label.text=="D","Both different gearbox types finish a measured physical race with the correct dashboard")
+    check(scene.car.powertrain.cvt.converter_heat_j>0.0 and scene.car.powertrain.brakes.temperatures.x>=20.0,"Exported power flow reaches converter and brake thermal states")
     scene.input_provider=Callable()
     scene._back_to_garage()
     await process_frame

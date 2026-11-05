@@ -2,6 +2,7 @@ extends Resource
 const Tire = preload("res://scripts/tire_model.gd")
 const Damage = preload("res://scripts/damage_model.gd")
 const StockSpecs = preload("res://scripts/stock_vehicle_specs.gd")
+const EnvironmentData = preload("res://scripts/driving_environment.gd")
 
 # Original approximate presets for development, not measured manufacturer data.
 @export var curb_mass := 980.0
@@ -9,7 +10,14 @@ const StockSpecs = preload("res://scripts/stock_vehicle_specs.gd")
 var mass: float:
     get: return curb_mass+driver_mass
     set(value): curb_mass=maxf(1.0,value-driver_mass)
-@export var air_density := 1.225
+@export var air_density: float = EnvironmentData.air_density(20.0,101325.0)
+@export var gravity_mps2 := EnvironmentData.STANDARD_GRAVITY
+@export var brake_heat_capacity := Vector2(4800.0,2600.0) # J/K per axle
+@export var brake_cooling_w_per_k := 18.0
+@export var brake_ambient_c := 20.0
+@export var brake_fade_start_c := 350.0
+@export var brake_fade_end_c := 700.0
+@export var brake_hot_factor := 0.45
 @export var peak_torque := 145.0
 @export var engine_inertia := 0.26
 @export var clutch_capacity := 230.0
@@ -24,6 +32,16 @@ var mass: float:
 @export var wheel_radius := 0.30
 @export var final_drive := 4.10
 @export var gear_ratios := PackedFloat32Array([3.10,2.10,1.50,1.15,0.90])
+@export var transmission_type := "manual"
+@export var cvt_min_ratio := 0.447
+@export var cvt_max_ratio := 2.236
+@export var cvt_launch_ratio := 3.377
+@export var cvt_ratio_rate := 1.4
+@export var cvt_handover_mps := 11.0
+@export var cvt_cruise_rpm := 1800.0
+@export var cvt_power_rpm := 6600.0
+@export var converter_capacity_factor := 18.5
+@export var converter_stall_multiplier := 1.9
 @export var idle_rpm := 900.0
 @export var redline_rpm := 7000.0
 @export var torque_curve := PackedFloat32Array([0.58,0.72,0.87,0.98,1.0,0.95,0.85,0.68])
@@ -104,6 +122,7 @@ static func from_vehicle(vehicle: Dictionary, factory: bool = false):
         result.reference_targets = local.get("reference_targets",{}).duplicate(true)
         result.engine_position = str(local.get("engine_position","rear" if name.contains("133") or name.contains("MR2") else "front"))
         result.turbo_fraction = float(local.get("turbo_fraction",0.0))
+        result.transmission_type = str(local.get("transmission_type","manual"))
     if name.contains("Civic") or name.contains("Levin") or name.contains("FTO"):
         result.redline_rpm = 7800.0
         result.torque_rpm = PackedFloat32Array([900,1800,2800,3800,4800,6000,7000,7800])
@@ -117,6 +136,9 @@ static func from_vehicle(vehicle: Dictionary, factory: bool = false):
     if name.contains("Impreza"):
         result.awd_front_split = 0.50
     result.clutch_capacity = result.peak_torque*1.7
+    # Rotor/drum thermal masses are explicit estimates scaled to vehicle size.
+    result.brake_heat_capacity *= result.curb_mass/1000.0
+    result.estimated_fields.append("brake_heat_capacity_j_k")
     result.engine_health = float(vehicle.get("health",{}).get("motor",50.0))
     result.transmission_health = float(vehicle.get("health",{}).get("transmision",50.0))
     result.tire_health = float(vehicle.get("health",{}).get("neumaticos",50.0))
@@ -140,6 +162,7 @@ static func from_vehicle(vehicle: Dictionary, factory: bool = false):
         # Baseline test protocol excludes gameplay assists. Exact factory safety
         # equipment is not established by the broad model names in old saves.
         result.abs_assist = bool(local.get("factory_abs",false))
+    result.record_revision = StockSpecs.record_revision(name)
     return result
 
 func metrics() -> Dictionary:

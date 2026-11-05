@@ -136,7 +136,7 @@ func _duel_result() -> void:
 func _controls() -> Dictionary:
     if input_provider.is_valid():
         return input_provider.call()
-    var controls: Dictionary = GameSession.controls.read_controls(true)
+    var controls: Dictionary = GameSession.controls.read_controls(true,car.powertrain.config.transmission_type=="cvt")
     controls["clutch"] = GameSession.controls.clutch_input()
     return controls
 
@@ -151,10 +151,12 @@ func _in_lane() -> bool:
     return absf(car.position.x-Strip.LANE_X) <= 2.7
 
 func _staged() -> bool:
-    return absf(car.position.z)<=0.10 and car.powertrain.speed_mps<0.10 and _in_lane() and int(car.ground_state.get("wheels_on_ground",0))==4
+    return absf(car.position.z)<=0.10 and absf(car.powertrain.speed_mps)<0.10 and _in_lane() and int(car.ground_state.get("wheels_on_ground",0))==4
 
 func _ready_for_start() -> bool:
-    return enabled and not paused and _mechanically_ready() and run.phase == "preparation" and _staged() and car.powertrain.gear == 1 and car.powertrain.engine_running and float(_controls().get("clutch",0.0))>=0.7
+    var controls := _controls()
+    var pedal_ready: bool = maxf(float(controls.get("brake",0.0)),-float(controls.get("throttle",0.0)))>=0.7 if car.powertrain.config.transmission_type=="cvt" else float(controls.get("clutch",0.0))>=0.7
+    return enabled and not paused and _mechanically_ready() and run.phase == "preparation" and _staged() and car.powertrain.gear == 1 and car.powertrain.engine_running and pedal_ready
 
 func _can_arm() -> bool:
     return procedure.phase=="countdown" and _ready_for_start()
@@ -162,7 +164,7 @@ func _can_arm() -> bool:
 func _opponent_ready() -> bool:
     if not is_duel:
         return true
-    return absf(opponent.position.z)<=0.10 and opponent.powertrain.speed_mps<0.10 and absf(opponent.position.x+Strip.LANE_X)<=2.7 and opponent.powertrain.gear==1 and opponent.powertrain.engine_running and opponent.powertrain.clutch_engagement<0.25 and int(opponent.ground_state.get("wheels_on_ground",0))==4
+    return absf(opponent.position.z)<=0.10 and absf(opponent.powertrain.speed_mps)<0.10 and absf(opponent.position.x+Strip.LANE_X)<=2.7 and opponent.powertrain.gear==1 and opponent.powertrain.engine_running and opponent.powertrain.clutch_engagement<0.25 and int(opponent.ground_state.get("wheels_on_ground",0))==4
 
 func _warmup_in_zone() -> bool:
     # Both axles of every supplied stock car begin ahead of the painted line.
@@ -174,7 +176,7 @@ func _advance_procedure(delta: float) -> void:
     if procedure.phase=="burnout" and not _warmup_in_zone():
         procedure.cancel_start("FUERA DE ZONA DE CALENTAMIENTO · R PARA REPETIR")
     if alignment_pending:
-        if car.powertrain.speed_mps<0.15 and (not is_duel or opponent.powertrain.speed_mps<0.15):
+        if absf(car.powertrain.speed_mps)<0.15 and (not is_duel or absf(opponent.powertrain.speed_mps)<0.15):
             car.align_for_start(Vector3(Strip.LANE_X,0.75,0))
             if is_duel:
                 opponent.align_for_start(Vector3(-Strip.LANE_X,0.75,0))

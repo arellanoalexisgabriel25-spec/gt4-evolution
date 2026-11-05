@@ -262,3 +262,35 @@ orientación, grupos no vacíos y textura. Las caras adicionales de recorte se
 cuentan aparte; la colisión sigue siendo un volumen simple independiente.
 Los faros proyectan luz y los frenos reflejan rojo sobre el suelo; no se añaden
 ópticas flotantes a los escaneos. No hay rig de suspensión ni deformación visual.
+
+
+## Incorporación 0.23 / siete modelos y datos importados eficientes
+
+Se añaden Yaris sedán, Ka de tres puertas de primera generación, 208 de primera
+generación, Polo Classic sedán, Virtus, Onix de primera generación y Corolla Cross
+(confirmado por el usuario). Las versiones y medidas del escaneo son provisionales.
+Yaris, Ka, Polo y Onix no heredan automáticamente las fichas de generaciones
+posteriores del compendio. El Cross usa una implementación CVT original con
+relaciones y convertidor estimados; no una caja manual ficticia.
+
+| Recurso | Triángulos originales → derivados | SHA256 original | SHA256 derivado |
+| --- | ---: | --- | --- |
+| yaris | 80,000 → 40,000 | `4b3a688e6666eecf6ea26eceeb6d1569b834b7098f459d01248296950db13436` | `36b3a2e0b72f0e6c350379f1fb8f77793a0b4ffcd967b2216b7cd3e7a926c1dd` |
+| ka | 90,000 → 39,998 | `1b1645dfb8c3264308513b27d56490d31f8c861040dd5d7a103f60a82ac4e219` | `bad6ef1c47388c16dc0eb10ed58e4eb4ebfd02616ad338cdbf838083198e7b13` |
+| peugeot_208 | 150,000 → 39,998 | `b050050409a0b08b83f008b8793d8df4bf47122ddc674e4ab8ab883f4f716729` | `351b6bba2062812bdb09c3703abf76f5fe3ee2d137b5f4b19c3a31416e9f4f10` |
+| polo | 60,000 → 39,994 | `5c3bb69a418e6f36f51d4eeccc197f08c33372ef16a48d94c5f7e22f6a26c344` | `757b2674b786697a3927b4b5af6d7c82ff869a3316c3f20264bea36fa4dbf422` |
+| virtus | 80,000 → 39,996 | `3a355a6658310e578e084bc7886a2332ad7f3def41ec48d73fff4e4948709b09` | `fc09c31ccd688a91e6d1868eb7e6cbe3ef9337a6c8d803dac92e37a617ff7659` |
+| onix | 80,000 → 39,998 | `b7aaa4355642f6b7a46c247e1cf58171bd39f5f8da02e2358f9750d6cf9359e1` | `9b829042b5ebbbcb8005cced5e825177229c24a67c2b119c7f1e0f422c6f71c5` |
+| cross | 90,000 → 39,998 | `30dc8a865debabdd40b5fdb1456d2abec388e6b31310283d23520aa1ad4b8682` | `c1991fc07104dd660622377d0a8f05d6e9f04d873c38a6129ad8bc8d8a54c53c` |
+
+Se conservan los originales fuera del proyecto. Derivados 1024² con UV protegidas,
+PNG RGB/mipmaps y sobres elípticos visuales independientes de la rueda mecánica.
+Las pruebas conservan área de superficie/UV y verifican los cuatro grupos.
+
+Las 26 importaciones omiten LOD, malla auxiliar de sombra, UV de lightmap y
+generación de tangentes que el constructor del rig no consume. El constructor
+sigue generando las tangentes necesarias para materiales con normal map. No
+se cambian los GLB/PNG anteriores ni sus caras de máxima resolución.
+El tamaño agregado de recursos importados baja de **42.460.229 a 20.812.924 bytes**
+para la misma flota de 26 modelos. Es tamaño de datos importados, no FPS ni memoria
+total medida. Se vuelve a comprobar la flota desde el paquete exportado.

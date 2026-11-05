@@ -81,7 +81,7 @@ static func axis(value: float, zone: float) -> float:
 static func pad_sample(steer: float, accelerator: float, brake: float, reverse: bool, zone: float) -> Dictionary:
     return {"throttle":clampf(maxf(0.0, axis(accelerator, zone)) - (1.0 if reverse else 0.0), -1.0, 1.0), "steer":axis(steer, zone), "brake":maxf(0.0, axis(brake, zone))}
 
-func read_controls(manual_mode: bool = false) -> Dictionary:
+func read_controls(manual_mode: bool = false, automatic: bool = false) -> Dictionary:
     var throttle := Input.get_action_strength(action("accelerate")) - Input.get_action_strength(action("reverse"))
     var steer := (Input.get_action_strength(action("right")) - Input.get_action_strength(action("left"))) * keyboard_steering
     var brake := Input.get_action_strength(action("brake"))
@@ -89,7 +89,7 @@ func read_controls(manual_mode: bool = false) -> Dictionary:
     if controller.selected()>=0:
         throttle += maxf(0,axis(controller.axis_value(JOY_AXIS_TRIGGER_RIGHT),trigger_deadzone))-(1.0 if controller.pressed(JOY_BUTTON_B) and not manual_mode else 0.0)
         steer += axis(controller.axis_value(JOY_AXIS_LEFT_X),deadzone)+(1.0 if controller.pressed(JOY_BUTTON_DPAD_RIGHT) else 0.0)-(1.0 if controller.pressed(JOY_BUTTON_DPAD_LEFT) else 0.0)
-        if not analog_clutch or not manual_mode:
+        if not analog_clutch or not manual_mode or automatic:
             brake = maxf(brake,maxf(0,axis(controller.axis_value(JOY_AXIS_TRIGGER_LEFT),trigger_deadzone)))
         if manual_mode and controller.pressed(JOY_BUTTON_B):
             brake = 1.0

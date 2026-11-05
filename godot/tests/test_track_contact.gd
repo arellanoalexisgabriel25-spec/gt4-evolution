@@ -187,7 +187,9 @@ func run() -> void:
     actor.powertrain.clutch_engagement = 1.0
     actor.powertrain.speed_mps = 10.0
     actor.powertrain.wheel_omega = 10.0/actor.powertrain.config.wheel_radius
-    actor.powertrain.config.air_density = 0.0
+    # The live atmosphere owns density now. Vacuum isolates tire propulsion
+    # from legitimate aerodynamic drag while the actor is airborne.
+    actor.conditions.pressure_pa = 0.0
     actor.powertrain.axles.temperatures = Vector2(80,80)
     var spin_before: float = actor.powertrain.axles.omega.x
     await sync_physics()
@@ -200,6 +202,11 @@ func run() -> void:
     check(actor.powertrain.tire_heat_j==0.0 and actor.powertrain.wear.neumaticos==0.0 and actor.powertrain.axles.temperatures.x<80.0,"Unsupported tires cool while contact heat and contact tread wear remain zero")
     check(actor.powertrain.rolling_scale==0.0 and actor.powertrain.road_load_force(10.0)==0.0,"Airborne wheel contact cannot retain rolling resistance")
     check(absf(actor.velocity.y+9.81)<0.0001,"The drag actor falls under 9.81 m/s² for one second")
+    actor.conditions.pressure_pa = 101325.0
+    for i in range(30):
+        await physics_frame
+        actor.drive_manual(1.0/60.0,{"throttle":1.0,"clutch":0.0,"brake":0.0})
+    check(actor.powertrain.speed_mps<10.0 and actor.powertrain.rolling_scale==0.0 and actor.powertrain.axles.forces==Vector2.ZERO,"Restoring air slows the falling chassis through drag while tire support remains zero")
     var before := actor_state(actor)
     for delta in [NAN,INF,-0.01,0.0]:
         actor.drive_manual(delta,{"throttle":1.0})

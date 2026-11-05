@@ -16,7 +16,7 @@ func check(ok: bool, message: String) -> void:
 func _initialize() -> void:
     var game = Economy.new()
     game.seed_demo()
-    check(game.cars.size()==29 and Catalog.REGIONALS.size()==6,"Six regional offers extend the prior twenty-three stable units")
+    check(game.cars.size()==36 and Catalog.REGIONALS.size()==6,"Six regional offers extend the prior twenty-three stable units")
     game.buy(12)
     game.find_car(12).history.append({"event":"previous career"})
     var old: Dictionary = game.to_dict().duplicate(true)
@@ -26,14 +26,14 @@ func _initialize() -> void:
     var previous: Dictionary = restored.to_dict().duplicate(true)
     restored.ensure_flagship_offers()
     restored.ensure_flagship_offers()
-    check(restored.cars.size()==29 and restored.to_dict().cars.slice(0,23)==previous.cars,"Idempotent migration preserves every previous ID, owner, history, condition and listing")
+    check(restored.cars.size()==36 and restored.to_dict().cars.slice(0,23)==previous.cars,"Idempotent migration preserves every previous ID, owner, history, condition and listing")
     check(restored.balance==previous.balance and restored.ledger==previous.ledger,"Adding market offers neither spends nor generates credits")
     var models := {}
     var ids := {}
     for car in Catalog.market_order(restored.cars):
         ids[car.id] = true
         models[car.model] = true
-    check(ids.size()==29 and models.size()==29,"All legacy and imported cars remain reachable exactly once in the market")
+    check(ids.size()==36 and models.size()==36,"All legacy and imported cars remain reachable exactly once in the market")
     var powers := [92.0,140.0,163.0,99.0,110.0,72.0]
     for index in range(6):
         var vehicle: Dictionary = game.find_car(24+index).duplicate(true)

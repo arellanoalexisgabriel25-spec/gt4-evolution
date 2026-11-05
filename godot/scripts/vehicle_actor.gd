@@ -50,7 +50,7 @@ func drive(delta: float, controls: Dictionary, road: bool) -> void:
     var previous := global_position
     velocity.x = physics.velocity.x
     velocity.z = physics.velocity.y
-    velocity.y = -1.0 if is_on_floor() else velocity.y - 15.0 * delta
+    velocity.y = -1.0 if is_on_floor() else velocity.y + get_gravity().y * delta
     move_and_slide()
     physics.velocity = Vector2(velocity.x, velocity.z)
     if is_on_wall():

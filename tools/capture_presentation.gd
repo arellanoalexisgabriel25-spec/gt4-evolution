@@ -1,7 +1,7 @@
 extends SceneTree
 
 const DragDriver = preload("res://tests/drag_test_driver.gd")
-var output := "/workspace/artifacts/presentation-0.22"
+var output := "/workspace/artifacts/presentation-0.23"
 var capture_heat_done := false
 
 func _initialize() -> void:
@@ -188,7 +188,7 @@ func run() -> void:
     await process_frame
     await process_frame
     current_scene._change_tab("inicio")
-    for entry in [["Fiat 147 Vivace","18-147-showroom"],["Fiat Uno Fire 3 puertas","19-uno-showroom"],["Volkswagen Gol Power 3 puertas","20-gol-showroom"],["Fiat 128 Súper Europa 1.5","28-128-super-showroom"],["Fiat 133","29-133-showroom"],["Fiat 128 estándar","30-128-standard-showroom"],["Fiat 125","34-125-showroom"],["Fiat Duna","35-duna-showroom"],["Fiat Cronos","36-cronos-showroom"],["Fiat Siena","37-siena-showroom"],["Fiat Punto","38-punto-showroom"],["Fiat Regatta","39-regatta-showroom"],["Fiat 500 Sport","40-500-showroom"],["Chevrolet Corsa 5 puertas","51-corsa-showroom"],["Volkswagen Amarok","52-amarok-showroom"],["Ford Ranger cabina simple","53-ranger-showroom"],["Ford EcoSport","54-ecosport-showroom"],["Toyota Corolla","55-corolla-showroom"],["Fiat Palio 5 puertas","56-palio-showroom"]]:
+    for entry in [["Fiat 147 Vivace","18-147-showroom"],["Fiat Uno Fire 3 puertas","19-uno-showroom"],["Volkswagen Gol Power 3 puertas","20-gol-showroom"],["Fiat 128 Súper Europa 1.5","28-128-super-showroom"],["Fiat 133","29-133-showroom"],["Fiat 128 estándar","30-128-standard-showroom"],["Fiat 125","34-125-showroom"],["Fiat Duna","35-duna-showroom"],["Fiat Cronos","36-cronos-showroom"],["Fiat Siena","37-siena-showroom"],["Fiat Punto","38-punto-showroom"],["Fiat Regatta","39-regatta-showroom"],["Fiat 500 Sport","40-500-showroom"],["Chevrolet Corsa 5 puertas","51-corsa-showroom"],["Volkswagen Amarok","52-amarok-showroom"],["Ford Ranger cabina simple","53-ranger-showroom"],["Ford EcoSport","54-ecosport-showroom"],["Toyota Corolla","55-corolla-showroom"],["Fiat Palio 5 puertas","56-palio-showroom"],["Toyota Yaris Sedán","61-yaris-showroom"],["Ford Ka 3 puertas","62-ka-showroom"],["Peugeot 208","63-208-showroom"],["Volkswagen Polo Classic","64-polo-showroom"],["Volkswagen Virtus","65-virtus-showroom"],["Chevrolet Onix","66-onix-showroom"],["Toyota Corolla Cross","67-cross-showroom"]]:
         current_scene._feature(entry[0])
         await picture(entry[1])
     current_scene._change_tab("taller")
@@ -474,6 +474,51 @@ func run() -> void:
     drag.set_physics_process(false)
     drag._refresh_hud()
     await picture("60-night-pickup-result")
+    Engine.time_scale = 1.0
+    drag.input_provider=Callable()
+    drag._back_to_garage()
+    await process_frame
+    await process_frame
+    session.reset()
+    session.game.buy(36)
+    for part in session.game.find_car(36).health: session.game.find_car(36).health[part]=100.0
+    session.start_drag(36,"duel","technical","","Volkswagen Virtus")
+    change_scene_to_file("res://scenes/drag.tscn")
+    await process_frame
+    await process_frame
+    drag = current_scene
+    driver = DragDriver.new()
+    drag.input_provider=func() -> Dictionary: return driver.controls(drag.car.powertrain,drag.run.clock,1.0/60.0)
+    await settle_drag(drag)
+    drag.set_physics_process(false)
+    drag._refresh_hud()
+    drag.camera.snap()
+    await picture("68-cvt-preparation")
+    if not await arm_drag(drag): return
+    drag.set_physics_process(true)
+    Engine.time_scale = 6.0
+    for frame in range(5000):
+        await physics_frame
+        if drag.run.elapsed>7.0: break
+    drag.set_physics_process(false)
+    drag.camera.snap()
+    drag._refresh_hud()
+    await picture("69-cvt-driving")
+    drag.paused = true
+    drag._refresh_hud()
+    await picture("71-physics-telemetry")
+    drag.paused = false
+    drag.set_physics_process(true)
+    for frame in range(7000):
+        await physics_frame
+        if drag.duel.finished: break
+    if drag.run.phase!="finished" or drag.opponent_run.phase!="finished":
+        push_error("The CVT Cross and manual Virtus did not physically finish.")
+        quit(1)
+        return
+    drag.set_physics_process(false)
+    drag._refresh_hud()
+    await picture("70-cvt-result")
     Engine.time_scale = 1.0
     drag.input_provider=Callable()
     drag._back_to_garage()

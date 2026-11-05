@@ -1,8 +1,29 @@
-# GT4 Evolution · v0.22 / Picadas nocturnas
+# GT4 Evolution · v0.23 / Gravedad, fuerzas y transmisión CVT
 
 Prototipo independiente de automovilismo en Godot 4.6.3. El desarrollo se centra en un **¼ de milla de 402,336 m contra otro auto físico**, con largada, cambios manuales, marcas y desgaste en un entorno original inspirado en el ambiente del autódromo Gálvez. Conserva mercado, garaje, taller, tuning y los modos anteriores. La investigación de GT4 se consulta como referencia; no se incluyen su ejecutable, modelos, texturas ni circuitos comerciales.
 
-## Novedades v0.22
+## Novedades v0.23
+
+Gravedad común de 9,81 m/s², fuerzas tangenciales/normal según el suelo real,
+retroceso en pendientes, resistencia con viento relativo/densidad atmosférica
+y frenos que se calientan por energía disipada y pierden eficacia al sobrecalentar.
+El contacto limita impulsos para impedir creación numérica de energía.
+Collider, rayos y visual se alinean al plano medio; no es suspensión completa.
+
+Se suman **Yaris sedán, Ka 3p, 208, Polo Classic, Virtus, Onix y Corolla Cross**.
+El Cross incorpora una CVT original de relación continua, salida y convertidor
+de par con pérdidas. **E selecciona D, Q selecciona N con el auto detenido;
+freno sostenido para alinear y soltarlo al verde.** No requiere pedal de embrague.
+LT frena incluso con la preferencia de embrague analógico para autos manuales.
+Las fichas siguen provisionales. Hay 26 carrocerías aportadas y 36 ofertas.
+
+La pausa añade fuerzas, condiciones y temperatura de frenos; el HUD en carrera
+continúa compacto. Se conservan partidas y marcas históricas: la nueva dinámica
+usa su propia serie de comparación. Las importaciones de modelos ocupan menos
+eliminando datos que el rig no utiliza. [Alcance y pruebas](RELEASE-0.23.md) ·
+[Física y límites](PHYSICS-0.23.md) · [Banco reproducible](STOCK-BENCHMARK-0.23.md).
+
+## Estado histórico: novedades v0.22
 
 ¼ de milla nocturno original, alumbrado cálido, faros proyectados y reflejo rojo
 de frenado. Dos instrumentos analógicos pequeños muestran velocidad y RPM
@@ -130,7 +151,7 @@ Las once acciones de teclado se reasignan en AJUSTES. Las preferencias anteriore
 
 Mando en este modo: RT/R2 acelera, LT/L2 o B/Círculo frena, LB/L1 sostiene embrague, A/Cruz sube, Y/Triángulo baja, X/Cuadrado recupera, RB/R1 cambia cámara y R3 mira atrás. Inicio y Select/Back abren pausa en cualquier fase; L3 acciona el freno de mano trasero. AJUSTES permite usar **LT/L2 como embrague analógico**: en ese modo B/Círculo frena, también si se mantiene el acelerador. LB sigue disponible. La opción solo afecta al ¼ de milla. El stick izquierdo conserva asistencia de dirección; el mando físico sigue pendiente de prueba.
 
-El escenario se llama **Autódromo Sur**: tribuna, boxes, control, colores argentinos, semáforo y una escapatoria de más de 250 m. Es un diseño original inspirado en un ambiente de autódromo porteño; no es una reproducción exacta ni homologada del Gálvez. El sonido de motor es sintetizado y provisional. Los diecinueve modelos aportados usan sus mallas adaptadas; los vehículos anteriores sin GLB conservan carrocerías procedurales. El Uno recibido tiene cinco puertas, frente a la variante objetivo de tres puertas.
+El escenario se llama **Autódromo Sur**: tribuna, boxes, control, colores argentinos, semáforo y una escapatoria de más de 250 m. Es un diseño original inspirado en un ambiente de autódromo porteño; no es una reproducción exacta ni homologada del Gálvez. El sonido de motor es sintetizado y provisional. Los veintiséis modelos aportados usan sus mallas adaptadas; los vehículos anteriores sin GLB conservan carrocerías procedurales. El Uno recibido tiene cinco puertas, frente a la variante objetivo de tres puertas.
 
 ## Probar el juego
 
@@ -185,7 +206,7 @@ La recuperación conserva las vueltas ya completadas y la distancia realmente re
 
 ## Límites actuales
 
-La conducción del circuito sigue siendo arcade. El ¼ de milla usa un modelo longitudinal con embrague, cambios manuales y daños mecánicos, asistencia lateral y temperaturas simplificadas. Hay duelos físicos y práctica individual; no hay campeonato de picadas, premios, llaves, finales ni verificación técnica homologada. Los pisos transcritos del reglamento no validan las prestaciones estimadas de los autos. El Uno aportado tiene cinco puertas, el catálogo apunta a tres; los GLB contienen detalles y luces horneados. No hay deformación visual ni simulación completa de neumáticos, suspensión, embrague o diferencial izquierda/derecha. Las colisiones usan cuerpos de personaje, sin intercambio realista de impulsos. Faltan conducción humana, Windows, mando físico y mediciones de rendimiento en GPU real. La evidencia y el estado de comprobación de esta versión se registran en [RELEASE-0.22.md](RELEASE-0.22.md).
+La conducción del circuito sigue siendo arcade. El ¼ de milla usa un modelo longitudinal con embrague, cambios manuales y daños mecánicos, asistencia lateral y temperaturas simplificadas. Hay duelos físicos y práctica individual; no hay campeonato de picadas, premios, llaves, finales ni verificación técnica homologada. Los pisos transcritos del reglamento no validan las prestaciones estimadas de los autos. El Uno aportado tiene cinco puertas, el catálogo apunta a tres; los GLB contienen detalles y luces horneados. No hay deformación visual ni simulación completa de neumáticos, suspensión, embrague o diferencial izquierda/derecha. Las colisiones usan cuerpos de personaje, sin intercambio realista de impulsos. Faltan conducción humana, Windows, mando físico y mediciones de rendimiento en GPU real. La evidencia y el estado de comprobación de esta versión se registran en [RELEASE-0.23.md](RELEASE-0.23.md).
 
 ## Desarrollo y pruebas
 

@@ -122,6 +122,9 @@ const DATA := {
 static func profile(model: String) -> Dictionary:
     if not DATA.has(model): return {}
     var data: Dictionary = DATA[model]
+    return profile_data(data)
+
+static func profile_data(data: Dictionary) -> Dictionary:
     var peak_rpm := float(data.power_rpm)
     var torque_rpm := float(data.torque_rpm)
     var anchor := Torque.torque_for_cv_at_rpm(float(data.power_cv),peak_rpm)/float(data.torque)
@@ -130,7 +133,7 @@ static func profile(model: String) -> Dictionary:
     if data.power_reference:
         sources.append({"kind":"user_secondary_compilation","document":"Informe Técnico Automotriz Completo.pdf","page":data.source_page,"primary_document_verified":false})
     return {
-        "id":str(data.key)+"_development_022", "record_revision":str(data.key)+"_factory_022", "variant":str(data.variant),
+        "id":str(data.key)+"_development_"+str(data.get("catalog_revision","022")), "record_revision":str(data.key)+"_factory_"+str(data.get("catalog_revision","022")), "variant":str(data.variant),
         "status":"development_estimate", "sources":sources,
         "basis":"Inspected supplied body; explicit provisional factory engine choice; no verified homologation",
         "curb_mass_kg":float(data.mass), "peak_torque_nm":float(data.torque),
@@ -139,6 +142,7 @@ static func profile(model: String) -> Dictionary:
         "final_drive":float(data.final_drive), "drivetrain":str(data.drivetrain),
         "front_weight_bias":float(data.front_weight_bias), "drag_area_m2":float(data.drag_area),
         "cg_height_m":float(data.cg_height), "engine_position":"front",
+        "transmission_type":str(data.get("transmission_type","manual")),
         "factory_abs":bool(data.factory_abs), "turbo_fraction":float(data.get("turbo_fraction",0.0)),
         "idle_rpm":float(data.get("idle_rpm",900.0)), "spool_rpm":float(data.get("spool_rpm",2500.0)),
         "boost_span_rpm":float(data.get("boost_span_rpm",1400.0)),

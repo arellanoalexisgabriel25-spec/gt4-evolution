@@ -43,7 +43,9 @@ func _initialize() -> void:
     var path := "user://drag-save-%d.json" % Time.get_ticks_usec()
     check(Store.save_file(path,game,career)==OK,"Drag wear and records can be written using the existing atomic save path")
     var loaded: Dictionary = Store.load_file(path)
-    check(loaded.get("error")=="" and loaded.career.drag_records.best(1)==ticket,"Actual JSON files restore complete per-car timing tickets")
+    var tagged := ticket.duplicate(true)
+    tagged["physics_profile"] = garage.record_profile
+    check(loaded.get("error")=="" and loaded.career.drag_records.best(1)==tagged,"Actual JSON files restore complete per-car timing tickets and their simulation revision")
     var health_matches := true
     for component in vehicle.health:
         health_matches = health_matches and is_equal_approx(float(loaded.game.find_car(1).health[component]),float(vehicle.health[component]))

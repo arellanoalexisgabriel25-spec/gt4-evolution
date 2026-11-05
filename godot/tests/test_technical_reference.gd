@@ -30,7 +30,7 @@ func _initialize() -> void:
     check(metrics.sources[0].kind=="user_compilation" and not metrics.sources[0].primary_document_verified and not metrics.manufacturer_verified,"A secondary compilation is not promoted to verified manufacturer data")
     check(metrics.mass_basis.contains("assumed curb") and metrics.estimated_fields.has("mass_convention"),"Unknown fuel/fluid mass convention remains visible")
     check(metrics.estimated_fields.has("gear_ratios") and metrics.estimated_fields.has("rolling_radius_m"),"The PDF cannot silently certify missing gearbox or tire geometry")
-    check(config.record_revision==Reference.VIVACE_REVISION,"A changed curve has a separate record comparison revision")
+    check(config.record_revision==Specs.record_revision("Fiat 147 Vivace"),"A changed curve has a separate record comparison revision")
     var catalog: Dictionary = Catalog.definition("Fiat 147 Vivace")
     check(catalog.mass==config.curb_mass and catalog.torque==config.peak_torque,"Catalog/circuit authoring and drag configuration use the same mass and torque anchors")
     check(is_equal_approx(catalog.size.z,3.742),"Supplied overall length updates visual normalization and collision dimensions")
@@ -48,6 +48,6 @@ func _initialize() -> void:
     profile.sources[0].page=99
     profile.torque_factors[0]=999.0
     check(Specs.for_model("Fiat 147 Vivace").sources[0].page==1 and Specs.for_model("Fiat 147 Vivace").torque_factors[0]<1.0,"Callers cannot mutate the source record or later physical configurations")
-    check(Specs.record_revision("Fiat Uno Fire 3 puertas").is_empty(),"Unchanged profiles retain compatible previous record lookup")
+    check(not Specs.record_revision("Fiat Uno Fire 3 puertas").is_empty(),"A shared dynamics revision gives every physical profile a new comparable series")
     if not failed: print("PASS: %d technical reference assertions" % checks)
     quit(1 if failed else 0)

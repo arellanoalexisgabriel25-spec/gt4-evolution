@@ -385,8 +385,9 @@ func _garage() -> void:
         var best := career.lap_records.get_best(int(car["id"]))
         if best > 0.0:
             layout.add_child(_label("Mejor vuelta al club: %.2f s" % best, 15))
-        if not metrics["record_revision"].is_empty():
+        if car["model"]=="Fiat 147 Vivace":
             layout.add_child(_label("Referencia parcial: 1.4 BIO 1997 · 10,4 kgm · régimen de potencia y caja estimados",13))
+        layout.add_child(_label("Transmisión: CVT automática · relaciones y convertidor estimados" if metrics.transmission_type=="cvt" else "Transmisión: manual · relaciones provisionales",13))
         for record_set in [[career.drag_records,"manual"],[career.stock_drag_records,"fábrica"]]:
             var drag_best: Dictionary = record_set[0].best_for_profile(int(car["id"]),str(metrics["record_revision"]))
             if not drag_best.is_empty():
@@ -401,7 +402,7 @@ func _garage() -> void:
         var duel_button := _button("DUELO ¼ DE MILLA / FÁBRICA",_drag_duel.bind(int(car["id"])))
         duel_button.disabled = not game.eligible(car)
         actions.add_child(duel_button)
-        var drag := _button("¼ DE MILLA / MANUAL",_drag_3d.bind(int(car["id"])))
+        var drag := _button("¼ DE MILLA / CVT" if metrics.transmission_type=="cvt" else "¼ DE MILLA / MANUAL",_drag_3d.bind(int(car["id"])))
         drag.disabled = not game.eligible(car)
         actions.add_child(drag)
         var drive_button := _button("PRUEBA SIMULADA 10 KM", _drive.bind(int(car["id"])))

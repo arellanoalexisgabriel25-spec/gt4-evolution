@@ -32,6 +32,8 @@ static func combine(samples: Array) -> Dictionary:
     var loads := Vector2.ZERO
     var grip := Vector2.ZERO
     var rolling := 0.0
+    var axle_rolling := Vector2.ZERO
+    var normal := Vector3.ZERO
     var wheels := 0
     var names: Array[String] = []
     if samples.size()!=4: return {}
@@ -41,12 +43,17 @@ static func combine(samples: Array) -> Dictionary:
         if sample.is_empty(): continue
         if not PROFILES.has(str(sample.get("id",""))): return {}
         var profile: Dictionary = PROFILES[str(sample.id)]
+        var hit_normal = sample.get("normal",Vector3.UP)
+        if typeof(hit_normal)!=TYPE_VECTOR3 or not hit_normal.is_finite() or hit_normal.length_squared()<0.5 or hit_normal.dot(Vector3.UP)<0.65: return {}
         var axle := 0 if index<2 else 1
         loads[axle] += 0.5
         grip[axle] += float(profile.grip)
         rolling += float(profile.rolling)*0.25
+        axle_rolling[axle] += float(profile.rolling)*0.5
+        normal += hit_normal.normalized()
         wheels += 1
         if not names.has(str(profile.label)): names.append(str(profile.label))
     for axle in range(2):
         grip[axle] = grip[axle]/(loads[axle]*2.0) if loads[axle]>0.0 else 0.0
-    return {"contact":loads,"grip":grip,"rolling":rolling,"wheels_on_ground":wheels,"label":" / ".join(names) if wheels>0 else "SIN APOYO"}
+        axle_rolling[axle] = axle_rolling[axle]/loads[axle] if loads[axle]>0.0 else 0.0
+    return {"contact":loads,"grip":grip,"rolling":rolling,"rolling_axles":axle_rolling,"normal":normal.normalized() if wheels>0 else Vector3.UP,"wheels_on_ground":wheels,"label":" / ".join(names) if wheels>0 else "SIN APOYO"}

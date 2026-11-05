@@ -49,7 +49,7 @@ def external_texture(path, source):
  total=12+8+len(encoded)+8+len(blob)
  path.write_bytes(struct.pack('<III',0x46546c67,2,total)+struct.pack('<II',len(encoded),0x4e4f534a)+encoded+struct.pack('<II',len(blob),0x004e4942)+blob)
  Path(str(texture)+'.import').write_text('[remap]\nimporter="texture"\ntype="CompressedTexture2D"\n\n[params]\ncompress/mode=2\ncompress/high_quality=false\nmipmaps/generate=true\n')
- Path(str(path)+'.import').write_text('[remap]\nimporter="scene"\nimporter_version=1\ntype="PackedScene"\n\n[params]\ngltf/embedded_image_handling=3\n')
+ Path(str(path)+'.import').write_text('[remap]\nimporter="scene"\nimporter_version=1\ntype="PackedScene"\n\n[params]\ngltf/embedded_image_handling=3\nmeshes/ensure_tangents=false\nmeshes/generate_lods=false\nmeshes/create_shadow_meshes=false\nmeshes/light_baking=0\n')
  return {'texture_original_size':original_size,'texture_runtime_size':image.size,'source_texture_sha256':hashlib.sha256(pixels).hexdigest(),'runtime_texture_sha256':hashlib.sha256(texture.read_bytes()).hexdigest(),'runtime_texture_bytes':texture.stat().st_size,'texture_original_bytes_preserved':False,'texture_processing':'Lanczos downsample, RGB PNG, explicit VRAM-compressed mipmapped import'}
 
 reports=[]
