@@ -33,7 +33,7 @@ func drive_manual(delta: float, controls: Dictionary, _road: bool = true) -> voi
     if not is_finite(delta) or delta<=0.0 or delta>0.1:
         return
     # Reject malformed controls before touching transforms, wear or telemetry.
-    for action in ["throttle","brake","clutch","steer"]:
+    for action in ["throttle","brake","clutch","steer","handbrake"]:
         var value = controls.get(action,0.0)
         if typeof(value) not in [TYPE_INT,TYPE_FLOAT] or not is_finite(float(value)):
             return
@@ -42,7 +42,7 @@ func drive_manual(delta: float, controls: Dictionary, _road: bool = true) -> voi
     damage.tick(delta)
     var pedal: float = float(controls.get("throttle",0.0))
     var brake: float = maxf(float(controls.get("brake",0.0)),-pedal)
-    powertrain.step(delta,maxf(0,pedal),float(controls.get("clutch",0.0)),brake,true,ground_state)
+    powertrain.step(delta,maxf(0,pedal),float(controls.get("clutch",0.0)),brake,true,ground_state,float(controls.get("handbrake",0.0)))
     # Light directional assistance for the first longitudinal driving increment.
     # Lane violations still use the real collider position and invalidate a pass.
     var steer: float = float(controls.get("steer",0.0))*powertrain.config.steering_factor
@@ -88,3 +88,20 @@ func reset_metrics() -> void:
     measured_acceleration = 0.0
     zero_to_hundred = -1.0
     acceleration_clock = 0.0
+
+# The manual drag gearbox has no reverse gear yet. The starter's pre-race
+# alignment assist moves the collider only before either timing beam is armed.
+# This is disclosed to the player; it never repairs, cools or resets session use.
+func align_for_start(location: Vector3) -> void:
+    global_position = location
+    rotation = Vector3.ZERO
+    velocity = Vector3.ZERO
+    powertrain.speed_mps = 0.0
+    powertrain.axles.omega = Vector2.ZERO
+    powertrain.axles.forces = Vector2.ZERO
+    powertrain.axles.slips = Vector2.ZERO
+    powertrain.axles.filtered_acceleration = 0.0
+    powertrain.acceleration = 0.0
+    powertrain.wheelspin = 0.0
+    physics.velocity = Vector2.ZERO
+    reset_metrics()

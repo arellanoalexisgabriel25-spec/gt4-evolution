@@ -1,5 +1,6 @@
 extends SceneTree
 const Driver = preload("res://scripts/drag_rival_driver.gd")
+const Preparation = preload("res://tests/drag_test_driver.gd")
 var checks := 0
 var failed := false
 func check(ok: bool, message: String) -> void:
@@ -29,8 +30,7 @@ func run() -> void:
     check(scene.car.visual.imported_model and scene.opponent.visual.imported_model,"Both chosen supplied models are imported into the live race")
     var driver=Driver.new("technical")
     scene.input_provider=func() -> Dictionary: return driver.controls(scene.car.powertrain,scene.run.clock,1.0/60.0)
-    for i in range(45): await physics_frame
-    scene._arm()
+    check(await Preparation.await_automatic_start(scene),"The starter calls both different physical models without a manual signal")
     check(scene.duel.started,"Different factory models arm on the same tree")
     for i in range(8000):
         await physics_frame

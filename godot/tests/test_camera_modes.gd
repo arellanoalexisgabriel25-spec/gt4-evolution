@@ -58,6 +58,29 @@ func run() -> void:
     car.physics.reset()
     camera.look_input = Vector2.ZERO
     camera.snap()
+    var peer := Node3D.new()
+    peer.position = Vector3(7.5,0.55,0)
+    stage.add_child(peer)
+    camera.race_peer = peer
+    camera.snap()
+    check(is_equal_approx(camera._peer_framing(),1.0) and root.get_visible_rect().has_point(camera.unproject_position(peer.global_position)),"Adjacent staging lanes remain visible together")
+    peer.position.z = 7.0
+    camera.snap()
+    check(camera._peer_framing()>0.0 and camera._peer_framing()<1.0,"Two-car framing fades continuously as the physical gap opens")
+    peer.position.z = 25.0
+    camera.snap()
+    check(camera._peer_framing()==0.0 and camera.global_position.distance_to(car.global_position)<8.0 and absf(camera.global_position.x-car.global_position.x)<0.01,"A distant trailing rival cannot pull the chase arm far behind the driven car")
+    peer.position.z = -25.0
+    camera.snap()
+    check(camera._peer_framing()==0.0 and camera.global_position.distance_to(car.global_position)<8.0,"A distant leading rival cannot become the camera's target either")
+    peer.position.z = 0.0
+    camera.look_back = true
+    camera.snap()
+    check(camera._peer_framing()==0.0 and camera.global_position.z<car.global_position.z,"Rear look does not inherit the side-by-side staging offset")
+    camera.look_back = false
+    camera.race_peer = null
+    camera.snap()
+    check(camera._peer_framing()==0.0,"Single-car and old circuit cameras retain their own framing")
     var wall := StaticBody3D.new()
     wall.position = Vector3(0,2,3)
     var collision := CollisionShape3D.new()

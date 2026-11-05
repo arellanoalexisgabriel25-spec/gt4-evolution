@@ -1,5 +1,7 @@
 extends SceneTree
 
+const Preparation = preload("res://tests/drag_test_driver.gd")
+
 var checks := 0
 var failed := false
 
@@ -114,7 +116,14 @@ func run() -> void:
     check(controls.throttle>0.5 and controls.brake==0 and session.controls.clutch_input()>0.99,"RT and analog LT provide independent accelerator and clutch without phantom braking")
     check(session.controls.read_controls(false).brake>0.99,"The same LT still brakes in the older automatic circuit mode")
     await tap(JOY_BUTTON_START)
-    check(scene.run.phase=="countdown","Controller Start arms the real staging tree")
+    check(scene.paused and scene.pause_menu.visible and scene.run.phase=="preparation" and scene.procedure.phase=="burnout","Controller Start pauses preparation instead of overriding the starter")
+    var preparation_clock: float = scene.procedure.elapsed
+    for i in range(10): await physics_frame
+    check(scene.procedure.elapsed==preparation_clock,"Controller pause also freezes the preparation deadline")
+    await tap(JOY_BUTTON_B)
+    check(not scene.paused and not scene.pause_menu.visible,"Controller B resumes the authorized preparation")
+    check(await Preparation.await_automatic_start(scene),"The starter automatically arms after the real controller gear and clutch remain ready")
+    check(scene.run.phase=="countdown","Held controller accelerator and clutch do not require a manual tree command")
     await tap(JOY_BUTTON_BACK)
     check(scene.paused and scene.pause_menu.visible,"Controller Select opens the full pause menu")
     var clock: float = scene.run.clock

@@ -1,0 +1,94 @@
+extends SceneTree
+
+const Procedure = preload("res://scripts/drag_start_procedure.gd")
+var checks := 0
+var failed := false
+
+func check(ok: bool, message: String) -> void:
+    checks += 1
+    if not ok:
+        failed = true
+        push_error(message)
+
+func close(a: float, b: float) -> bool:
+    return absf(a-b) < 0.000001
+
+func _initialize() -> void:
+    var procedure = Procedure.new()
+    check(procedure.phase=="burnout" and procedure.warmup_allowed and close(procedure.remaining,25.0),"A fresh procedure starts with a bounded authorized warming period")
+    check(not procedure.consume_start(),"No player action can request a tree during warmup")
+    check(procedure.snapshot().red_flashing and procedure.snapshot().far_yellow_on and not procedure.snapshot().blue_on,"Warmup announces flashing tree red and far-end yellow, without blue")
+    check(procedure.snapshot().timing_policy=="game_pacing_not_official_duration","Pacing is explicitly separate from an official duration")
+    check(procedure.SOURCE_SHA256=="46b13eb02fac46a50381509129a82a2eaa623754d7d0bd262d35e5c9cc089acc" and procedure.SOURCE_ARTICLES==[10,11,27],"Procedure records the actual supplied sports-text provenance")
+    procedure.advance(24.0,true,true)
+    check(procedure.phase=="burnout" and close(procedure.remaining,1.0),"Being aligned early does not skip warming time")
+    procedure.advance(1.0,true,true)
+    check(procedure.phase=="staging" and not procedure.warmup_allowed and close(procedure.remaining,30.0),"Expiry calls drivers with blue and ends authorization to warm")
+    check(not procedure.snapshot().red_flashing and not procedure.snapshot().far_yellow_on and procedure.snapshot().blue_on,"Calling alignment turns off the warming lights and enables blue")
+    check(procedure.status().contains("AZUL") and not procedure.consume_start(),"Calling to alignment does not immediately start a race")
+    procedure.advance(1.0,true,true)
+    check(procedure.phase=="staging" and close(procedure.ready_elapsed,1.0),"Both stopped and ready drivers must remain ready through a stable hold")
+    procedure.advance(0.25,false,true)
+    check(procedure.phase=="staging" and close(procedure.ready_elapsed,0.0),"Losing either ready signal resets the continuous hold")
+    procedure.advance(1.49,true,true)
+    check(procedure.phase=="staging" and not procedure.consume_start(),"A partial hold cannot arm the tree")
+    procedure.advance(0.02,true,true)
+    check(procedure.phase=="countdown" and close(procedure.ready_elapsed,1.5),"The starter issues the tree automatically after a fresh complete hold")
+    check(procedure.consume_start() and not procedure.consume_start(),"The automatic tree request is delivered exactly once")
+    var before: Dictionary = procedure.snapshot()
+    procedure.advance(1000.0,false,false)
+    check(procedure.snapshot()==before,"The preparation clock cannot advance or rearm the live tree")
+    procedure.reset()
+    check(procedure.phase=="burnout" and close(procedure.elapsed,0.0) and not procedure.consume_start(),"Repeating starts a new complete procedure without an old pending request")
+    procedure.advance(26.5,true,true)
+    check(procedure.phase=="countdown" and close(procedure.elapsed,26.5) and procedure.consume_start(),"A coarse tick carries leftover time without bypassing the ready hold")
+    var fine = Procedure.new()
+    for i in range(265): fine.advance(0.1,true,true)
+    if fine.phase=="staging": fine.advance(0.000000001,true,true)
+    check(fine.phase=="countdown" and close(fine.elapsed,procedure.elapsed),"Fine and coarse steps reach the same timed start")
+    var timeout = Procedure.new(2.0,3.0,1.0)
+    timeout.advance(2.0,false,true)
+    timeout.advance(3.0,false,true)
+    check(timeout.phase=="expired" and timeout.reason.contains("PILOTO") and not timeout.reason.contains("RIVAL"),"A player missing alignment reaches an explicit terminal deadline")
+    check(not timeout.consume_start() and not timeout.warmup_allowed,"An expired presentation cannot create a race request or reopen warming")
+    var rival_missing = Procedure.new(1.0,2.0,1.0)
+    rival_missing.advance(3.0,true,false)
+    check(rival_missing.phase=="expired" and rival_missing.reason.contains("RIVAL"),"A missing rival cannot silently arm one lane")
+    var both_missing = Procedure.new(1.0,2.0,1.0)
+    both_missing.advance(3.0,false,false)
+    check(both_missing.phase=="expired" and both_missing.reason.contains("AMBOS"),"Both absent drivers are identified without inventing a winner")
+    var late_ready = Procedure.new(1.0,2.0,1.0)
+    late_ready.advance(2.5,false,true)
+    late_ready.advance(0.5,true,true)
+    check(late_ready.phase=="expired" and late_ready.reason.contains("NO ESTABLE") and not late_ready.consume_start(),"Readiness too late to complete the safe hold does not defeat the alignment deadline")
+    var exact_deadline = Procedure.new(1.0,2.0,1.0)
+    exact_deadline.advance(2.0,false,true)
+    exact_deadline.advance(1.0,true,true)
+    check(exact_deadline.phase=="countdown" and exact_deadline.consume_start(),"A full hold completed exactly on the deadline is accepted")
+    var invalid = Procedure.new()
+    var unchanged: Dictionary = invalid.snapshot()
+    for delta in [NAN,INF,-INF,0.0,-1.0]:
+        invalid.advance(delta,true,true)
+        check(invalid.snapshot()==unchanged,"Invalid delta cannot mutate the procedure: "+str(delta))
+    for values in [[NAN,30.0,1.5],[25.0,INF,1.5],[25.0,30.0,-1.0],[0.0,30.0,1.5],[25.0,1.0,1.5],[1.0e308,1.0e308,1.5]]:
+        check(not invalid.configure(values[0],values[1],values[2]) and invalid.snapshot()==unchanged,"Invalid timing configuration is rejected atomically: "+str(values))
+    var invalid_new = Procedure.new(0.0,2.0,1.0)
+    invalid_new.advance(100.0,true,true)
+    invalid_new.reset()
+    check(not invalid_new.configuration_valid and invalid_new.phase=="expired" and not invalid_new.consume_start(),"An invalid constructor cannot produce or reset into an active race")
+    var paused = Procedure.new(2.0,3.0,1.0)
+    paused.advance(0.5,false,false)
+    var pause_state: Dictionary = paused.snapshot()
+    # The mode simply does not call advance while paused; wall time is irrelevant.
+    for i in range(100): paused.status()
+    check(paused.snapshot()==pause_state,"No wall-clock timer runs while the caller has paused")
+    paused.advance(1.5,false,false)
+    check(paused.phase=="staging" and close(paused.remaining,3.0),"Resume consumes only unpaused simulation time")
+    paused.advance(1.0,true,true)
+    paused.cancel_start("FALLO DE ALINEACIÓN FÍSICA")
+    check(paused.phase=="expired" and not paused.consume_start() and paused.reason=="FALLO DE ALINEACIÓN FÍSICA","An arming failure cancels a pending request explicitly")
+    paused.reset()
+    check(paused.phase=="burnout" and paused.reason.is_empty(),"A valid next attempt clears an old cancellation")
+    if not failed:
+        print("PASS: %d automatic drag start procedure assertions" % checks)
+    quit(1 if failed else 0)

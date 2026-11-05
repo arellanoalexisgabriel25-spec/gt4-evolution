@@ -2,9 +2,12 @@ extends Control
 
 signal return_requested
 signal camera_requested
+# Kept for callers of the previous HUD; the starter now controls the tree.
+@warning_ignore("unused_signal")
 signal arm_requested
 const Style = preload("res://scripts/racing_theme.gd")
 const Run = preload("res://scripts/drag_run.gd")
+const Tire = preload("res://scripts/tire_model.gd")
 var model_label: Label
 var clock_label: Label
 var reaction_label: Label
@@ -20,18 +23,25 @@ var damage_label: Label
 var opponent_label: Label
 var status_label: Label
 var help_label: Label
+var preparation_label: Label
 var ticket_label: Label
 var ticket_panel: PanelContainer
-var arm_button: Button
+var details_panel: PanelContainer
+var preparation_panel: PanelContainer
+var opponent_panel: PanelContainer
+var actions: HBoxContainer
+var speed_panel: PanelContainer
 var rpm_fraction := 0.0
 var progress := 0.0
 var tree_phase := "preparation"
 var tree_clock := 0.0
 var staged := true
+var show_tree := false
 
 func label(parent: Node, value: String, font_size: int) -> Label:
     var node := Label.new()
     node.text = value
+    node.mouse_filter = Control.MOUSE_FILTER_IGNORE
     node.add_theme_font_override("font",Style.FONT)
     node.add_theme_font_size_override("font_size",font_size)
     node.add_theme_color_override("font_color",Color.WHITE)
@@ -48,166 +58,200 @@ func panel(rect: Rect2, anchor: Vector2 = Vector2.ZERO) -> PanelContainer:
     node.offset_right = rect.end.x
     node.offset_top = rect.position.y
     node.offset_bottom = rect.end.y
-    node.add_theme_stylebox_override("panel",Style.panel(Color(0.025,0.06,0.11,0.90),12))
+    node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    node.add_theme_stylebox_override("panel",Style.panel(Color(0.025,0.06,0.11,0.78),8))
     add_child(node)
+    return node
+
+func column(parent: Node) -> VBoxContainer:
+    var node := VBoxContainer.new()
+    node.add_theme_constant_override("separation",2)
+    parent.add_child(node)
     return node
 
 func _ready() -> void:
     set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     mouse_filter = Control.MOUSE_FILTER_IGNORE
     theme = Style.build()
-    var intro := VBoxContainer.new()
-    panel(Rect2(20,20,410,100)).add_child(intro)
-    label(intro,"¼ DE MILLA / AUTÓDROMO SUR",26)
-    model_label = label(intro,"",19)
-    best_label = label(intro,"MEJOR UNIDAD  —",16)
-    var clock := VBoxContainer.new()
-    panel(Rect2(-140,20,280,100),Vector2(0.5,0)).add_child(clock)
-    clock_label = label(clock,"0.000 s",38)
+    var intro := column(panel(Rect2(18,16,278,62)))
+    model_label = label(intro,"",18)
+    model_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+    best_label = label(intro,"",14)
+    var clock := column(panel(Rect2(-158,16,316,74),Vector2(0.5,0)))
+    status_label = label(clock,"",17)
+    status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    clock_label = label(clock,"0.000 s",28)
     clock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    reaction_label = label(clock,"REACCIÓN  —",19)
+    reaction_label = label(clock,"",14)
     reaction_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    var rival := VBoxContainer.new()
-    panel(Rect2(-490,20,230,105),Vector2(1,0)).add_child(rival)
+    opponent_panel = panel(Rect2(-284,16,266,62),Vector2(1,0))
+    var rival := column(opponent_panel)
     opponent_label = label(rival,"",16)
-    var actions := HBoxContainer.new()
-    actions.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-    actions.offset_left = -250
-    actions.offset_right = -20
-    actions.offset_top = 20
-    actions.offset_bottom = 60
+    opponent_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+    actions = HBoxContainer.new()
+    actions.offset_left = 18
+    actions.offset_right = 244
+    actions.offset_top = 86
+    actions.offset_bottom = 116
     add_child(actions)
     for entry in [["GARAJE",return_requested],["CÁMARA",camera_requested]]:
         var button := Button.new()
         button.text = entry[0]
-        button.custom_minimum_size = Vector2(105,38)
+        button.add_theme_font_size_override("font_size",16)
+        button.custom_minimum_size = Vector2(102,30)
         button.pressed.connect(func(): entry[1].emit())
         actions.add_child(button)
-    arm_button = Button.new()
-    arm_button.text = "INICIAR SEMÁFORO [Enter]"
-    arm_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-    arm_button.offset_left = -250
-    arm_button.offset_right = -20
-    arm_button.offset_top = 77
-    arm_button.offset_bottom = 120
-    arm_button.pressed.connect(func(): arm_requested.emit())
-    add_child(arm_button)
-    var numbers := VBoxContainer.new()
-    numbers.add_theme_constant_override("separation",3)
-    panel(Rect2(-320,-337,300,315),Vector2.ONE).add_child(numbers)
+    speed_panel = panel(Rect2(-250,-158,232,140),Vector2.ONE)
+    var numbers := column(speed_panel)
     var row := HBoxContainer.new()
     numbers.add_child(row)
-    gear_label = label(row,"N",65)
+    gear_label = label(row,"N",50)
     gear_label.add_theme_color_override("font_color",Color("f0d48c"))
-    speed_label = label(row,"0",65)
+    speed_label = label(row,"0",50)
     speed_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     speed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-    rpm_label = label(numbers,"KM/H    900 RPM",20)
+    rpm_label = label(numbers,"KM/H    900 RPM",17)
     rpm_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-    pedals_label = label(numbers,"",17)
-    condition_label = label(numbers,"",16)
-    power_label = label(numbers,"",17)
-    status_label = label(self,"",25)
-    status_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
-    status_label.offset_left = -320
-    status_label.offset_right = 320
-    status_label.offset_top = 140
-    status_label.offset_bottom = 225
-    status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-    status_label.add_theme_color_override("font_shadow_color",Color.BLACK)
-    status_label.add_theme_constant_override("shadow_offset_x",2)
-    status_label.add_theme_constant_override("shadow_offset_y",2)
-    help_label = label(self,"",17)
+    details_panel = panel(Rect2(18,-326,352,206),Vector2(0,1))
+    # The pause menu shades the track; side diagnostics stay above that shade.
+    details_panel.z_index = 2
+    var details := column(details_panel)
+    pedals_label = label(details,"",16)
+    condition_label = label(details,"",15)
+    power_label = label(details,"",15)
+    help_label = label(self,"",15)
+    help_label.z_index = 2
     help_label.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-    help_label.offset_left = 24
-    help_label.offset_right = 910
-    help_label.offset_top = -130
-    help_label.offset_bottom = -10
+    help_label.offset_left = 22
+    help_label.offset_right = 395
+    help_label.offset_top = -112
+    help_label.offset_bottom = -18
+    help_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     help_label.add_theme_color_override("font_shadow_color",Color.BLACK)
     help_label.add_theme_constant_override("shadow_offset_x",1)
     help_label.add_theme_constant_override("shadow_offset_y",1)
-    ticket_panel = panel(Rect2(20,150,405,360))
-    var ticket_body := VBoxContainer.new()
-    ticket_body.add_theme_constant_override("separation",8)
-    ticket_panel.add_child(ticket_body)
-    ticket_label = label(ticket_body,"",24)
+    preparation_panel = panel(Rect2(-260,-112,520,92),Vector2(0.5,1))
+    preparation_label = label(preparation_panel,"",17)
+    preparation_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    preparation_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    ticket_panel = panel(Rect2(18,-390,350,370),Vector2(0,1))
+    var ticket_body := column(ticket_panel)
+    ticket_body.add_theme_constant_override("separation",6)
+    ticket_label = label(ticket_body,"",19)
     ticket_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-    wear_label = label(ticket_body,"",17)
-    damage_label = label(ticket_body,"",16)
+    wear_label = label(ticket_body,"",15)
+    damage_label = label(ticket_body,"",14)
     damage_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     ticket_panel.visible = false
+    details_panel.visible = false
+    help_label.visible = false
 
 func refresh(data: Dictionary) -> void:
     var model = data["model"]
     var run = data["run"]
     var settings = data["settings"]
     var is_duel: bool = data.get("duel",false)
-    model_label.text = data["name"] + (" / FÁBRICA" if is_duel else " / MANUAL")
-    opponent_label.get_parent().get_parent().visible = is_duel
-    if is_duel:
-        var other = data["opponent_run"]
-        var gap := float(data.get("opponent_gap",0.0))
-        opponent_label.text = str(data["opponent_name"]).to_upper()+" · "+("%.1f m ATRÁS" % gap if gap>=0 else "%.1f m DELANTE" % -gap)+"\n"+str(data.get("opponent_model",""))+"\nET %s · RT %s" % [("%.3f" % other.elapsed) if other.launch_time>=0 else "—",("%.3f" % other.reaction) if other.launch_time>=0 else "—"]
+    var paused: bool = data.get("paused",false)
+    var preparing: bool = run.phase=="preparation"
+    var procedure_phase := str(data.get("procedure_phase","staging"))
+    var procedure_remaining := maxf(0.0,float(data.get("procedure_remaining",0.0)))
     var category: Dictionary = data.get("class_data",{})
-    if is_duel and not str(data.get("opponent_model","")).is_empty():
-        opponent_label.tooltip_text = str(data["opponent_model"])
+    var duel_result: Dictionary = data.get("duel_result",{})
+    model_label.text = str(data["name"]) + (" / FÁBRICA" if is_duel else " / MANUAL")
+    model_label.tooltip_text = model_label.text
+    opponent_panel.visible = is_duel
+    if is_duel:
+        var gap := float(data.get("opponent_gap",0.0))
+        opponent_label.text = str(data["opponent_name"]).to_upper()+" · "+("%.1f m ATRÁS" % gap if gap>=0 else "%.1f m DELANTE" % -gap)+"\n"+str(data.get("opponent_model",""))
+        opponent_label.tooltip_text = str(data.get("opponent_model",""))
     clock_label.text = "%.3f s" % run.elapsed
-    reaction_label.text = "REACCIÓN  %s" % ("%.3f s" % run.reaction if run.launch_time >= 0 else "—")
-    gear_label.text = "N" if model.gear == 0 else str(model.gear)
-    speed_label.text = "0" if model.speed_mps<0.15 else "%.0f" % (model.speed_mps*3.6)
+    reaction_label.text = "RT %.3f s" % run.reaction if run.launch_time>=0 else ""
+    reaction_label.visible = not reaction_label.text.is_empty()
+    gear_label.text = "N" if model.gear==0 else ("R" if model.gear<0 else str(model.gear))
+    speed_label.text = "0" if absf(model.speed_mps)<0.15 else "%.0f" % absf(model.speed_mps*3.6)
     rpm_label.text = "KM/H    %.0f RPM" % model.rpm
     pedals_label.text = "ACEL %.0f%%   EMBRAGUE %.0f%%" % [model.throttle*100,(1.0-model.clutch_engagement)*100]
     condition_label.text = "GOMAS DL %.0f°C / TR %.0f°C · MOTOR %.0f°C\n%s · %s · %s" % [model.axles.temperatures.x,model.axles.temperatures.y,model.engine_temperature,model.config.drivetrain,"TCS ACTIVO" if model.tcs_cut<0.95 else ("TCS ON" if model.traction_control else "TCS OFF"),"ABS" if model.axles.abs_active else ("PATINA" if model.wheelspin>0.18 and model.gear>0 else "AGARRE")]
     var acceleration_time := float(data.get("zero_to_hundred",-1.0))
-    power_label.text = "MOTOR %.0f Nm · EJE %.0f kW\n%s · EMBRAGUE PIERDE %.0f kW\n%s · IMPACTOS %d\nMASA %.0f kg · 0–100 %s" % [model.engine_torque_nm,model.wheel_power_kw,"TURBO %.0f%%" % (model.engine.boost*100) if model.config.turbo_fraction>0 else "ASPIRADO",model.clutch_loss_kw,preload("res://scripts/tire_model.gd").title(model.config.tire_compound).to_upper(),int(data.get("impacts",0)),model.config.mass,"%.2f s" % acceleration_time if acceleration_time>=0 else "—"]
+    power_label.text = "MOTOR %.0f Nm · EJE %.0f kW\n%s · EMBRAGUE PIERDE %.0f kW\n%s · IMPACTOS %d\nMASA %.0f kg · 0–100 %s" % [model.engine_torque_nm,model.wheel_power_kw,"TURBO %.0f%%" % (model.engine.boost*100) if model.config.turbo_fraction>0 else "ASPIRADO",model.clutch_loss_kw,Tire.title(model.config.tire_compound).to_upper(),int(data.get("impacts",0)),model.config.mass,"%.2f s" % acceleration_time if acceleration_time>=0 else "—"]
     rpm_fraction = clampf(model.rpm/model.config.redline_rpm,0,1)
     progress = clampf(float(data["position"])/Run.DISTANCE,0,1)
     tree_phase = run.phase
     tree_clock = run.clock
     staged = data["staged"]
-    arm_button.disabled = not data["can_arm"]
-    best_label.text = "MEJOR UNIDAD  " + ("%.3f s" % data["best"]["et"] if not data["best"].is_empty() else "—") + " · SIN PREMIOS"
+    show_tree = run.phase=="countdown" or (run.phase=="running" and run.clock<Run.GREEN_TIME+0.8)
+    best_label.text = "MEJOR " + ("%.3f s" % data["best"]["et"] if not data["best"].is_empty() else "—")
     if is_duel:
-        best_label.text = ("CLASE %s · PISO ET %.2f s" % [category.id,category.minimum_et] if not category.is_empty() else "LIBRE") + " · MEJOR " + ("%.3f s" % data["best"]["et"] if not data["best"].is_empty() else "—")
-    var status := "PREPARACIÓN · Primera, embrague y Enter"
-    if run.phase == "preparation" and model.feedback_time>0.0:
-        status = model.shift_hint()
-    if run.phase == "countdown":
-        status = "ESPERÁ EL VERDE · Regulá las RPM"
-    elif run.phase == "running":
-        status = "¡VERDE! · Soltá el embrague" if run.launch_time < 0 else model.shift_hint()
-    elif run.phase == "finished":
-        status = "ESPERANDO LA LLEGADA DEL RIVAL" if is_duel and data.get("duel_result",{}).is_empty() else "PASADA VÁLIDA · Frenando"
-    elif run.phase == "invalid":
+        best_label.text = ("CLASE %s · PISO %.2f s" % [category.id,category.minimum_et] if not category.is_empty() else "LIBRE") + " · " + best_label.text
+    var status := ""
+    if preparing:
+        var title: String = {"burnout":"CALENTAMIENTO", "call":"LLAMADO A LARGADA", "staging":"LLAMADO · ALINEACIÓN", "ready":"LISTOS", "timeout":"FUERA DE LLAMADO", "expired":"FUERA DE LLAMADO"}.get(procedure_phase,"PRELARGADA")
+        status = str(data.get("procedure_message",title))
+        if status.is_empty():
+            status = title
+        clock_label.text = "%d s" % int(ceil(procedure_remaining)) if procedure_remaining>0.0 else "ESPERÁ LA INDICACIÓN"
+        if model.feedback_time>0.0:
+            status = model.shift_hint()
+        var clutch_key: String = settings.key_label("clutch")
+        var up_key: String = settings.key_label("shift_up")
+        var handbrake_key: String = settings.key_label("handbrake")
+        var stop_keys := clutch_key+" + "+str(settings.key_label("brake"))
+        var guide := "Asistencia de alineación y sostén · Primera con %s+%s.\nMantené %s embrague: el largador inicia automáticamente." % [clutch_key,up_key,clutch_key]
+        if procedure_phase=="burnout":
+            var technique := "Ráfagas %s + %s/L3 (FWD)" % [settings.key_label("accelerate"),handbrake_key] if model.config.drivetrain=="FWD" else "Ráfagas de acelerador con freno suave"
+            guide = "%s+%s: primera · %s.\nPuede avanzar: zona 2,5–35 m · Para parar: %s." % [clutch_key,up_key,technique,stop_keys]
+        elif procedure_phase in ["expired","timeout"]:
+            guide = "Llamado vencido · %s: otra preparación.\nEl uso y el desgaste se conservan." % settings.key_label("recover")
+        # The starter's status belongs above; it must never replace the guide.
+        preparation_label.text = guide
+        preparation_label.text += "\nGOMAS DL %.0f°C · TR %.0f°C" % [model.axles.temperatures.x,model.axles.temperatures.y]
+        if bool(data.get("procedure_ready",false)):
+            reaction_label.text = "ALINEADO · MANTENÉ EL EMBRAGUE"
+            reaction_label.visible = true
+    elif run.phase=="countdown":
+        status = "ESPERÁ EL VERDE"
+        clock_label.text = "LARGADA"
+    elif run.phase=="running":
+        if run.launch_time<0.0:
+            status = "¡VERDE!"
+        elif model.feedback_time>0.0 or model.limiter or not model.engine_running:
+            status = model.shift_hint()
+    elif run.phase=="finished":
+        status = "ESPERANDO AL RIVAL" if is_duel and duel_result.is_empty() else "PASADA VÁLIDA"
+    elif run.phase=="invalid":
         status = run.reason
-    if not str(data["message"]).is_empty():
+    if not str(data.get("message","")).is_empty():
         status = str(data["message"])
-    if data["paused"]:
-        status = "PAUSA · Piloto y cronómetro detenidos"
+    if paused:
+        status = "PAUSA · CRONÓMETRO DETENIDO"
     status_label.text = status
-    ticket_panel.visible = run.phase in ["finished","invalid"]
-    if run.phase == "finished":
+    status_label.visible = not status.is_empty()
+    details_panel.visible = paused
+    help_label.visible = paused
+    actions.visible = preparing or paused or run.phase in ["finished","invalid"]
+    preparation_panel.visible = preparing and not paused
+    # A finished player lane must not cover the view while the rival is racing.
+    ticket_panel.visible = not paused and ((not is_duel and run.phase in ["finished","invalid"]) or (is_duel and not duel_result.is_empty()))
+    if run.phase=="finished":
         var result: Dictionary = run.report()
-        ticket_label.text = "TICKET / 402,336 METROS\nET                 %.3f s\nREACCIÓN       %+.3f s\nTOTAL             %.3f s\n60 PIES           %.3f s\n1/8 MILLA       %.3f s\nTRAMPA          %.1f km/h\n%s" % [result.et,result.reaction,result.total,result.sixty_ft,result.eighth,result.trap_kmh,"MEJOR MARCA PERSONAL" if data["personal_best"] else "R: OTRA PASADA"]
-    elif run.phase == "invalid":
+        ticket_label.text = "TICKET / 402,336 METROS\nET                 %.3f s\nREACCIÓN       %+.3f s\nTOTAL             %.3f s\n60 PIES           %.3f s\n1/8 MILLA       %.3f s\nTRAMPA          %.1f km/h\n%s" % [result.et,result.reaction,result.total,result.sixty_ft,result.eighth,result.trap_kmh,"MEJOR MARCA PERSONAL" if data.get("personal_best",false) else "R: OTRA PASADA"]
+    elif run.phase=="invalid":
         ticket_label.text = "PASADA INVÁLIDA\n\n%s\n\nNo se registra una marca.\nR: volver a preparar\nEl uso mecánico se conserva." % run.reason
-    var duel_result: Dictionary = data.get("duel_result",{})
     if is_duel and not duel_result.is_empty():
         var heading := "VICTORIA" if duel_result["winner"]=="player" else ("DERROTA" if duel_result["winner"]=="rival" else ("EMPATE" if duel_result["outcome"]=="tie" else "SIN GANADOR"))
-        status_label.text = heading + " · " + str(duel_result["reason"])
-        ticket_panel.visible = true
+        status_label.text = "PAUSA · "+heading if paused else heading
+        status_label.visible = true
         ticket_label.text = heading+" / DUELO DE FÁBRICA\n"+_lane_result("VOS",duel_result["entries"]["player"])+"\n"+_lane_result(str(data["opponent_name"]),duel_result["entries"]["rival"])+"\n"+("CLASE %s · PISO ET %.2f s\n" % [category.id,category.minimum_et] if not category.is_empty() else "")+("EXCEPCIÓN ART. 12 / FALSO INDIVIDUAL\n" if duel_result.get("exception","")=="art12_single_false_start" else "")+"Sin inscripción ni premios"
-        if data["paused"]: status_label.text = "PAUSA · "+heading
     var start: Dictionary = data["wear_start"]
     wear_label.text = "DESGASTE ADICIONAL / ESTA PASADA\nMotor %.3f · Caja %.3f · Gomas %.3f" % [float(model.wear.motor)-float(start.get("motor",0.0)),float(model.wear.transmision)-float(start.get("transmision",0.0)),float(model.wear.neumaticos)-float(start.get("neumaticos",0.0))]
     var damage: Dictionary = data.get("damage",{})
     damage_label.text = "DAÑOS POR IMPACTO / SESIÓN\nMotor −%.1f · Chasis −%.1f · Suspensión −%.1f" % [float(damage.get("motor",0.0)),float(damage.get("chasis",0.0)),float(damage.get("suspension",0.0))] if not damage.is_empty() else ""
+    damage_label.visible = not damage_label.text.is_empty()
     var pad_clutch := "LT/LB embrague · B frena" if settings.analog_clutch else "LB embrague · LT/B frena"
-    help_label.text = "%s acelerar · %s/%s frenar · %s embrague · %s subir / %s bajar\nEnter: semáforo · %s repetir · %s/Select pausa · Esc: garaje\nTab/RB: cámara · Shift/R3: atrás · A sube / Y baja · %s" % [settings.key_label("accelerate"),settings.key_label("reverse"),settings.key_label("brake"),settings.key_label("clutch"),settings.key_label("shift_up"),settings.key_label("shift_down"),settings.key_label("recover"),settings.key_label("pause"),pad_clutch]
+    help_label.text = "%s acelerar · %s/%s frenar · %s embrague\n%s subir / %s bajar · %s repetir\n%s/Select pausa · Esc garaje · Tab/RB cámara\nMando: A sube / Y baja · %s\n%s/L3: freno de mano trasero" % [settings.key_label("accelerate"),settings.key_label("reverse"),settings.key_label("brake"),settings.key_label("clutch"),settings.key_label("shift_up"),settings.key_label("shift_down"),settings.key_label("recover"),settings.key_label("pause"),pad_clutch,settings.key_label("handbrake")]
     var ground: Dictionary = data.get("ground",{})
     if not ground.is_empty():
-        help_label.text += "\n%s · APOYO %d/4 RUEDAS" % [ground.label,int(ground.wheels_on_ground)]
+        power_label.text += "\n%s · APOYO %d/4 RUEDAS" % [ground.label,int(ground.wheels_on_ground)]
     queue_redraw()
 
 func _lane_result(name: String, entry: Dictionary) -> String:
@@ -218,17 +262,16 @@ func _lane_result(name: String, entry: Dictionary) -> String:
 
 func _draw() -> void:
     for i in range(24):
-        var color := Color("728495")
-        if float(i)/24.0 < rpm_fraction:
+        var color := Color("536473")
+        if float(i)/24.0<rpm_fraction:
             color = Color("df3445") if i>=21 else Color("f2d78e")
-        draw_rect(Rect2(size.x-320+i*12.5,size.y-349,10,7),color)
-    var track := Rect2(size.x*0.5-190,size.y-32,380,5)
-    draw_rect(track,Color(0.1,0.15,0.2,0.8))
-    draw_rect(Rect2(track.position,Vector2(track.size.x*progress,5)),Color("e2ca83"))
-    if tree_phase in ["preparation","countdown","running"]:
-        draw_rect(Rect2(24,155,62,215),Color(0.025,0.06,0.11,0.9))
-        draw_circle(Vector2(55,174),6,Color("e6f5ff") if staged else Color("3a4b58"))
-        for i in range(5):
-            var on := (tree_phase == "countdown" and i < 3 and tree_clock>=0.5+float(i)*0.5) or (tree_phase=="running" and i==3)
-            var color := Color("f1bb55") if i<3 else (Color("60d58a") if i==3 else Color("d94252"))
-            draw_circle(Vector2(55,207+i*34),12,color if on else Color("32434f"))
+        draw_rect(Rect2(size.x-240+i*8.8,size.y-33,7,4),color)
+    if tree_phase=="running":
+        var track := Rect2(size.x*0.5-105,size.y-18,210,2)
+        draw_rect(track,Color(0.1,0.15,0.2,0.7))
+        draw_rect(Rect2(track.position,Vector2(track.size.x*progress,2)),Color("e2ca83"))
+    if show_tree:
+        for i in range(4):
+            var on := (tree_phase=="countdown" and i<3 and tree_clock>=0.5+float(i)*0.5) or (tree_phase=="running" and i==3)
+            var color := Color("f1bb55") if i<3 else Color("60d58a")
+            draw_circle(Vector2(size.x*0.5-48+i*32,108),9,color if on else Color("32434f"))

@@ -19,3 +19,25 @@ func controls(model, clock: float, delta: float) -> Dictionary:
         shift_hold = 0.22
         return {"throttle":0.0,"clutch":1.0,"brake":0.0,"steer":0.0}
     return {"throttle":0.7 if model.speed_mps<6.0 else 1.0,"clutch":0.0,"brake":0.0,"steer":0.0}
+
+# Exercise the real preparation/alignment/ready-hold path with short fixture
+# timings. Never invoke the player's former manual tree command or move cars.
+# Production defaults are covered separately by the procedure's own tests.
+static func await_automatic_start(scene) -> bool:
+    var was_active: bool = scene.is_physics_processing()
+    # A retry may already have auto-started if a caller advanced it first.
+    # Never reset a live procedure independently of its timing run.
+    if scene.run.phase != "preparation" or scene.paused or not scene.enabled:
+        return false
+    if not scene.procedure.configure(0.05,5.0,0.05):
+        return false
+    scene.set_physics_process(true)
+    for frame in range(600):
+        await scene.get_tree().physics_frame
+        if scene.run.phase == "countdown":
+            scene.set_physics_process(was_active)
+            return true
+        if scene.run.phase == "invalid" or scene.procedure.phase == "expired":
+            break
+    scene.set_physics_process(was_active)
+    return false

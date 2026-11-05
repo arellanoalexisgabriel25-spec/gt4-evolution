@@ -27,6 +27,13 @@ func cycle_mode() -> void:
     mode = (mode + 1) % MODES.size()
     snap()
 
+# Frame both lanes at staging, then smoothly prioritize the driven car as
+# the gap opens. A distant opponent must not turn chase into a TV camera.
+func _peer_framing() -> float:
+    if mode!=0 or look_back or not is_instance_valid(race_peer):
+        return 0.0
+    return 1.0-smoothstep(2.0,12.0,absf(race_peer.global_position.z-target.global_position.z))
+
 func _offset(speed: float) -> Vector3:
     var distance := base_distance
     var height := base_height
@@ -43,10 +50,11 @@ func _offset(speed: float) -> Vector3:
         distance += clampf(speed,0.0,45.0) * 0.035
         height += clampf(speed,0.0,45.0) * 0.008
     var lateral := 0.0
-    if mode==0 and is_instance_valid(race_peer):
-        distance += 2.5+clampf(absf(race_peer.global_position.z-target.global_position.z),0,20)*0.85
-        height += 0.6
-        lateral = (race_peer.global_position.x-target.global_position.x)*0.5
+    var framing := _peer_framing()
+    if framing>0.0:
+        distance += 2.5*framing
+        height += 0.6*framing
+        lateral = clampf(race_peer.global_position.x-target.global_position.x,-8.0,8.0)*0.5*framing
     return Vector3(sin(_heading + _orbit),0,cos(_heading + _orbit)) * distance + Vector3.UP * (height + look_input.y * 0.7)+Vector3.RIGHT*lateral
 
 func snap() -> void:
@@ -70,9 +78,10 @@ func _aim(speed: float) -> void:
     var height := 0.65 if mode >= 2 else 0.7
     var ahead := 20.0 if mode >= 2 else 2.5 + minf(speed,45.0) * 0.06
     var point := target.global_position
-    if mode==0 and is_instance_valid(race_peer):
-        point.x = (point.x+race_peer.global_position.x)*0.5
-        point.z += clampf(race_peer.global_position.z-point.z,-20,20)*0.25
+    var framing := _peer_framing()
+    if framing>0.0:
+        point.x += clampf(race_peer.global_position.x-point.x,-8.0,8.0)*0.5*framing
+        point.z += clampf(race_peer.global_position.z-point.z,-6.0,6.0)*0.15*framing
     look_at(point + Vector3.UP * height - back * ahead,Vector3.UP)
 
 func _process(delta: float) -> void:

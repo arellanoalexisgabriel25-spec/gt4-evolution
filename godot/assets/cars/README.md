@@ -1,5 +1,67 @@
 # Modelos aportados para GT4 Evolution
 
+## Optimización 0.20 / estado actual de los recursos
+
+Los seis modelos incorporados antes de 0.19 utilizan ahora texturas externas de
+**1024×1024**, con mipmaps y compresión VRAM, igual que los siete modelos nuevos.
+Se reduce el atlas de los cinco escaneos y los tres mapas PBR del Gol desde 2048²
+con Lanczos. El mapa normal del Gol se renormaliza después del filtrado; se conservan
+sus materiales, mapa de color y mapa de metallic/roughness independientes.
+**Las imágenes derivadas no son byteidénticas a las aportadas**.
+
+Esta optimización no vuelve a simplificar la geometría: posiciones, normales,
+UV, índices, nodos y definiciones de material conservan sus datos. Los cinco
+escaneos mantienen sus ~80.000 triángulos y el Gol sus 40.000. Los contornos y
+pivotes visuales se siguen calculando sobre las mismas mallas; ningún dato
+mecánico cambia por reducir las texturas.
+
+El respaldo exacto de los recursos jugables de 0.19 permanece separado en
+`/workspace/references/user-changes-0.20/assets-before/`. Los originales completos
+de los adjuntos siguen en sus directorios históricos de referencias. El juego
+distribuye únicamente los derivados y sus PNG necesarias, sin duplicar originales.
+Las secciones de versiones anteriores que siguen abajo registran el estado de
+cada entrega histórica, no el formato actual de 0.20.
+
+| Recurso | GLB de 0.19, bytes | GLB + PNG de 0.20, bytes | Triángulos conservados |
+| --- | ---: | ---: | ---: |
+| `fiat_147` | 6,805,924 | 4,163,074 | 79,998 |
+| `uno_fire` | 6,958,084 | 4,302,312 | 79,998 |
+| `gol_power` | 12,272,296 | 4,517,193 | 40,000 |
+| `fiat_128` | 5,866,600 | 3,309,079 | 79,998 |
+| `fiat_133` | 7,282,936 | 4,188,108 | 79,998 |
+| `fiat_128_standard` | 6,473,388 | 3,994,014 | 79,996 |
+
+Total GLB + imágenes de esos seis autos: **45.659.228 → 24.473.780 bytes**
+(**46,4% menos**). Recursos importados en el fixture Godot 4.6.3, escenas y
+texturas referenciadas: **52.199.882 → 22.058.753 bytes** (**57,7% menos**).
+Son tamaños de recursos; no se presentan como mediciones de FPS, memoria máxima
+ni tamaño final del ZIP Windows, que se verifica durante el empaquetado.
+
+`tools/optimize_runtime_textures.py` reproduce el proceso desde un manifiesto
+con `model` y `source`, usando Pillow sólo al preparar recursos. Reconstruye los
+buffer views y comprueba SHA256 de **todos** los bloques no imagen; rechaza cambios
+de malla/material, salida sobre fuente y texturas con transparencia sin inspección.
+La importación usa referencias PNG explícitas, incluidas en fuente y exportación.
+
+```sh
+python3 tools/optimize_runtime_textures.py --manifest /ruta/texture-sources.json --output /ruta/derivados
+```
+
+Verificación: importación limpia y suites visuales reales, **26 casos de insignia,
+42 de clásicos y 107 de los modelos 0.19**, todos aprobados en el fixture aislado.
+Se comparan también 18 vistas antes y 18 después con las mismas cámaras,
+incluyendo ruedas giradas; se conservan los detalles horneados e irregularidades
+de las mallas. No se añaden interiores ni deformaciones.
+
+SHA256 de los GLB de 0.20 (los atlas PNG son recursos distintos):
+
+- `fiat_147`: `d72b1ae695d381afc00539dc968594df1c9fbe939021b7d3b5545439287eff05`.
+- `uno_fire`: `5230a94dea6bead4452acb9782c56f2b223abe5b3e9ed5e5bff981fc7aeb6959`.
+- `gol_power`: `8ec3da22c0b1fb2612de3f931f27a3a726fc6a8488144147549fdd535129c248`.
+- `fiat_128`: `32b7bbffa5b67e350396fe3930ad332c642edc34bb36d26d4534eeae85370505`.
+- `fiat_133`: `c1fc423ff585310c92618ae350f8e788eb528c4163b2b37256d2d57ec78ddac0`.
+- `fiat_128_standard`: `be55fe5e0b7393644b6b465efc6e5c7e2f80dd8f8291f2664b9a0565f1464ace`.
+
 ## Gol Power de tres puertas
 
 `gol_power/gol_power.glb` procede de `base_basic_pbr.glb` en el adjunto

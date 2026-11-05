@@ -45,9 +45,8 @@ func run() -> void:
     check(scene.car.powertrain.gear==0 and scene.hud.gear_label.text=="N" and scene.hud.speed_label.text=="0","The staged car starts visibly in neutral at zero speed")
     key(KEY_E,true)
     key(KEY_E,false)
-    check(scene.car.powertrain.gear==0 and scene.car.powertrain.missed_shifts==1,"A real shift key without clutch is rejected and recorded")
-    await physics_frame
-    await physics_frame
+    for i in range(12): await physics_frame
+    check(scene.car.powertrain.gear==0 and scene.car.powertrain.missed_shifts==1,"A real shift key without clutch expires once and records mechanical rejection")
     check(scene.hud.status_label.text.contains("EMBRAGUE") or scene.hud.status_label.text.contains("embrague"),"Rejected first-gear input explains the clutch requirement visibly during staging")
     key(KEY_C,true)
     for i in range(15):
@@ -57,10 +56,11 @@ func run() -> void:
     check(scene.car.powertrain.gear==1,"Clutch plus the physical shift key selects first gear")
     key(KEY_ENTER,true)
     key(KEY_ENTER,false)
-    check(scene.run.phase=="countdown","Enter starts an armed tree with the real staged vehicle")
+    check(scene.run.phase=="preparation" and scene.procedure.phase=="burnout","Enter cannot bypass the starter or the authorized warm-up period")
     var driver = Driver.new()
     scene.input_provider = func() -> Dictionary: return driver.controls(scene.car.powertrain,scene.run.clock,1.0/60.0)
     key(KEY_C,false)
+    check(await Driver.await_automatic_start(scene),"The real staged car starts automatically after the call and continuous readiness")
     scene.paused = true
     var clock: float = scene.run.clock
     var rpm: float = scene.car.powertrain.rpm
@@ -87,7 +87,7 @@ func run() -> void:
     check(scene.car.powertrain.speed_mps<0.5,"Automatic finish braking stops safely within the physical runoff")
     check(session.game.balance==balance,"A completed free run cannot accidentally create a circuit prize or debit")
     scene._recover()
-    check(scene.run.phase=="preparation" and scene.car.powertrain.gear==0,"Recovery creates a new staging attempt in neutral")
+    check(scene.run.phase=="preparation" and scene.car.powertrain.gear==0 and scene.procedure.phase=="burnout","Recovery creates a new staging attempt in neutral")
     var health: Dictionary = session.game.find_car(1).health.duplicate(true)
     var distance: float = scene.garage.settled_distance
     scene._recover()

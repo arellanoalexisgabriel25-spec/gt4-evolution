@@ -63,8 +63,8 @@ func drive_slip(config) -> float:
 # contact is the supported fraction of each axle; no missing load is invented on
 # the other axle. surface_grip is additional per-axle grip (legacy road=false still
 # applies its historical 0.4 multiplier). Bench callers retain full dry contact.
-func step(dt: float, speed: float, drive_torque: float, brake: float, config, tire_health: float, road: bool, contact: Vector2 = Vector2.ONE, surface_grip: Vector2 = Vector2.ONE) -> float:
-    if not is_finite(dt) or dt<=0.0 or not is_finite(speed) or not is_finite(drive_torque) or not is_finite(brake) or not is_finite(tire_health):
+func step(dt: float, speed: float, drive_torque: float, brake: float, config, tire_health: float, road: bool, contact: Vector2 = Vector2.ONE, surface_grip: Vector2 = Vector2.ONE, handbrake: float = 0.0) -> float:
+    if not is_finite(dt) or dt<=0.0 or not is_finite(speed) or not is_finite(drive_torque) or not is_finite(brake) or not is_finite(tire_health) or not is_finite(handbrake):
         return 0.0
     contact = Vector2(clampf(contact.x,0.0,1.0),clampf(contact.y,0.0,1.0)) if contact.is_finite() else Vector2.ZERO
     surface_grip = Vector2(clampf(surface_grip.x,0.0,2.0),clampf(surface_grip.y,0.0,2.0)) if surface_grip.is_finite() else Vector2.ZERO
@@ -75,6 +75,9 @@ func step(dt: float, speed: float, drive_torque: float, brake: float, config, ti
     var drive := Vector2(drive_torque*split,drive_torque*(1.0-split))
     var brake_total: float = clampf(brake,0.0,1.0)*weight*config.wheel_radius*config.brake_capacity*(0.55+0.45*clampf(config.brake_health/100.0,0,1))
     var brakes := Vector2(brake_total*config.brake_front_bias,brake_total*(1.0-config.brake_front_bias))
+    # Mechanical parking brake acts on the rear axle, independently of the
+    # hydraulic pedal and ABS. It adds no engine torque or tire temperature.
+    var rear_parking: float = clampf(handbrake,0.0,1.0)*weight*config.wheel_radius*0.65*(0.55+0.45*clampf(config.brake_health/100.0,0,1))
     slip_power = 0.0
     brake_power = 0.0
     abs_active = false
@@ -96,6 +99,8 @@ func step(dt: float, speed: float, drive_torque: float, brake: float, config, ti
         if normal_loads[index]>0.0 and config.abs_assist and speed>3.0 and slips[index]<-0.16:
             applied_brake *= clampf(1.0+(slips[index]+0.16)*4.0,0.08,1.0)
             abs_active = true
+        if index==1:
+            applied_brake = maxf(applied_brake,rear_parking)
         var spin_before := omega[index]
         var torque: float = drive[index]-forces[index]*config.wheel_radius
         omega[index] = maxf(0,omega[index]+torque*dt/config.wheel_inertia)

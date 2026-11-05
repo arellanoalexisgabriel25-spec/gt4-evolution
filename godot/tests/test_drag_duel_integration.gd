@@ -56,12 +56,11 @@ func run() -> void:
     check(vehicle.upgrades==["ecu","tires"] and vehicle.tire_compound=="slick","Entering series preserves purchased equipment in the garage")
     var driver=Driver.new()
     scene.input_provider=func() -> Dictionary: return driver.controls(scene.car.powertrain,scene.run.clock,1.0/60.0)
-    for i in range(45): await physics_frame
     scene.car.acceleration_clock=5.0
     scene.car.zero_to_hundred=2.0
-    scene._arm()
+    check(await Driver.await_automatic_start(scene),"The starter arms the common tree only after both cars remain ready")
     check(scene.car.acceleration_clock==0.0 and scene.car.zero_to_hundred<0,"Staging movement and waiting cannot contaminate the armed acceleration metric")
-    check(scene.run.phase=="countdown" and scene.opponent_run.phase=="countdown" and scene.duel.started,"One start command arms both independent timing beams on the same tree")
+    check(scene.run.phase=="countdown" and scene.opponent_run.phase=="countdown" and scene.duel.started,"The automatic starter arms both independent timing beams on the same tree")
     scene.paused=true
     var clock: float=scene.run.clock
     var rival_position: Vector3=scene.opponent.position
@@ -90,12 +89,11 @@ func run() -> void:
     check(decoded.career.from_dict(legacy) and decoded.career.stock_drag_records.best(13).is_empty(),"Previous saves without series records remain valid")
     check(session.game.balance==balance and scene.hud.ticket_label.text.contains("TOTAL"),"A free exhibition reports both arrival times without inventing prizes")
     scene._recover()
-    check(scene.duel_result.is_empty() and scene.opponent_run.phase=="preparation" and absf(scene.opponent.position.z)<0.01,"Retry resets both lanes and cannot reuse the previous result")
-    driver.reaction_delay=-1.0
+    check(scene.duel_result.is_empty() and scene.opponent_run.phase=="preparation" and absf(scene.opponent.position.z-scene.car.position.z)<0.01 and scene.procedure.phase=="burnout","Retry resets both lanes and cannot reuse the previous result")
+    driver.reaction_delay=0.12
     driver.shift_hold=0.0
-    driver.controls(scene.car.powertrain,0,1.0/60.0)
-    for i in range(45): await physics_frame
-    scene._arm()
+    check(await Driver.await_automatic_start(scene),"Retry reaches the automatic tree without any driver start command")
+    driver.reaction_delay=-1.0
     for i in range(8000):
         await physics_frame
         if scene.duel.finished: break

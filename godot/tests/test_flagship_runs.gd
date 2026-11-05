@@ -34,8 +34,7 @@ func run() -> void:
         check(is_equal_approx(collision.shape.size.z,float(Catalog.DATA[car.model].size.z)),"The physical body uses the selected car's length")
         var driver = Driver.new()
         scene.input_provider = func() -> Dictionary: return driver.controls(scene.car.powertrain,scene.run.clock,1.0/60.0)
-        for i in range(45): await physics_frame
-        scene._arm()
+        check(await Driver.await_automatic_start(scene),"The starter automatically calls and starts the aligned physical cars")
         check(scene.run.phase=="countdown","The flagship stages through the real clutch and start tree")
         for i in range(5000):
             await physics_frame

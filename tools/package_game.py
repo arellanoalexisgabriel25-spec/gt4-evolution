@@ -5,15 +5,15 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.19"
-README = """GT4 EVOLUTION — PROTOTIPO 0.19 / FLOTA FIAT Y DUELOS ENTRE MODELOS
+VERSION = "0.20"
+README = """GT4 EVOLUTION — PROTOTIPO 0.20 / CALENTAMIENTO Y LARGADA AUTOMÁTICA
 
 WINDOWS: extraé TODO el ZIP y abrí GT4Evolution.exe o JUGAR.cmd.
 Es un juego exportado independiente: no necesita Godot instalado ni importar el
 proyecto al iniciar. Conservá GT4Evolution.pck junto al ejecutable.
 El ZIP Proyecto contiene las fuentes: abrí juego/project.godot con Godot 4.6.3.
 
-Se suman 125, Duna, Cronos, Siena, Punto, Regatta y 500 Sport a los seis modelos
+Se incluyen 125, Duna, Cronos, Siena, Punto, Regatta y 500 Sport a los seis modelos
 anteriores. Inicio permite elegirlos y el garaje permite seleccionar el auto rival.
 El 500 usa la ficha Sport: 100 CV, 13,1 kgfm y seis marchas; su carrocería aportada
 tiene estética Abarth provisional. No se le asignó potencia de Abarth.
@@ -37,13 +37,26 @@ Exhibición sin inscripción, premios ni campeonato. FÁBRICA excluye preparacio
 y conserva la salud de tu unidad. La categoría oficial Serie tiene otro alcance.
 ¼ DE MILLA / MANUAL mantiene la práctica individual con mejoras anteriores.
 
+PREPARACIÓN: hay 25 s de calentamiento autorizado delante de la línea y luego
+30 s para prepararse. Son duraciones del juego, no tiempos oficiales publicados.
+Rojo intermitente/amarillas fondo: calentar; azul: fin y llamado a alinear (art.11).
+El asistente frena, alinea y sostiene sólo antes de cronometrar; no hay reversa manual
+ni simulación del regreso. Se conservan calor, desgaste y uso. Primera+embrague
+sostenidos y ambos autos alineados activan el árbol automáticamente. Enter no inicia.
+
 CONTROLES: C embrague, E sube marcha, Q baja, W acelera, S/Espacio frena.
-Primera: mantené C y tocá E. Enter arma el semáforo; esperá verde y soltá C.
-Para cambiar, soltá W, pisá C, tocá E, soltá C y acelerá. R repite conservando uso,
-desgaste y temperatura. P pausa ambos autos; Esc vuelve al garaje. Tab cambia cámara.
-Mando: RT acelera, LT/B frena, LB embrague, A sube, Y baja, X repite, RB cámara.
-Select abre pausa; embrague analógico LT/L2 opcional. AJUSTES permite reasignar teclas.
-Menús: stick/cruceta navega, A confirma, B vuelve, LB/RB cambia pestaña.
+Para calentar un FWD: C+E primera, prepará RPM con C; soltá C en ráfagas W+H.
+H es freno de mano trasero: el auto puede avanzar; usá C+Espacio para detenerlo.
+Zona de calentamiento 2,5–35 m delante de la línea; excederla cancela esta preparación.
+No hace falta calentar todo el tiempo: demasiado calor y patinamiento desgastan.
+Al llamado, mantené primera+C y prepará RPM; esperá verde y soltá C para largar.
+Para cambiar, C+E o C+Q; podés mantener W, con limitador y desgaste normales.
+R repite conservando uso/calor; P pausa, Esc garaje, Tab cámara. La telemetría
+completa y la ayuda aparecen al pausar; durante la pasada queda instrumental compacto.
+Mando: RT acelera, LT/B frena, LB embrague, A sube, Y baja, L3 freno de mano,
+X repite, RB cámara. Inicio/Select pausa; embrague analógico LT/L2 opcional.
+AJUSTES reasigna teclas, también H. Menús: stick/cruceta navega, A confirma,
+B vuelve, LB/RB cambia pestaña.
 
 TALLER repara y cambia neumáticos. Recuperar no repara. Los importes están en
 pesos argentinos (ARS); cada unidad contable histórica representa $ 1.000 ARS.
@@ -59,7 +72,7 @@ Los modos anteriores siguen disponibles; los eventos simulados se identifican.
 Música: Lezcano Alan — PERRA #Ritmomanijero, Prod Sketchy, aportada con autorización
 de redistribución; volumen en AJUSTES. No está cubierta por MIT.
 
-Ver juego/RELEASE-0.19.md en el ZIP Proyecto y documentacion/ en Windows para el
+Ver juego/RELEASE-0.20.md en el ZIP Proyecto y documentacion/ en Windows para el
 alcance exacto y resultados de validación. El entorno valida Linux y el mismo PCK;
 Windows y mando físico requieren prueba en esos equipos. Si no inicia, ejecutá
 DIAGNOSTICO.cmd y compartí juego.log. Licencias incluidas. No se distribuyen
@@ -98,7 +111,6 @@ def write_project(archive):
     for path in project_files(ROOT / "godot"):
         archive.write(path, Path("juego") / path.relative_to(ROOT / "godot"))
     write_common(archive)
-    archive.write(ROOT / "README.md", "README-proyecto.md")
 
 
 def verified_templates(archive_path, checksums, output):

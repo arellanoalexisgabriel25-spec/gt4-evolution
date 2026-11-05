@@ -5,6 +5,9 @@ const Style = preload("res://scripts/racing_theme.gd")
 const Surfaces = preload("res://scripts/track_surface.gd")
 const Run = preload("res://scripts/drag_run.gd")
 const LANE_X := -3.75
+var blue_lamp: StandardMaterial3D
+var far_yellow: Array[StandardMaterial3D] = []
+var marshal_sign: Label3D
 var lamps: Array[StandardMaterial3D] = []
 var stage_lamps: Array[StandardMaterial3D] = []
 var dual_lanes := false
@@ -95,6 +98,16 @@ func _ready() -> void:
     _grandstand()
     _paddock()
     _tree()
+    # Authorized warm-up lies AHEAD of the line (sports text art.11).
+    # Paint only: it changes neither the road grip nor the stock engine's power.
+    for lane in [LANE_X,-LANE_X] if dual_lanes else [LANE_X]:
+        for distance in [2.5,35.0]:
+            box(Vector3(6.2,0.008,0.12),Vector3(lane,0.055,-distance),Color("c3a65a"))
+    blue_lamp = _lamp(Vector3(0,4.1,-6.75),Color("3595ff"))
+    for side in [-1,1]:
+        far_yellow.append(_lamp(Vector3(side*7.5,3.0,-410),Color("ecb543")))
+        box(Vector3(0.08,3.0,0.08),Vector3(side*7.5,1.5,-410),Color("63717a"))
+    marshal_sign = sign_text("CALENTAMIENTO",Vector3(0,4.6,-6.75),55,0.003)
     # Long braking zone beyond the finish, ending in a real collision barrier.
     box(Vector3(19,1.2,0.5),Vector3(0,0.6,-710),Color("ba433c"),true)
     sign_text("FRENAR / FIN DE PISTA",Vector3(0,2.3,-706),110,0.007)
@@ -165,7 +178,7 @@ func _tree() -> void:
         if dual_lanes:
             opponent_lamps.append(_lamp(Vector3(0.22,2.75-float(i)*0.43,-6.75),color))
 
-func update_tree(run, staged: bool, other = null, other_staged: bool = false) -> void:
+func update_tree(run, staged: bool, other = null, other_staged: bool = false, procedure: Dictionary = {}) -> void:
     for mat in stage_lamps:
         mat.emission_energy_multiplier = 1.3 if staged else 0.03
     for i in range(lamps.size()):
@@ -177,3 +190,23 @@ func update_tree(run, staged: bool, other = null, other_staged: bool = false) ->
         for i in range(opponent_lamps.size()):
             var active: bool = (other.phase=="countdown" and i<3 and other.clock>=0.5+float(i)*0.5) or (i==3 and other.phase in ["running","finished"]) or (i==4 and other.phase=="invalid")
             opponent_lamps[i].emission_energy_multiplier = 1.5 if active else 0.03
+
+    if not procedure.is_empty():
+        var warming: bool = bool(procedure.get("red_flashing",false))
+        var flash: bool = fmod(float(procedure.get("elapsed",0.0)),0.6)<0.3
+        if warming:
+            for index in range(lamps.size()):
+                lamps[index].emission_energy_multiplier = 1.5 if index==4 and flash else 0.03
+            for index in range(opponent_lamps.size()):
+                opponent_lamps[index].emission_energy_multiplier = 1.5 if index==4 and flash else 0.03
+        if blue_lamp!=null:
+            blue_lamp.emission_energy_multiplier = 1.8 if procedure.get("blue_on",false) else 0.03
+        for mat in far_yellow:
+            mat.emission_energy_multiplier = 1.5 if procedure.get("far_yellow_on",false) else 0.03
+        if marshal_sign!=null:
+            marshal_sign.text = "CALENTAMIENTO" if warming else ("ALINEAR · LUZ AZUL" if procedure.get("blue_on",false) else "ATENCIÓN AL SEMÁFORO")
+        if procedure.get("phase")=="expired":
+            lamps[4].emission_energy_multiplier = 1.5
+            for mat in opponent_lamps:
+                mat.emission_energy_multiplier = 0.03
+            marshal_sign.text = "LARGADA CANCELADA"

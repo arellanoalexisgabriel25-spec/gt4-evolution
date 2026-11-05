@@ -1,9 +1,9 @@
 extends RefCounted
 
 const DEFAULT_KEYS := {"accelerate":KEY_W, "reverse":KEY_S, "left":KEY_A, "right":KEY_D, "brake":KEY_SPACE, "recover":KEY_R, "pause":KEY_P}
-const DRAG_KEYS := {"shift_up":KEY_E,"shift_down":KEY_Q,"clutch":KEY_C}
+const DRAG_KEYS := {"shift_up":KEY_E,"shift_down":KEY_Q,"clutch":KEY_C,"handbrake":KEY_H}
 const ARROWS := {"accelerate":KEY_UP, "reverse":KEY_DOWN, "left":KEY_LEFT, "right":KEY_RIGHT}
-const TITLES := {"accelerate":"Acelerar", "reverse":"Frenar / reversa", "left":"Girar a la izquierda", "right":"Girar a la derecha", "brake":"Freno", "recover":"Recuperar vehículo", "pause":"Pausar","shift_up":"Subir marcha (¼ milla)","shift_down":"Bajar marcha (¼ milla)","clutch":"Embrague (¼ milla)"}
+const TITLES := {"accelerate":"Acelerar", "reverse":"Frenar / reversa", "left":"Girar a la izquierda", "right":"Girar a la derecha", "brake":"Freno", "recover":"Recuperar vehículo", "pause":"Pausar","shift_up":"Subir marcha (¼ milla)","shift_down":"Bajar marcha (¼ milla)","clutch":"Embrague (¼ milla)","handbrake":"Freno de mano (¼ milla)"}
 const FILE_PATH := "user://controls_v1.json"
 const Controller = preload("res://scripts/controller_state.gd")
 var controller = Controller.new()
@@ -80,6 +80,7 @@ func read_controls(manual_mode: bool = false) -> Dictionary:
     var throttle := Input.get_action_strength(action("accelerate")) - Input.get_action_strength(action("reverse"))
     var steer := (Input.get_action_strength(action("right")) - Input.get_action_strength(action("left"))) * keyboard_steering
     var brake := Input.get_action_strength(action("brake"))
+    var handbrake := Input.get_action_strength(action("handbrake")) if manual_mode else 0.0
     if controller.selected()>=0:
         throttle += maxf(0,axis(controller.axis_value(JOY_AXIS_TRIGGER_RIGHT),trigger_deadzone))-(1.0 if controller.pressed(JOY_BUTTON_B) and not manual_mode else 0.0)
         steer += axis(controller.axis_value(JOY_AXIS_LEFT_X),deadzone)+(1.0 if controller.pressed(JOY_BUTTON_DPAD_RIGHT) else 0.0)-(1.0 if controller.pressed(JOY_BUTTON_DPAD_LEFT) else 0.0)
@@ -87,7 +88,9 @@ func read_controls(manual_mode: bool = false) -> Dictionary:
             brake = maxf(brake,maxf(0,axis(controller.axis_value(JOY_AXIS_TRIGGER_LEFT),trigger_deadzone)))
         if manual_mode and controller.pressed(JOY_BUTTON_B):
             brake = 1.0
-    return {"throttle":clampf(throttle, -1.0, 1.0), "steer":clampf(steer, -1.0, 1.0), "brake":brake}
+        if manual_mode and controller.pressed(JOY_BUTTON_LEFT_STICK):
+            handbrake = 1.0
+    return {"throttle":clampf(throttle, -1.0, 1.0), "steer":clampf(steer, -1.0, 1.0), "brake":brake,"handbrake":handbrake}
 
 func all_keys() -> Dictionary:
     var bindings := keys.duplicate()
@@ -151,9 +154,14 @@ func from_dict(data: Dictionary) -> bool:
         seen[int(code)] = true
     var drag := {}
     if data.has("drag_keys"):
-        if typeof(data["drag_keys"]) != TYPE_DICTIONARY or data["drag_keys"].size() != DRAG_KEYS.size():
+        if typeof(data["drag_keys"]) != TYPE_DICTIONARY or data["drag_keys"].size() not in [3,DRAG_KEYS.size()]:
             return false
+        for name in data["drag_keys"]:
+            if not DRAG_KEYS.has(name):
+                return false
         for name in DRAG_KEYS:
+            if name=="handbrake" and not data["drag_keys"].has(name):
+                continue
             var code = data["drag_keys"].get(name)
             if typeof(code) not in [TYPE_INT,TYPE_FLOAT] or not is_finite(float(code)) or float(code)!=floorf(float(code)) or not valid_key(int(code)) or seen.has(int(code)):
                 return false
@@ -168,6 +176,13 @@ func from_dict(data: Dictionary) -> bool:
                     drag[name] = code
                     seen[code] = true
                     break
+    if not drag.has("handbrake"):
+        # Existing v1 files contain three manual actions. Add only the optional
+        # handbrake, retaining every old key even when H was already assigned.
+        for code in [KEY_H,KEY_F,KEY_G,KEY_J,KEY_K,KEY_L,KEY_Z,KEY_V,KEY_B,KEY_N,KEY_M]:
+            if not seen.has(code):
+                drag["handbrake"] = code
+                break
     keys = candidate
     drag_keys = drag
     deadzone = float(zone)

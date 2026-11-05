@@ -1,7 +1,8 @@
 extends SceneTree
 
 const DragDriver = preload("res://tests/drag_test_driver.gd")
-var output := "/workspace/artifacts/presentation-0.19"
+var output := "/workspace/artifacts/presentation-0.20"
+var capture_heat_done := false
 
 func _initialize() -> void:
     var args := OS.get_cmdline_user_args()
@@ -28,12 +29,22 @@ func settle_drag(drag) -> void:
     drag.set_physics_process(active)
 
 func arm_drag(drag) -> bool:
-    drag._arm()
-    if drag.run.phase!="countdown":
+    var armed: bool = await DragDriver.await_automatic_start(drag)
+    if not armed or drag.run.phase!="countdown":
+        print("Capture start failure: run=",drag.run.phase," / procedure=",drag.procedure.phase," / clock=",drag.run.clock)
         push_error("Cannot capture an unstaged race: "+str(drag.message))
         quit(1)
         return false
     return true
+
+func burnout_controls(drag) -> Dictionary:
+    var model = drag.car.powertrain
+    if drag.procedure.phase != "burnout" or capture_heat_done:
+        return {"throttle":0.0,"clutch":1.0,"brake":1.0,"handbrake":0.0,"steer":0.0}
+    if model.gear == 0 and model.shift_timer <= 0.0:
+        model.shift(1,1.0)
+    var preloading: bool = drag.procedure.phase_elapsed<1.5
+    return {"throttle":0.75 if preloading else 1.0,"clutch":1.0 if preloading else 0.0,"brake":0.0,"handbrake":1.0,"steer":0.0}
 
 func run() -> void:
     if DisplayServer.get_name() == "headless":
@@ -111,7 +122,7 @@ func run() -> void:
     var driver = DragDriver.new()
     drag.input_provider = func() -> Dictionary: return driver.controls(drag.car.powertrain,drag.run.clock,drag.get_physics_process_delta_time())
     driver.controls(drag.car.powertrain,0,1.0/60.0)
-    if not arm_drag(drag): return
+    if not await arm_drag(drag): return
     Engine.time_scale = 3.0
     while drag.run.clock < 1.0:
         await physics_frame
@@ -139,11 +150,12 @@ func run() -> void:
     drag._refresh_hud()
     await picture("15-drag-ticket")
     drag._recover()
-    await settle_drag(drag)
-    driver.reaction_delay = -1.0
+    # The procedure starts itself; do not advance an already-ready retry before
+    # configuring the short fixture window and observing its common tree.
+    driver.reaction_delay = 0.12
     driver.shift_hold = 0.0
-    driver.controls(drag.car.powertrain,0,1.0/60.0)
-    if not arm_drag(drag): return
+    if not await arm_drag(drag): return
+    driver.reaction_delay = -1.0
     drag.set_physics_process(true)
     while drag.run.phase not in ["finished","invalid"]:
         await physics_frame
@@ -198,7 +210,7 @@ func run() -> void:
     var gol_driver := DragDriver.new()
     drag.input_provider = func() -> Dictionary: return gol_driver.controls(drag.car.powertrain,drag.run.clock,drag.get_physics_process_delta_time())
     gol_driver.controls(drag.car.powertrain,0,1.0/60.0)
-    if not arm_drag(drag): return
+    if not await arm_drag(drag): return
     drag.set_physics_process(true)
     Engine.time_scale = 3.0
     while -drag.car.position.z<140 and drag.run.phase not in ["finished","invalid"]:
@@ -247,7 +259,7 @@ func run() -> void:
     var duel_driver := DragDriver.new()
     drag.input_provider = func() -> Dictionary: return duel_driver.controls(drag.car.powertrain,drag.run.clock,drag.get_physics_process_delta_time())
     duel_driver.controls(drag.car.powertrain,0,1.0/60.0)
-    if not arm_drag(drag): return
+    if not await arm_drag(drag): return
     Engine.time_scale = 3.0
     while -drag.car.position.z<140 and not drag.duel.finished:
         await physics_frame
@@ -283,7 +295,7 @@ func run() -> void:
     drag.input_provider = func() -> Dictionary: return classic_driver.controls(drag.car.powertrain,drag.run.clock,drag.get_physics_process_delta_time())
     await settle_drag(drag)
     await picture("31-133-duel-staging")
-    if not arm_drag(drag): return
+    if not await arm_drag(drag): return
     Engine.time_scale = 3.0
     while -drag.car.position.z<100 and not drag.duel.finished:
         await physics_frame
@@ -319,7 +331,7 @@ func run() -> void:
     drag.input_provider = func() -> Dictionary: return mixed_driver.controls(drag.car.powertrain,drag.run.clock,drag.get_physics_process_delta_time())
     await settle_drag(drag)
     await picture("41-mixed-duel-staging")
-    if not arm_drag(drag): return
+    if not await arm_drag(drag): return
     Engine.time_scale = 3.0
     while -drag.car.position.z<60 and not drag.duel.finished:
         await physics_frame
@@ -337,6 +349,61 @@ func run() -> void:
         return
     drag._refresh_hud()
     await picture("43-mixed-duel-result")
+    Engine.time_scale = 1.0
+    drag.input_provider = Callable()
+    drag._back_to_garage()
+    await process_frame
+    await process_frame
+    # Capture actual preparation contact heat and the marshal's subsequent
+    # blue-light call. No tire-temperature helper or fake timing ticket is used.
+    session.reset()
+    session.game.buy(23)
+    for component in session.game.find_car(23)["health"]:
+        session.game.find_car(23)["health"][component] = 100.0
+    session.start_drag(23,"duel","technical","","Fiat 133")
+    change_scene_to_file("res://scenes/drag.tscn")
+    await process_frame
+    await process_frame
+    drag = current_scene
+    drag.input_provider = func() -> Dictionary: return burnout_controls(drag)
+    Engine.time_scale = 3.0
+    var cold_front: float = drag.car.powertrain.axles.temperatures.x
+    var heated := false
+    for frame in range(500):
+        await physics_frame
+        if drag.procedure.phase != "burnout" or drag.procedure.phase_elapsed>6.6: break
+        if drag.car.powertrain.axles.temperatures.x>cold_front+15.0 and drag.car.powertrain.axles.slip_power>1000.0:
+            heated = true
+            break
+    if not heated or drag.run.clock != 0.0:
+        print("Burnout capture evidence: ",{"phase":drag.procedure.phase,"elapsed":drag.procedure.phase_elapsed,"temperatures":drag.car.powertrain.axles.temperatures,"slip_power":drag.car.powertrain.axles.slip_power,"distance":-drag.car.position.z,"speed":drag.car.powertrain.speed_mps,"rpm":drag.car.powertrain.rpm,"gear":drag.car.powertrain.gear,"clock":drag.run.clock})
+        push_error("The rendered burnout did not create actual tire contact heat before timing.")
+        quit(1)
+        return
+    drag.set_physics_process(false)
+    drag.camera.mode = 1
+    drag.camera.look_input = Vector2(0.7,0.0)
+    drag.camera.snap()
+    drag._refresh_hud()
+    print("Rendered burnout temperature: ",cold_front," -> ",drag.car.powertrain.axles.temperatures.x,"; slip power ",drag.car.powertrain.axles.slip_power)
+    await picture("44-burnout-preparation")
+    capture_heat_done = true
+    drag.set_physics_process(true)
+    for frame in range(800):
+        await physics_frame
+        if drag.procedure.phase != "burnout": break
+    if drag.procedure.phase != "staging" or drag.run.phase != "preparation":
+        push_error("The starter did not issue a blue-light alignment call before timing.")
+        quit(1)
+        return
+    drag.set_physics_process(false)
+    drag.camera.look_input = Vector2.ZERO
+    drag.camera.snap()
+    drag._refresh_hud()
+    await picture("45-starter-call")
+    drag.paused = true
+    drag._refresh_hud()
+    await picture("46-paused-telemetry")
     Engine.time_scale = 1.0
     drag.input_provider = Callable()
     drag._back_to_garage()

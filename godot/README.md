@@ -1,8 +1,18 @@
-# GT4 Evolution · v0.19 / Flota Fiat y duelos entre modelos
+# GT4 Evolution · v0.20 / Calentamiento y largada automática
 
 Prototipo independiente de automovilismo en Godot 4.6.3. El desarrollo se centra en un **¼ de milla de 402,336 m contra otro auto físico**, con largada, cambios manuales, marcas y desgaste en un entorno original inspirado en el ambiente del autódromo Gálvez. Conserva mercado, garaje, taller, tuning y los modos anteriores. La investigación de GT4 se consulta como referencia; no se incluyen su ejecutable, modelos, texturas ni circuitos comerciales.
 
-## Novedades v0.19
+## Novedades v0.20
+
+Se incorporan **calentamiento previo y largador automático**. El art.11 aportado permite calentar desde la línea hacia delante, con rojo intermitente/amarillas de fondo; la luz azul termina esa fase y llama a alinear. La ventana de 25 s, los 30 s para prepararse y el sostén de 1,5 s son parámetros de juego, no duraciones oficiales. Enter ya no arma el semáforo.
+
+**H/L3 acciona el freno de mano trasero**, reasignable en teclado. En los FWD se puede calentar con primera y ráfagas de acelerador+H: el calor y desgaste proceden del patinamiento físico. Puede avanzar; hay que frenar dentro de la zona. El asistente alinea y sostiene antes de cronometrar, conservando uso y temperatura; el regreso en reversa aún no está simulado. Primera y embrague sostenidos, con ambos autos listos, activan automáticamente el árbol.
+
+Los cambios aceptan acelerador sostenido y una ventana de 0,10 s para la pulsación simultánea de embrague/cambio. Se mantiene el embrague obligatorio y el desgaste por cambiar mal. Durante la pasada desaparecen botones, ayuda y diagnóstico extenso; la pausa conserva esa información. La cámara vuelve progresivamente a tu auto cuando el rival se aleja.
+
+Los seis modelos anteriores pasan a texturas externas 1024²/mipmaps como los siete nuevos, sin cambiar geometría ni UV. Sus recursos importados bajan 52,20→22,06 MB; es tamaño de recursos, no una medición de FPS. [Informe 0.20](RELEASE-0.20.md) · [Recursos](assets/cars/README.md).
+
+## Estado histórico: novedades v0.19
 
 Se integran **125, Duna, Cronos, Siena, Punto, Regatta y 500 Sport**. Son trece modelos aportados disponibles en Inicio y veintitrés ofertas con las anteriores; se conservan las unidades, IDs y partidas. El selector de Inicio permite recorrer la flota sin recortar el mapa. En el garaje se puede elegir **otro modelo como rival**, con configuración, masa y equipamiento independientes; la opción de mismo modelo sigue disponible para comparar pilotos.
 
@@ -32,7 +42,7 @@ El duelo usa configuración de fábrica, neumáticos de calle y protocolo sin ay
 
 Se incorporan los modelos aportados del **147 y del Uno**, con derivados de render optimizados a partir de originales de aproximadamente un millón de triángulos, preservando UV y materiales; el conteo final y la revisión gráfica se registran en el informe de entrega. Los originales se archivan por separado. El Gol mantiene su GLB aportado sin modificar. **El modelo del Uno recibido es de cinco puertas**, aunque la variante objetivo del catálogo sigue siendo Uno Fire de tres puertas: la diferencia visual permanece explícita y su corrección requiere un modelo adecuado.
 
-El Uno se identifica como **Fire 1.3 8V de tres puertas, año 2014**. Su curva respeta los **68 CV a 5.250 RPM** y **11,3 kgf·m a 2.250 RPM** de la referencia de fabricante transcrita por el usuario. Los **13,2 s de 0–100 y 158 km/h** se registran como objetivos de contraste, sin imponerlos a la física. Los demás puntos de curva, masas, relaciones y prestaciones continúan siendo **estimaciones de desarrollo**. Los nuevos textos permiten transcribir reglas, pero no verifican datos de fabricante; no se obtuvieron fichas de V6 para calibrarlos. [Reglamentos, artículos y límites](REGULATIONS-REFERENCE.md) · [Fuentes de vehículos](STOCK-SOURCES.md) · [Revisión del PDF Fiat](FIAT-REPORT-REVIEW.md) · [Informe de entrega y estado de validación](RELEASE-0.19.md) · [Procedencia de modelos](assets/cars/README.md).
+El Uno se identifica como **Fire 1.3 8V de tres puertas, año 2014**. Su curva respeta los **68 CV a 5.250 RPM** y **11,3 kgf·m a 2.250 RPM** de la referencia de fabricante transcrita por el usuario. Los **13,2 s de 0–100 y 158 km/h** se registran como objetivos de contraste, sin imponerlos a la física. Los demás puntos de curva, masas, relaciones y prestaciones continúan siendo **estimaciones de desarrollo**. Los nuevos textos permiten transcribir reglas, pero no verifican datos de fabricante; no se obtuvieron fichas de V6 para calibrarlos. [Reglamentos, artículos y límites](REGULATIONS-REFERENCE.md) · [Fuentes de vehículos](STOCK-SOURCES.md) · [Revisión del PDF Fiat](FIAT-REPORT-REVIEW.md) · [Informe de entrega y estado de validación](RELEASE-0.20.md) · [Procedencia de modelos](assets/cars/README.md).
 
 ## Estado histórico: incorporado en v0.16
 
@@ -65,21 +75,21 @@ Informe técnico, archivos y resultados: [RELEASE-0.14.md](RELEASE-0.14.md).
 
 Comprá un auto y elegí **GARAJE → ¼ DE MILLA / MANUAL**. También hay acceso desde Inicio cuando tenés un vehículo. La práctica no cobra inscripción ni paga premios; registra distancia, desgaste y mejor ticket por unidad.
 
-1. El auto arranca en **N**. Mantené **C** (embrague), tocá **E** para primera y seguí sosteniendo C.
-2. **Enter** arma el semáforo. Regulá W para preparar las RPM; probá primero una largada alrededor de 3000–4000 RPM.
-3. Esperá el verde y soltá C para largar. El cronómetro distingue reacción y ET; salir antes invalida la marca.
-4. Para subir marcha, soltá W, pisá C, tocá E, soltá C y volvé a acelerar. Q baja marcha. El indicador avisa al entrar en la zona de cambio, pero la operación la realiza el piloto.
-5. La meta entrega ticket y frenado asistido en la escapatoria. **R** prepara otra pasada y conserva uso, desgaste y temperatura de la sesión. **Esc** vuelve al garaje; presioná **GUARDAR** para conservar progreso y récords.
+1. El auto aparece en **N**, a 5 m delante de la línea. Tenés25 s de calentamiento autorizado; es opcional.
+2. Mantené **C**, tocá **E** para primera y prepará RPM con C. En FWD, soltá C con ráfagas **W+H**. H frena sólo atrás: el auto puede avanzar. Para detenerlo, **C+Espacio**. No excedas la zona 2,5–35 m.
+3. La **luz azul** termina el calentamiento. El asistente frena/alinea y sostiene antes de cronometrar; mantené **primera+C**. Ambos listos durante 1,5 s activan el semáforo automáticamente, sin Enter. Hay 30 s para prepararse.
+4. Prepará RPM; esperá verde y soltá C para largar. Para cambiar, **C+E/Q**; podés mantener W. Pasar de RPM y cambiar mal tiene consecuencias.
+5. La meta entrega ticket y frenado asistido. **R** repite conservando uso, desgaste y temperatura. **P/Inicio/Select** pausa y muestra ayuda/telemetría completa; **Esc** vuelve al garaje. Presioná **GUARDAR** para conservar progreso.
 
 Cambiar temprano lleva el motor a una zona de menor entrega; quedarse en el corte interrumpe la potencia. Un cambio sin embrague se rechaza y desgasta la transmisión. Una reducción excesiva puede llevar el motor a sobrerégimen; soltar el embrague a bajas RPM contra el freno puede calarlo. R permite recuperar y arrancar de nuevo. El modelo usa masa, par, relaciones, inercia de motor y ruedas, capacidad de embrague, resistencia aerodinámica, agarre y transferencia longitudinal de carga. Los parámetros de cada auto son **aproximaciones de desarrollo**, sin validación contra mediciones reales.
 
-El HUD muestra RPM, marcha, torque de motor, potencia transmitida a las ruedas, pérdidas de embrague, carga de turbo, temperaturas de ambos ejes, tracción y ayudas. El ticket incluye ET, reacción, total, 60 pies, 1/8 de milla y velocidad media en los últimos 20,1168 m. El reloj parte cuando el auto libera el haz de salida tras 0,20 m de rollout; los tiempos de paso se interpolan entre cuadros físicos. Salirse del carril, saltarse la salida o una discontinuidad de posición invalida el intento.
+El HUD de pasada muestra velocidad, marcha, RPM, tiempos y rival. Al pausar se muestran torque, potencia, pérdidas de embrague, turbo, temperaturas, tracción y ayudas. El ticket incluye ET, reacción, total, 60 pies, 1/8 de milla y velocidad media en los últimos 20,1168 m. El reloj parte cuando el auto libera el haz de salida tras 0,20 m de rollout; los tiempos de paso se interpolan entre cuadros físicos. Salirse del carril, saltarse la salida o una discontinuidad de posición invalida el intento.
 
 El desgaste adicional del motor, transmisión/embrague, neumáticos y frenos se aplica al auto existente. Repetir, abandonar o volver a llamar la liquidación no lo borra ni lo duplica. El tuning existente modifica potencia y agarre. Las temperaturas son una aproximación de sesión; el guardado conserva salud y marcas, sin una simulación térmica persistente.
 
-Las diez acciones de teclado se reasignan en AJUSTES. Las preferencias anteriores migran: si E, Q o C ya estaban ocupadas, se preserva la asignación anterior y se elige otra tecla libre para la nueva acción. Consultá AJUSTES para conocer tus teclas.
+Las once acciones de teclado se reasignan en AJUSTES. Las preferencias anteriores migran: si E, Q o C ya estaban ocupadas, se preserva la asignación anterior y se elige otra tecla libre para la nueva acción. Consultá AJUSTES para conocer tus teclas.
 
-Mando en este modo: RT/R2 acelera, LT/L2 o B/Círculo frena, LB/L1 sostiene embrague, A/Cruz sube, Y/Triángulo baja, X/Cuadrado recupera, RB/R1 cambia cámara y R3 mira atrás. Inicio arma el árbol durante preparación y pausa/reanuda durante la pasada; Select/Back abre la pausa en cualquier momento. AJUSTES permite usar **LT/L2 como embrague analógico**: en ese modo B/Círculo frena, también si se mantiene el acelerador. LB sigue disponible. La opción solo afecta al ¼ de milla. El stick izquierdo conserva asistencia de dirección; el mando físico sigue pendiente de prueba.
+Mando en este modo: RT/R2 acelera, LT/L2 o B/Círculo frena, LB/L1 sostiene embrague, A/Cruz sube, Y/Triángulo baja, X/Cuadrado recupera, RB/R1 cambia cámara y R3 mira atrás. Inicio y Select/Back abren pausa en cualquier fase; L3 acciona el freno de mano trasero. AJUSTES permite usar **LT/L2 como embrague analógico**: en ese modo B/Círculo frena, también si se mantiene el acelerador. LB sigue disponible. La opción solo afecta al ¼ de milla. El stick izquierdo conserva asistencia de dirección; el mando físico sigue pendiente de prueba.
 
 El escenario se llama **Autódromo Sur**: tribuna, boxes, control, colores argentinos, semáforo y una escapatoria de más de 250 m. Es un diseño original inspirado en un ambiente de autódromo porteño; no es una reproducción exacta ni homologada del Gálvez. El sonido de motor es sintetizado y provisional. Los trece modelos aportados usan sus mallas adaptadas; los vehículos anteriores sin GLB conservan carrocerías procedurales. El Uno recibido tiene cinco puertas, frente a la variante objetivo de tres puertas.
 
@@ -136,7 +146,7 @@ La recuperación conserva las vueltas ya completadas y la distancia realmente re
 
 ## Límites actuales
 
-La conducción del circuito sigue siendo arcade. El ¼ de milla usa un modelo longitudinal con embrague, cambios manuales y daños mecánicos, asistencia lateral y temperaturas simplificadas. Hay duelos físicos y práctica individual; no hay campeonato de picadas, premios, llaves, finales ni verificación técnica homologada. Los pisos transcritos del reglamento no validan las prestaciones estimadas de los autos. El Uno aportado tiene cinco puertas, el catálogo apunta a tres; los GLB contienen detalles y luces horneados. No hay deformación visual ni simulación completa de neumáticos, suspensión, embrague o diferencial izquierda/derecha. Las colisiones usan cuerpos de personaje, sin intercambio realista de impulsos. Faltan conducción humana, Windows, mando físico y mediciones de rendimiento en GPU real. La evidencia y el estado de comprobación de esta versión se registran en [RELEASE-0.19.md](RELEASE-0.19.md).
+La conducción del circuito sigue siendo arcade. El ¼ de milla usa un modelo longitudinal con embrague, cambios manuales y daños mecánicos, asistencia lateral y temperaturas simplificadas. Hay duelos físicos y práctica individual; no hay campeonato de picadas, premios, llaves, finales ni verificación técnica homologada. Los pisos transcritos del reglamento no validan las prestaciones estimadas de los autos. El Uno aportado tiene cinco puertas, el catálogo apunta a tres; los GLB contienen detalles y luces horneados. No hay deformación visual ni simulación completa de neumáticos, suspensión, embrague o diferencial izquierda/derecha. Las colisiones usan cuerpos de personaje, sin intercambio realista de impulsos. Faltan conducción humana, Windows, mando físico y mediciones de rendimiento en GPU real. La evidencia y el estado de comprobación de esta versión se registran en [RELEASE-0.20.md](RELEASE-0.20.md).
 
 ## Desarrollo y pruebas
 

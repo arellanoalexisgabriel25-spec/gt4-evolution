@@ -8,7 +8,15 @@ Develop functional increments on descriptive branches, preserve user work and sa
 
 Current priority: develop a compact quarter-mile environment, manual shifting, measurable driving skill, persistent mechanical use and original visuals. Large-circuit expansion is deferred. Existing circuit, career and AI modes remain available. A simulated result must always be labelled as such.
 
-## Current increment: 0.19
+## Current increment: 0.20
+
+`drag_start_procedure.gd` owns the pure starter state (25s warm-up,30s staging,1.5s continuous ready hold). These durations are game policy, not the supplied regulation. `drag_mode.gd` advances it only during unpaused physics, samples both actual cars, and arms their existing timing runs once. Enter is no longer a start input. Authorized warm-up is ahead of the line; the disclosed staging assist brakes, aligns and holds before timing, preserving heat/wear/odometry and resetting only acceleration metrics. No reverse-gear return is claimed. Leaving the local2.5–35m zone or missing the call cancels this exhibition preparation, not an official championship penalty ladder.
+
+Rear parking brake H/L3 is independent of hydraulic ABS; Manual/axles dissipate physical slip and brake energy with existing torque limits. There is no temperature bonus or forced stationary burnout. `request_shift` buffers pedal/lever ordering for0.10s without lifting throttle or auto-clutching. Legacy strict `shift` remains for scripted drivers. The HUD keeps compact instruments in the pass, diagnostic/help in pause.
+
+Six older models now use external1024² mipmapped textures, including Gol's three PBR maps; geometry/UV/accessor bytes remain identical. Original files remain in references. See RELEASE-0.20.md and asset provenance for measured resource sizes and validation limits.
+
+## Previous increment: 0.19
 
 Seven new models are authored once in `additional_vehicle_data.gd`, consumed by catalog and stock specifications. Stable names and IDs 17–23 extend the previous sixteen offers; legacy offers, saves and finances stay unchanged. Distinguish a supplied guide claim from an estimated parameter or a body scan's appearance. The 500 uses the user's explicit Sport 100 CV reference, with the supplied Abarth body still labelled provisional; do not infer turbo/Abarth performance from graphics.
 
@@ -129,7 +137,7 @@ mkdir -p "$XDG_DATA_HOME" "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME"
 godot --headless --path godot --editor --import
 ```
 
-`python3 tools/package_game.py --output /path/to/output` creates the source ZIP. A portable Windows ZIP additionally requires `--windows-engine /path/to/Godot_v4.6.3-stable_win64.exe.zip --checksums /path/to/SHA512-SUMS.txt --engine-license /path/to/Godot-LICENSE.txt`. Use the official release and tagged source repository. Launchers import a fresh project before running it; caches are not bundled. The application data directory retains the original project name to preserve saved games; the displayed window title uses the current version.
+`python3 tools/package_game.py --output /path/to/output` creates the source ZIP. A standalone Windows ZIP requires `--export-templates /path/to/Godot_v4.6.3-stable_export_templates.tpz --checksums /path/to/SHA512-SUMS.txt --engine-license /path/to/Godot-LICENSE.txt --engine-copyright /path/to/Godot-COPYRIGHT.txt`. Use the official release and tagged source repository. Windows runs its exported PCK without importing a project or bundling the editor; the source ZIP is freshly imported for validation. The application data directory retains the original project name to preserve saved games; the displayed window title uses the current version.
 
 The feature branch includes the earlier pending increments; `main` remains unchanged until review and required CI can be confirmed. Git access and GitHub API access are separate: when the API is unavailable, inspect public Actions run/job pages for the exact source commit before reporting CI status.
 

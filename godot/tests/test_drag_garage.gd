@@ -61,7 +61,7 @@ func _initialize() -> void:
     old_controls.erase("drag_keys")
     old_controls["keys"]["accelerate"] = KEY_E
     check(settings.from_dict(old_controls) and settings.keys.accelerate==KEY_E,"Legacy custom bindings are preserved even when they used the new default shift key")
-    check(settings.drag_keys.shift_up!=KEY_E and settings.all_keys().values().size()==10,"Migration assigns a free key for each manual action instead of stealing an existing binding")
+    check(settings.drag_keys.shift_up!=KEY_E and settings.all_keys().values().size()==11,"Migration assigns a free key for each manual action instead of stealing an existing binding")
     check(settings.bind("shift_up",KEY_U).is_empty(),"Manual shifts are rebindable through the same settings interface")
     var preferences := "user://drag-controls-%d.json" % Time.get_ticks_usec()
     check(settings.save_file(preferences)==OK,"Migrated manual controls persist in the existing preference schema")

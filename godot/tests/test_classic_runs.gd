@@ -35,8 +35,7 @@ func run() -> void:
         check(body.shape.size.z==Catalog.DATA[vehicle.model].size.z,"Collision length follows the selected classic rather than a generic flagship")
         var driver = Driver.new()
         scene.input_provider=func() -> Dictionary: return driver.controls(scene.car.powertrain,scene.run.clock,1.0/60.0)
-        for i in range(45): await physics_frame
-        scene._arm()
+        check(await Driver.await_automatic_start(scene),"The starter automatically calls and starts the aligned physical cars")
         check(scene.duel.started and scene.run.phase=="countdown" and scene.opponent_run.phase=="countdown","Both classics stage on the common tree")
         for i in range(8000):
             await physics_frame

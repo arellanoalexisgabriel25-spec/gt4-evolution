@@ -124,3 +124,12 @@ Otras definiciones y restricciones que sirven para ampliaciones posteriores:
 6. **Gestión ajena a la exhibición:** llaves con repechaje (arts. 7–8), admisión, sanciones administrativas, cupos, lluvia, derechos de organizadores y campeonatos requieren sistemas adicionales. No quedan implementados por mostrar los índices en pantalla.
 
 El alcance jugable de este incremento debe declararse por separado en las notas de entrega y en la interfaz: enfrentamiento de dos autos de fábrica, medición propia de RT/ET y, cuando se habilite, un reglamento de clases basado en los pisos de **1/4** del art. 21. Mostrar una tabla de índices no convierte la exhibición en un campeonato oficial; toda excepción aún no cubierta debe permanecer documentada como provisional.
+
+
+## Aplicación jugable 0.20: calentamiento y largador
+
+El art.11 se aplica mediante rojo intermitente y amarillas al fondo durante calentamiento, seguidos de azul para terminar y llamar a alinear. La zona local está delante de la línea (2,5–35m del origen del auto); no se permite calentamiento detrás. Esa distancia es del escenario original, no el puente/cono de las pistas oficiales. El art.10 sustenta el control del largador y las luces de posición, sin publicar nuestros intervalos concretos de semáforo.
+
+25s de calentamiento,30s de preparación y1,5s de ambos listos son decisiones de ritmo configurables del juego. Los60s del texto corresponden a supuestos específicos de presentación tardía; no se reinterpretan como tiempo universal de burnout. El calentamiento es opcional y físico: patinamiento real, temperatura y desgaste, sin potencia adicional ni botón de calentamiento instantáneo.
+
+Una asistencia explícita frena/alinea/sostiene sólo antes de cronometrar. El regreso en reversa no está implementado. Se preservan calor y desgaste; la relocalización no suma kilometraje ni crea marcas. Al vencer el llamado o salir de la zona, se cancela esta preparación sin inventar ET, premios ni un ganador. Esto no implementa el régimen completo de apercibimiento/segunda descalificación, admisión, reemplazos o campeonatos del reglamento.

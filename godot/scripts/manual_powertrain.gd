@@ -6,6 +6,9 @@ extends RefCounted
 const Config = preload("res://scripts/drag_vehicle_config.gd")
 const Axles = preload("res://scripts/axle_traction.gd")
 const EngineTorque = preload("res://scripts/engine_torque.gd")
+# A brief lever-input window tolerates pedal/button delivery order. It never
+# opens the clutch, releases the accelerator or executes an unclutched change.
+const SHIFT_INPUT_WINDOW := 0.10
 var config = Config.new()
 var axles = Axles.new()
 var engine = EngineTorque.new()
@@ -19,6 +22,8 @@ var clutch_engagement := 0.0
 var throttle := 0.0
 var engine_running := true
 var shift_timer := 0.0
+var pending_shift_direction := 0
+var pending_shift_time := 0.0
 var missed_shifts := 0
 var shifts := 0
 var wheelspin := 0.0
@@ -64,6 +69,8 @@ func reset(keep_heat: bool = true) -> void:
     clutch_engagement = 0.0
     throttle = 0.0
     shift_timer = 0.0
+    pending_shift_direction = 0
+    pending_shift_time = 0.0
     engine_running = true
     limiter = false
     acceleration = 0.0
@@ -111,6 +118,8 @@ func shift(direction: int, clutch: float) -> bool:
     var next := clampi(gear+direction,0,config.gear_ratios.size())
     if next == gear:
         return false
+    pending_shift_direction = 0
+    pending_shift_time = 0.0
     if clutch < 0.7:
         missed_shifts += 1
         wear["transmision"] += 0.035
@@ -131,8 +140,37 @@ func shift(direction: int, clutch: float) -> bool:
     feedback_time = 1.6
     return true
 
-func step(delta: float, accelerator: float, clutch: float, brake: float, on_road: bool = true, contact_state: Dictionary = {}) -> void:
-    if not is_finite(delta) or delta <= 0.0 or not is_finite(accelerator) or not is_finite(clutch) or not is_finite(brake):
+# Input-facing API. Simultaneously pressed clutch/shift buttons can arrive in
+# either order within a frame. Queue only this short pedal transition; a driver
+# who never depresses the clutch still incurs the normal missed-shift damage.
+# Scripted drivers retain shift(), whose strict immediate contract is unchanged.
+func request_shift(direction: int, clutch: float) -> bool:
+    if not is_finite(clutch) or clutch<0.0 or clutch>1.0 or direction not in [-1,1]:
+        return false
+    if shift_timer>0.0 or pending_shift_direction!=0:
+        return false
+    if clampi(gear+direction,0,config.gear_ratios.size())==gear:
+        return false
+    if clutch>=0.7:
+        return shift(direction,clutch)
+    pending_shift_direction = direction
+    pending_shift_time = SHIFT_INPUT_WINDOW
+    feedback = "CAMBIO SOLICITADO · Pisá el embrague"
+    feedback_time = SHIFT_INPUT_WINDOW
+    return true
+
+func _advance_shift_request(delta: float, clutch: float) -> void:
+    if pending_shift_direction==0:
+        return
+    pending_shift_time = maxf(0.0,pending_shift_time-delta)
+    if clutch>=0.7 or pending_shift_time<=0.0:
+        var direction := pending_shift_direction
+        pending_shift_direction = 0
+        pending_shift_time = 0.0
+        shift(direction,clutch)
+
+func step(delta: float, accelerator: float, clutch: float, brake: float, on_road: bool = true, contact_state: Dictionary = {}, handbrake: float = 0.0) -> void:
+    if not is_finite(delta) or delta <= 0.0 or not is_finite(accelerator) or not is_finite(clutch) or not is_finite(brake) or not is_finite(handbrake):
         return
     var support = contact_state.get("contact",Vector2.ONE)
     var friction = contact_state.get("grip",Vector2.ONE)
@@ -149,10 +187,11 @@ func step(delta: float, accelerator: float, clutch: float, brake: float, on_road
     var count := maxi(1,ceili(duration*480.0))
     var dt := duration/float(count)
     feedback_time = maxf(0,feedback_time-duration)
+    _advance_shift_request(duration,clampf(clutch,0,1))
     for i in range(count):
-        _integrate(dt,clampf(accelerator,0,1),clampf(clutch,0,1),clampf(brake,0,1),on_road)
+        _integrate(dt,clampf(accelerator,0,1),clampf(clutch,0,1),clampf(brake,0,1),on_road,clampf(handbrake,0,1))
 
-func _integrate(dt: float, accelerator: float, clutch: float, brake: float, on_road: bool) -> void:
+func _integrate(dt: float, accelerator: float, clutch: float, brake: float, on_road: bool, handbrake: float) -> void:
     shift_timer = maxf(0,shift_timer-dt)
     throttle = move_toward(throttle,accelerator,dt*5.0)
     clutch_engagement = move_toward(clutch_engagement,1.0-clutch,dt*(10.0 if clutch > 0.5 else 5.0))
@@ -192,7 +231,7 @@ func _integrate(dt: float, accelerator: float, clutch: float, brake: float, on_r
     wheel_power_kw = maxf(0,shaft_power_kw)
     driveline_loss_kw = maxf(0,(clutch_torque*ratio-wheel_torque_nm)*wheel_omega/1000.0)
     var tread_before: float = axles.tread_wear_points()
-    var tire_force: float = axles.step(dt,speed_mps,wheel_torque_nm,brake,config,config.tire_health-float(wear["neumaticos"]),on_road,contact_loads,surface_grip)
+    var tire_force: float = axles.step(dt,speed_mps,wheel_torque_nm,brake,config,config.tire_health-float(wear["neumaticos"]),on_road,contact_loads,surface_grip,handbrake)
     wheelspin = axles.driven_slip(config)
     var resistance: float = road_load_force(speed_mps)
     road_load_n = resistance
@@ -229,5 +268,5 @@ func shift_hint() -> String:
     if gear == 0:
         return "NEUTRO · Embrague + subir marcha"
     if gear < config.gear_ratios.size() and rpm >= config.redline_rpm*0.90:
-        return "CAMBIAR · Embrague, subir y volver a acelerar"
+        return "CAMBIAR · Embrague y subir marcha"
     return "EN BANDA" if rpm >= config.redline_rpm*0.55 else "BAJAS RPM"

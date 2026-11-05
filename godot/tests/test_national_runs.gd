@@ -39,8 +39,7 @@ func run() -> void:
         check(collider.shape.size.z==Catalog.definition(car.model).size.z,"The collision length belongs to the selected car rather than a generic placeholder")
         var driver = Driver.new()
         scene.input_provider=func() -> Dictionary: return driver.controls(scene.car.powertrain,scene.run.clock,1.0/60.0)
-        for i in range(45): await physics_frame
-        scene._arm()
+        check(await Driver.await_automatic_start(scene),"The starter automatically calls and starts the aligned physical cars")
         check(scene.duel.started and scene.run.phase=="countdown" and scene.opponent_run.phase=="countdown","Both new lane actors settle and arm on one common start tree")
         for i in range(8000):
             await physics_frame

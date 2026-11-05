@@ -41,3 +41,6 @@
 41-mixed-duel-staging
 42-mixed-duel-driving
 43-mixed-duel-result
+44-burnout-preparation
+45-starter-call
+46-paused-telemetry
