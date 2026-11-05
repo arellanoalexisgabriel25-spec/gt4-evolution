@@ -1,7 +1,7 @@
-# GT4 Evolution 0.20 · Descargas
+# GT4 Evolution 0.21 · Descargas
 
-- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.20/GT4-Evolution-0.20-Windows.zip)
-- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.20/GT4-Evolution-0.20-Proyecto.zip)
+- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.21/GT4-Evolution-0.21-Windows.zip)
+- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.21/GT4-Evolution-0.21-Proyecto.zip)
 
 Extraé TODO el ZIP Windows y abrí **GT4Evolution.exe** o **JUGAR.cmd**.
 Es una exportación independiente; no requiere instalar Godot ni importar el proyecto.
@@ -13,6 +13,11 @@ La reacción cuenta para llegar primero. Un falso individual concede al rival
 la excepción del art. 12 aunque su ET caiga. Exhibición sin inscripción ni premios.
 Fábrica conserva salud del garaje y excluye preparaciones; «serie» oficial tiene
 otro alcance. La práctica individual y sus marcas anteriores siguen disponibles.
+La interfaz adopta fondos oscuros, azul acero y números monoespaciados según
+la guía GT4_UI_System aportada. El 147 Vivace usa la referencia 1.4 BIO 1997:
+63 CV, 10,4 kgfm, 807 kg más 75 kg de piloto; otros parámetros siguen estimados.
+Las marcas anteriores se conservan como históricas y no se mezclan con la
+nueva ficha. Ver TECHNICAL-REPORT-REVIEW-0.21.md y STOCK-BENCHMARK-0.21.md.
 Se incluyen 125, Duna, Cronos, Siena, Punto, Regatta y 500 Sport a los seis
 modelos anteriores. El garaje permite elegir un modelo rival distinto.
 El 500 utiliza 100 CV y caja de seis marchas; su estética Abarth es provisional.
@@ -27,7 +32,7 @@ y parámetros estimados; la calibración de prestaciones sigue pendiente.
 Ver STOCK-SOURCES.md. En Inicio podés elegir los trece modelos; en garaje,
 VER MODELO cambia la vista.
 El taller ofrece calle, deportivos o slick. Los impactos dejan daño mecánico
-persistente; recuperar no repara. Ver RELEASE-0.20.md y REGULATIONS-REFERENCE.md.
+persistente; recuperar no repara. Ver RELEASE-0.21.md y REGULATIONS-REFERENCE.md.
 
 Comprá un auto y abrí **GARAJE → DUELO ¼ DE MILLA / FÁBRICA**.
 Hay 25 s de calentamiento delante de línea, luego azul y 30 s de preparación.
@@ -52,16 +57,40 @@ hashes de fuentes/exportación y DIAGNOSTICO.cmd para registrar fallos de arranq
 prueba en esos equipos; la validación automatizada se realiza en Linux.
 Las licencias se incluyen. No se distribuyen recursos comerciales de GT4.
 
-Código: [4f86b35](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/4f86b3526add726cf15ab55bbd2144014c9d1318).
+Código: [03e5ab8](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/03e5ab8761b28ca6122d995d39fe5d2b03348c5c).
 Esta rama contiene únicamente distribución y no se integra en main.
 Los archivos .sha256 permiten verificar los ZIP.
 
-## Presentación 0.20
+## Presentación 0.21
 
 Capturas reales del juego en Linux con OpenGL por software. No son renders conceptuales.
 
-Tab / RB cambia entre seguimiento, cercana, capó y paragolpes; Shift / Y permite mirar atrás.
+Tab / RB cambia entre seguimiento, cercana, capó y paragolpes; Shift / R3 permite mirar atrás en picadas.
 AJUSTES conserva la cámara inicial y permite suavizar la dirección del teclado.
+
+### Inicio / Línea visual aportada
+
+![Inicio / Línea visual aportada](captura-01-home.png)
+
+### 147 / Referencia técnica parcial
+
+![147 / Referencia técnica parcial](captura-47-reference-147-garage.png)
+
+### Tuning / Tema compartido
+
+![Tuning / Tema compartido](captura-48-tuning-system.png)
+
+### Carrera / Tema compartido
+
+![Carrera / Tema compartido](captura-49-career-system.png)
+
+### Movimientos / Tema compartido
+
+![Movimientos / Tema compartido](captura-50-transactions-system.png)
+
+### HUD / Números monoespaciados
+
+![HUD / Números monoespaciados](captura-42-mixed-duel-driving.png)
 
 ### Calentamiento real
 
