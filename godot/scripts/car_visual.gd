@@ -1,6 +1,7 @@
 extends Node3D
 const Catalog = preload("res://scripts/car_catalog.gd")
 const Imported = preload("res://scripts/imported_car.gd")
+const Lamps = preload("res://scripts/vehicle_lights.gd")
 
 # Original procedural bodywork: no manufacturer meshes or game assets.
 var paint_color := Color("9e2933")
@@ -11,6 +12,14 @@ var brake_material: StandardMaterial3D
 var imported_model := false
 var wheel_radius := 0.30
 var triangle_counts: Array = []
+var night_lights
+
+func set_night_lighting() -> void:
+    if is_instance_valid(night_lights): return
+    night_lights = Lamps.new()
+    night_lights.draw_housings = not imported_model
+    night_lights.dimensions = Catalog.definition(model_name).get("size",Vector3(1.8,1.4,3.9))
+    add_child(night_lights)
 
 static func material(color: Color, metallic: float = 0.0, roughness: float = 0.5) -> StandardMaterial3D:
     var mat := StandardMaterial3D.new()
@@ -229,3 +238,4 @@ func update_motion(delta: float, speed: float, steering: float, load_shift: floa
     rotation.x = lerp_angle(rotation.x,-load_shift * 0.045,1.0-exp(-8.0*delta))
     rotation.z = lerp_angle(rotation.z,-steering * speed * 0.0015,1.0-exp(-8.0*delta))
     brake_material.emission_energy_multiplier = 2.0 if brake > 0.05 else 0.25
+    if is_instance_valid(night_lights): night_lights.set_brake(brake)

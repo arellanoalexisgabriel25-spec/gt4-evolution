@@ -15,6 +15,7 @@ func measure(name: String) -> Dictionary:
     model.config=Config.from_vehicle(vehicle,true)
     model.reset(false)
     var driver=Driver.new()
+    driver.launch_rpm = 2400.0 if model.config.redline_rpm<5000.0 and model.config.turbo_fraction>0.0 else 3400.0
     var timer=Run.new()
     timer.arm(0.0,0.0)
     var distance := 0.0
@@ -33,12 +34,12 @@ func measure(name: String) -> Dictionary:
         distance+=model.speed_mps*DT
         timer.advance(DT,distance,model.speed_mps)
         if measured_ticket.is_empty() and timer.phase=="finished": measured_ticket=timer.report()
-    return {"model":name,"physical_scene":false,"profile":model.config.metrics(),"ticket":measured_ticket,"zero_to_hundred_s":hundred_time if hundred_time>0 else null,"speed_at_90_s_kmh":model.speed_mps*3.6,"driver_shifts":model.shifts,"temperature_front_c":model.axles.temperatures.x,"temperature_rear_c":model.axles.temperatures.y}
+    return {"model":name,"physical_scene":false,"launch_rpm_target":driver.launch_rpm,"profile":model.config.metrics(),"ticket":measured_ticket,"zero_to_hundred_s":hundred_time if hundred_time>0 else null,"speed_at_90_s_kmh":model.speed_mps*3.6,"driver_shifts":model.shifts,"temperature_front_c":model.axles.temperatures.x,"temperature_rear_c":model.axles.temperatures.y}
 func _initialize() -> void:
     call_deferred("run")
 func run() -> void:
     var reports: Array=[]
-    for name in Catalog.FLAGSHIPS+Catalog.CLASSICS+Catalog.NATIONALS:
+    for name in Catalog.FLAGSHIPS+Catalog.CLASSICS+Catalog.NATIONALS+Catalog.REGIONALS:
         var result:=measure(name)
         if result.ticket.is_empty():
             push_error("No completed numerical pass: "+name)
@@ -59,5 +60,5 @@ func run() -> void:
         return
     file.store_string(JSON.stringify(data,"  "))
     file.close()
-    print("PASS: 13 stock numerical benchmarks written")
+    print("PASS: %d stock numerical benchmarks written" % reports.size())
     quit(0)

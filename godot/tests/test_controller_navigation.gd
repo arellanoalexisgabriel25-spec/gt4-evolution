@@ -87,11 +87,11 @@ func run() -> void:
     var old_volume: float = session.controls.music_volume
     await tap(JOY_BUTTON_DPAD_RIGHT)
     check(session.controls.music_volume>old_volume,"D-pad adjusts and persists the real menu music slider")
-    var choice = menu.content.find_children("*","OptionButton",true,false)[0]
+    var choice = menu.content.find_child("ClutchMode",true,false)
     choice.grab_focus()
     await tap(JOY_BUTTON_A)
     check(session.controls.analog_clutch,"The controller can choose analog clutch directly from Settings")
-    var tcs = menu.content.find_children("*","CheckButton",true,false)[0]
+    var tcs = menu.content.find_child("traction_control",true,false)
     tcs.grab_focus()
     await tap(JOY_BUTTON_A)
     check(session.controls.traction_control,"Controller confirmation can toggle the actual traction assistance setting")

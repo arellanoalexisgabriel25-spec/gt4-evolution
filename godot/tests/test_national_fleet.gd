@@ -25,13 +25,13 @@ func _initialize() -> void:
     game.seed_demo()
     var expected := ["Fiat 125","Fiat Duna","Fiat Cronos","Fiat Siena","Fiat Punto","Fiat Regatta","Fiat 500 Sport"]
     var expected_power := [90.0,72.0,130.0,103.0,87.0,100.0,100.0]
-    check(game.cars.size()==23 and Catalog.NATIONALS==expected,"Seven additional offers append after the previous sixteen stable units")
-    check(Catalog.FLAGSHIPS.size()==3 and Catalog.CLASSICS.size()==3 and Catalog.DATA.size()==13,"Supported models grow without redefining the three flagships or three classics")
+    check(game.cars.size()==29 and Catalog.NATIONALS==expected,"Seven additional offers append after the previous sixteen stable units")
+    check(Catalog.FLAGSHIPS.size()==3 and Catalog.CLASSICS.size()==3 and Catalog.DATA.size()==19,"Supported models grow without redefining the three flagships or three classics")
     check(game.find_car(1).model=="Mazda MX-5 NA" and game.find_car(1).price==4100 and game.find_car(16).model=="Fiat 128 estándar","The legacy market sequence and asking prices are preserved")
     var ordered := Catalog.market_order(game.cars)
     var ids := {}
     for item in ordered: ids[int(item.id)]=true
-    check(ordered.size()==23 and ids.size()==23 and ordered[0].id==11 and ordered[5].id==16 and ordered[6].id==17,"The complete market contains every unit once, keeping flagships and classics first")
+    check(ordered.size()==29 and ids.size()==29 and ordered[0].id==11 and ordered[5].id==16 and ordered[6].id==17,"The complete market contains every unit once, keeping flagships and classics first")
 
     game.buy(12)
     var owned: Dictionary = game.find_car(12)
@@ -46,7 +46,7 @@ func _initialize() -> void:
     restored.ensure_flagship_offers()
     restored.ensure_flagship_offers()
     var after: Dictionary = restored.to_dict()
-    check(restored.cars.size()==23 and after.balance==before.balance and after.ledger==before.ledger,"Offer migration is idempotent and creates neither credits nor charges")
+    check(restored.cars.size()==29 and after.balance==before.balance and after.ledger==before.ledger,"Offer migration is idempotent and creates neither credits nor charges")
     check(after.cars.slice(0,16)==before.cars,"Migration retains all previous IDs, ownership, health, upgrades, history and listings")
     check(restored.find_car(12).owner=="player" and restored.find_car(12).health.motor==71.25,"The existing owned unit is not replaced by a freshly seeded offer")
     var occupied := old.duplicate(true)
@@ -60,7 +60,7 @@ func _initialize() -> void:
     restored.ensure_flagship_offers()
     ids.clear()
     for item in restored.cars: ids[int(item.id)]=true
-    check(restored.cars.size()==26 and ids.size()==26,"Colliding offer IDs are allocated free IDs without duplicate cars")
+    check(restored.cars.size()==32 and ids.size()==32,"Colliding offer IDs are allocated free IDs without duplicate cars")
     check(restored.find_car(17).model=="Unidad preservada 17" and restored.find_car(19).model=="Unidad preservada 19" and restored.find_car(23).model=="Unidad preservada 23","Migration never overwrites existing colliding IDs")
 
     for index in range(expected.size()):

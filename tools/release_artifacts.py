@@ -7,7 +7,7 @@ import hashlib
 from pathlib import Path, PurePosixPath
 import struct
 
-SOURCE_SUFFIXES = {".gd", ".uid", ".tscn", ".tres", ".godot", ".md", ".ttf", ".otf", ".txt", ".import", ".mp3", ".glb", ".png", ".cfg"}
+SOURCE_SUFFIXES = {".gd", ".uid", ".tscn", ".tres", ".godot", ".md", ".ttf", ".otf", ".txt", ".import", ".mp3", ".ogg", ".glb", ".png", ".cfg"}
 ENGINE_VERSION = "4.6.3"
 TEMPLATE_ARCHIVE = "Godot_v4.6.3-stable_export_templates.tpz"
 TEMPLATE_ARCHIVE_SHA512 = "da606b61c10157844f8300172df374472665f95015495cb1a7cd132c40ede404faa96cc1016a4b9662db9909ddea69632c4948b2cd11163438dad4808881fb68"

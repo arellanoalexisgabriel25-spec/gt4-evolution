@@ -1,7 +1,7 @@
 extends SceneTree
 
 const DragDriver = preload("res://tests/drag_test_driver.gd")
-var output := "/workspace/artifacts/presentation-0.21"
+var output := "/workspace/artifacts/presentation-0.22"
 var capture_heat_done := false
 
 func _initialize() -> void:
@@ -57,8 +57,8 @@ func run() -> void:
     await process_frame
     await process_frame
     await picture("01-home")
-    if not session.menu_music.player.playing or not session.menu_music.player.stream.loop:
-        push_error("Menu MP3 did not start its real looping playback.")
+    if not session.menu_music.player.playing or session.menu_music.player.stream.loop:
+        push_error("Menu playlist did not start its real playback.")
         quit(1)
         return
     current_scene._change_tab("mercado")
@@ -188,7 +188,7 @@ func run() -> void:
     await process_frame
     await process_frame
     current_scene._change_tab("inicio")
-    for entry in [["Fiat 147 Vivace","18-147-showroom"],["Fiat Uno Fire 3 puertas","19-uno-showroom"],["Volkswagen Gol Power 3 puertas","20-gol-showroom"],["Fiat 128 Súper Europa 1.5","28-128-super-showroom"],["Fiat 133","29-133-showroom"],["Fiat 128 estándar","30-128-standard-showroom"],["Fiat 125","34-125-showroom"],["Fiat Duna","35-duna-showroom"],["Fiat Cronos","36-cronos-showroom"],["Fiat Siena","37-siena-showroom"],["Fiat Punto","38-punto-showroom"],["Fiat Regatta","39-regatta-showroom"],["Fiat 500 Sport","40-500-showroom"]]:
+    for entry in [["Fiat 147 Vivace","18-147-showroom"],["Fiat Uno Fire 3 puertas","19-uno-showroom"],["Volkswagen Gol Power 3 puertas","20-gol-showroom"],["Fiat 128 Súper Europa 1.5","28-128-super-showroom"],["Fiat 133","29-133-showroom"],["Fiat 128 estándar","30-128-standard-showroom"],["Fiat 125","34-125-showroom"],["Fiat Duna","35-duna-showroom"],["Fiat Cronos","36-cronos-showroom"],["Fiat Siena","37-siena-showroom"],["Fiat Punto","38-punto-showroom"],["Fiat Regatta","39-regatta-showroom"],["Fiat 500 Sport","40-500-showroom"],["Chevrolet Corsa 5 puertas","51-corsa-showroom"],["Volkswagen Amarok","52-amarok-showroom"],["Ford Ranger cabina simple","53-ranger-showroom"],["Ford EcoSport","54-ecosport-showroom"],["Toyota Corolla","55-corolla-showroom"],["Fiat Palio 5 puertas","56-palio-showroom"]]:
         current_scene._feature(entry[0])
         await picture(entry[1])
     current_scene._change_tab("taller")
@@ -429,6 +429,56 @@ func run() -> void:
     await picture("49-career-system")
     current_scene._change_tab("historial")
     await picture("50-transactions-system")
+    session.menu_music.select_track("butakera")
+    current_scene._change_tab("ajustes")
+    await picture("57-playlist-settings")
+    if not session.menu_music.player.playing or session.menu_music.track_id()!="butakera":
+        push_error("The new Ogg playlist track did not play in the actual menu.")
+        quit(1)
+        return
+    session.reset()
+    session.game.buy(25)
+    for component in session.game.find_car(25).health:
+        session.game.find_car(25).health[component]=100.0
+    session.start_drag(25,"duel","technical","","Chevrolet Corsa 5 puertas")
+    change_scene_to_file("res://scenes/drag.tscn")
+    await process_frame
+    await process_frame
+    drag = current_scene
+    drag.set_physics_process(false)
+    await settle_drag(drag)
+    drag._refresh_hud()
+    drag.camera.snap()
+    await picture("58-night-pickup-staging")
+    driver = DragDriver.new()
+    driver.launch_rpm = 2400.0
+    drag.input_provider=func() -> Dictionary: return driver.controls(drag.car.powertrain,drag.run.clock,1.0/60.0)
+    if not await arm_drag(drag): return
+    drag.set_physics_process(true)
+    Engine.time_scale = 6.0
+    for frame in range(5000):
+        await physics_frame
+        if drag.run.elapsed>6.0: break
+    drag.set_physics_process(false)
+    drag.camera.snap()
+    drag._refresh_hud()
+    await picture("59-night-pickup-driving")
+    drag.set_physics_process(true)
+    for frame in range(7000):
+        await physics_frame
+        if drag.duel.finished: break
+    if drag.run.phase!="finished" or drag.opponent_run.phase!="finished":
+        push_error("The new pickup and Corsa did not complete the measured night duel.")
+        quit(1)
+        return
+    drag.set_physics_process(false)
+    drag._refresh_hud()
+    await picture("60-night-pickup-result")
+    Engine.time_scale = 1.0
+    drag.input_provider=Callable()
+    drag._back_to_garage()
+    await process_frame
+    await process_frame
     session.menu_music.set_menu_active(false)
     for i in range(20):
         await process_frame

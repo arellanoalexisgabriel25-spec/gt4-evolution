@@ -7,6 +7,7 @@ extends RefCounted
 const EngineTorque = preload("res://scripts/engine_torque.gd")
 const TechnicalReference = preload("res://scripts/technical_reference_data.gd")
 const Additional = preload("res://scripts/additional_vehicle_data.gd")
+const Regional = preload("res://scripts/regional_vehicle_data.gd")
 const TEST_DRIVER_KG := 75.0
 const PROFILES := {
     "Fiat 147 Vivace": {"id":"147_vivace_14_bio_1997_reference","variant":"Vivace 1.4 BIO · 1997 (compendio aportado)","curb_mass_kg":TechnicalReference.VIVACE_MASS_KG,"peak_torque_nm":TechnicalReference.VIVACE_TORQUE_NM,"redline_rpm":6200.0,"wheelbase_m":2.22,"rolling_radius_m":0.275,"gear_ratios":[3.91,2.24,1.47,1.04,0.86],"final_drive":3.76},
@@ -39,6 +40,7 @@ const PROFILES := {
 }
 
 static func for_model(model: String) -> Dictionary:
+    if Regional.DATA.has(model): return Regional.profile(model)
     if Additional.DATA.has(model): return Additional.profile(model)
     var profile: Dictionary = PROFILES.get(model,{}).duplicate(true)
     if not profile.is_empty():

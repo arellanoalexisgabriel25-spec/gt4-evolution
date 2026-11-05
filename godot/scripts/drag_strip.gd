@@ -4,6 +4,7 @@ const Visual = preload("res://scripts/car_visual.gd")
 const Style = preload("res://scripts/racing_theme.gd")
 const Surfaces = preload("res://scripts/track_surface.gd")
 const Run = preload("res://scripts/drag_run.gd")
+const Night = preload("res://scripts/drag_night.gd")
 const LANE_X := -3.75
 var blue_lamp: StandardMaterial3D
 var far_yellow: Array[StandardMaterial3D] = []
@@ -44,33 +45,13 @@ func sign_text(value: String, location: Vector3, font_size: int = 90, scale: flo
     return label
 
 func _ready() -> void:
-    var world := WorldEnvironment.new()
-    var environment := Environment.new()
-    environment.background_mode = Environment.BG_SKY
-    var sky := Sky.new()
-    var sky_material := ProceduralSkyMaterial.new()
-    sky_material.sky_top_color = Color("4079a6")
-    sky_material.sky_horizon_color = Color("c6d7df")
-    sky_material.ground_horizon_color = Color("acbcb3")
-    sky_material.sun_angle_max = 3.0
-    sky.sky_material = sky_material
-    environment.sky = sky
-    environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    environment.ambient_light_color = Color("cedbe9")
-    environment.ambient_light_energy = 0.38
-    world.environment = environment
-    add_child(world)
-    var sun := DirectionalLight3D.new()
-    sun.rotation_degrees = Vector3(-36,-35,0)
-    sun.light_color = Color("fff0dc")
-    sun.light_energy = 0.9
-    sun.shadow_enabled = true
-    sun.directional_shadow_max_distance = 130
-    add_child(sun)
-    var ground := box(Vector3(200,1,920),Vector3(0,-0.56,-320),Color("536b45"),true)
+    var night := Night.new()
+    night.name = "NightPresentation"
+    add_child(night)
+    var ground := box(Vector3(200,1,920),Vector3(0,-0.56,-320),Color("263327"),true)
     ground.get_child(0).position.y = 0.10
     var shader := Shader.new()
-    shader.code = "shader_type spatial; varying vec3 p; void vertex(){p=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;} void fragment(){float grain=fract(sin(dot(floor(p.xz*18.0),vec2(12.9898,78.233)))*43758.5453); float rubber=1.0-smoothstep(0.3,0.8,abs(abs(p.x)-3.75)); ALBEDO=vec3(0.15,0.16,0.17)*mix(0.90,1.06,grain)*(1.0-rubber*0.30); ROUGHNESS=0.97;}"
+    shader.code = "shader_type spatial; varying vec3 p; void vertex(){p=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;} void fragment(){float grain=fract(sin(dot(floor(p.xz*18.0),vec2(12.9898,78.233)))*43758.5453); float rubber=1.0-smoothstep(0.3,0.8,abs(abs(p.x)-3.75)); float dz=mod(p.z+16.0,32.0)-16.0; float pool=exp(-dz*dz/105.0)*0.075; ALBEDO=vec3(0.16,0.17,0.19)*mix(0.90,1.06,grain)*(1.0-rubber*0.30); EMISSION=vec3(1.0,0.60,0.26)*pool*(1.0-rubber*0.25); ROUGHNESS=0.88;}"
     var asphalt := ShaderMaterial.new()
     asphalt.shader = shader
     # Surface borders and tire queries share these exact dimensions.

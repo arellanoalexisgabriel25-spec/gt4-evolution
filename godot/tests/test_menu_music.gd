@@ -19,7 +19,7 @@ func run() -> void:
     var music = session.menu_music
     check(music.track!=null and music.track.get_length()>128 and music.track.get_length()<130,"The supplied MP3 actually loads and decodes with its expected duration")
     check(FileAccess.get_sha256(music.TRACK_PATH)=="d109a76148ab20504ffbfc07cec643c9c44a95d57a165a53dcd07694a56a08aa","The packaged menu track retains the user's original bytes")
-    check(music.player.stream.loop,"Menu music repeats using the real MP3 stream loop flag")
+    check(not music.player.stream.loop and music.player.finished.is_connected(music._advance_finished),"The stream advances the real playlist instead of looping the same track forever")
     change_scene_to_file("res://scenes/main.tscn")
     await process_frame
     await process_frame

@@ -231,3 +231,34 @@ la escala del juego es una normalización visual estimada, no una medición real
 Los recursos no indican una licencia de autor verificable en sus metadatos;
 se conservan como aportes del usuario con derechos de sus autores, sin relicenciarlos
 bajo MIT. Los rigs son aproximaciones sobre escaneos, no suspensión articulada.
+
+
+## Incorporación 0.22 / seis modelos regionales
+
+Los seis GLB recibidos tienen 150.000 triángulos y una textura de 2048².
+Se preservan los originales fuera del juego y se generan derivados con Blender
+4.3.2, `tools/optimize_fleet_models.py`, costuras UV protegidas y texturas RGB
+PNG 1024² con Lanczos. Las texturas se reprocesan y usan mipmaps/compresión VRAM.
+Los derivados se distribuyen como aportes del usuario; no se relicencian bajo MIT.
+
+La inspección visual identifica Corsa hatch cinco puertas, Amarok doble cabina,
+Ranger cabina simple, EcoSport primera generación, Corolla sedán y Palio hatch
+cinco puertas. El ZIP llamado «Corsa Classic» no contiene el sedán Classic.
+La carrocería Amarok no identifica el motor TDI base: se mantiene explícita la
+asociación mecánica provisional. El Palio no usa la ficha Weekend del compendio.
+
+| Recurso | Triángulos derivados | SHA256 original | SHA256 derivado |
+| --- | ---: | --- | --- |
+| corsa | 39,996 | `60001c8d07e8f35fb16917b4e642ca5ba966c14a18584692f463435d22c48917` | `77f193d7e6e4715d2a5563442b87e6c280c8a12a0ed80a479af30ce564eeef1e` |
+| amarok | 39,998 | `a44ba417e1c7ceb2f450d8daa7c8f549649634804d8465dfd15ab86f493d5ebf` | `8436078f25795d3a0c3c21487915f550e247a11074006d8fd119c6d2700638ee` |
+| ranger | 39,999 | `6aa427bccbbdb4c86bbaf15410b9c628a5ff15f55a17e7cb218bbe57bac42770` | `3649ae53c09a9ddcc1cbf600e8b1515fa691ff2a098b0aee23d67de41f2f36fa` |
+| ecosport | 39,996 | `3eeeb3d67eecb07a8efa997287faff44b958cfcc60a32208593d56f5d94584a6` | `ff30edaa3e7fa5a69d984439e6c3d3df7c5fae3a9739961944c24671aa7303cd` |
+| corolla | 40,000 | `20dc2b921318de09c1dda358d3d393a59dcd9e651a6e2bc6d651b598e046cb93` | `8a829dfd8692032d1c5f7066545a8dbd4c08c90f029dcf29721209d6d0c8250b` |
+| palio | 39,998 | `e3dbd65026aa83146c1e14059f12aa3b940f80dd1ba74089fd0167d3237c161e` | `f9a0f1e3a9d87788e6bab9e90c892459f421260c70ae74129ac6be4001e8e7e7` |
+
+Cada visual separa cuatro ruedas mediante sobres elípticos estimados y recorte
+de triángulos que interpola UV/normales. Se comprueban área de superficie,
+orientación, grupos no vacíos y textura. Las caras adicionales de recorte se
+cuentan aparte; la colisión sigue siendo un volumen simple independiente.
+Los faros proyectan luz y los frenos reflejan rojo sobre el suelo; no se añaden
+ópticas flotantes a los escaneos. No hay rig de suspensión ni deformación visual.

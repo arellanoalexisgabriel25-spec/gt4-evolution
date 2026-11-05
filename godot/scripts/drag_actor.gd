@@ -10,6 +10,10 @@ var measured_acceleration := 0.0
 var zero_to_hundred := -1.0
 var acceleration_clock := 0.0
 
+func _ready() -> void:
+    super._ready()
+    visual.set_night_lighting()
+
 # Four vertical suspension probes query real world collision, excluding vehicles.
 # Ray reach is an explicit approximation; there is no full suspension solver yet.
 func sample_ground() -> Dictionary:

@@ -6,6 +6,8 @@ const FLAGSHIPS := ["Fiat 147 Vivace", "Fiat Uno Fire 3 puertas", "Volkswagen Go
 const TechnicalReference = preload("res://scripts/technical_reference_data.gd")
 const Additional = preload("res://scripts/additional_vehicle_data.gd")
 const NATIONALS = Additional.MODELS
+const Regional = preload("res://scripts/regional_vehicle_data.gd")
+const REGIONALS = Regional.MODELS
 const CLASSICS := ["Fiat 128 Súper Europa 1.5", "Fiat 133", "Fiat 128 estándar"]
 const DATA := {
     "Fiat 147 Vivace": {
@@ -60,6 +62,12 @@ const DATA := {
     "Fiat Punto": Additional.DATA["Fiat Punto"],
     "Fiat Regatta": Additional.DATA["Fiat Regatta"],
     "Fiat 500 Sport": Additional.DATA["Fiat 500 Sport"],
+    "Chevrolet Corsa 5 puertas": Regional.DATA["Chevrolet Corsa 5 puertas"],
+    "Volkswagen Amarok": Regional.DATA["Volkswagen Amarok"],
+    "Ford Ranger cabina simple": Regional.DATA["Ford Ranger cabina simple"],
+    "Ford EcoSport": Regional.DATA["Ford EcoSport"],
+    "Toyota Corolla": Regional.DATA["Toyota Corolla"],
+    "Fiat Palio 5 puertas": Regional.DATA["Fiat Palio 5 puertas"],
 
 }
 
@@ -74,7 +82,7 @@ static func has_definition(model: String) -> bool:
 
 static func market_order(cars: Array) -> Array:
     var ordered: Array = []
-    for model in FLAGSHIPS+CLASSICS+NATIONALS:
+    for model in FLAGSHIPS+CLASSICS+NATIONALS+REGIONALS:
         for car in cars:
             if car.get("model")==model:
                 ordered.append(car)

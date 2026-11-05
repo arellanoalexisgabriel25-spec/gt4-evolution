@@ -8,6 +8,8 @@ signal arm_requested
 const Style = preload("res://scripts/racing_theme.gd")
 const Run = preload("res://scripts/drag_run.gd")
 const Tire = preload("res://scripts/tire_model.gd")
+const Instruments = preload("res://scripts/drag_instruments.gd")
+var instruments
 var model_label: Label
 var clock_label: Label
 var reaction_label: Label
@@ -101,17 +103,24 @@ func _ready() -> void:
         button.custom_minimum_size = Vector2(102,30)
         button.pressed.connect(func(): entry[1].emit())
         actions.add_child(button)
-    speed_panel = panel(Rect2(-250,-158,232,140),Vector2.ONE)
-    var numbers := column(speed_panel)
-    var row := HBoxContainer.new()
-    numbers.add_child(row)
-    gear_label = label(row,"N",50)
+    speed_panel = panel(Rect2(-324,-162,306,144),Vector2.ONE)
+    instruments = Instruments.new()
+    instruments.custom_minimum_size = Vector2(290,128)
+    instruments.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    speed_panel.add_child(instruments)
+    gear_label = label(instruments,"N",27)
+    gear_label.position = Vector2(193,89)
+    gear_label.size = Vector2(54,32)
+    gear_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     gear_label.add_theme_color_override("font_color",Style.SELECTED)
-    speed_label = label(row,"0",50)
-    speed_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    speed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-    rpm_label = label(numbers,"KM/H    900 RPM",17)
-    rpm_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+    speed_label = label(instruments,"0",27)
+    speed_label.position = Vector2(38,89)
+    speed_label.size = Vector2(64,32)
+    speed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    rpm_label = label(instruments,"900 RPM",10)
+    rpm_label.position = Vector2(152,115)
+    rpm_label.size = Vector2(136,13)
+    rpm_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     for metric in [gear_label,speed_label,rpm_label,clock_label,reaction_label,best_label]:
         metric.add_theme_font_override("font",Style.MONO)
     details_panel = panel(Rect2(18,-326,352,206),Vector2(0,1))
@@ -173,7 +182,8 @@ func refresh(data: Dictionary) -> void:
     reaction_label.visible = not reaction_label.text.is_empty()
     gear_label.text = "N" if model.gear==0 else ("R" if model.gear<0 else str(model.gear))
     speed_label.text = "0" if absf(model.speed_mps)<0.15 else "%.0f" % absf(model.speed_mps*3.6)
-    rpm_label.text = "KM/H    %.0f RPM" % model.rpm
+    rpm_label.text = "%.0f RPM" % model.rpm
+    instruments.readings(model.speed_mps*3.6,model.rpm,model.config.redline_rpm)
     pedals_label.text = "ACEL %.0f%%   EMBRAGUE %.0f%%" % [model.throttle*100,(1.0-model.clutch_engagement)*100]
     condition_label.text = "GOMAS DL %.0f°C / TR %.0f°C · MOTOR %.0f°C\n%s · %s · %s" % [model.axles.temperatures.x,model.axles.temperatures.y,model.engine_temperature,model.config.drivetrain,"TCS ACTIVO" if model.tcs_cut<0.95 else ("TCS ON" if model.traction_control else "TCS OFF"),"ABS" if model.axles.abs_active else ("PATINA" if model.wheelspin>0.18 and model.gear>0 else "AGARRE")]
     var acceleration_time := float(data.get("zero_to_hundred",-1.0))
@@ -266,11 +276,6 @@ func _lane_result(name: String, entry: Dictionary) -> String:
     return "%s%s\nET %.3f · RT %.3f\nTOTAL %.3f s" % [name," · CAÍDA" if entry["status"]=="breakout" else "",ticket["et"],ticket["reaction"],ticket["total"]]
 
 func _draw() -> void:
-    for i in range(24):
-        var color := Style.BORDER
-        if float(i)/24.0<rpm_fraction:
-            color = Style.DANGER if i>=21 else Style.ACCENT.lerp(Style.HOVER,float(i)/24.0)
-        draw_rect(Rect2(size.x-240+i*8.8,size.y-33,7,4),color)
     if tree_phase=="running":
         var track := Rect2(size.x*0.5-105,size.y-18,210,2)
         draw_rect(track,Color(0.1,0.15,0.2,0.7))

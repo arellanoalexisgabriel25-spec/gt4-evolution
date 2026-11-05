@@ -39,6 +39,7 @@ var mass: float:
 @export var abs_assist := true
 @export var turbo_fraction := 0.0
 @export var spool_rpm := 2500.0
+@export var boost_span_rpm := 1400.0
 @export var turbo_response := 2.0
 @export var brake_health := 100.0
 @export var engine_wear_factor := 1.0
@@ -87,7 +88,12 @@ static func from_vehicle(vehicle: Dictionary, factory: bool = false):
         result.front_weight_bias = float(local.get("front_weight_bias",result.front_weight_bias))
         result.drivetrain_efficiency = 0.91 if result.drivetrain=="FWD" else (0.83 if result.drivetrain=="AWD" else 0.88)
         result.drag_area = float(local.get("drag_area_m2",0.69))
-        result.cg_height = 0.48
+        result.cg_height = float(local.get("cg_height_m",0.48))
+        result.idle_rpm = float(local.get("idle_rpm",900.0))
+        result.spool_rpm = float(local.get("spool_rpm",2500.0))
+        result.boost_span_rpm = float(local.get("boost_span_rpm",1400.0))
+        result.engine_inertia = float(local.get("engine_inertia",0.26))
+        result.wheel_inertia = float(local.get("wheel_inertia",3.2))
         result.profile_id = str(local["id"])
         result.record_revision = str(local.get("record_revision",""))
         result.mass_basis = str(local.get("mass_basis",result.mass_basis))

@@ -66,7 +66,7 @@ func boost_factor(dt: float, rpm: float, throttle: float, loaded: bool, config) 
     if config.turbo_fraction<=0.0:
         boost = 0.0
         return 1.0
-    var target := clampf((rpm-config.spool_rpm)/1400.0,0,1)*throttle*(1.0 if loaded else 0.25)
+    var target := clampf((rpm-config.spool_rpm)/maxf(config.boost_span_rpm,1.0),0,1)*throttle*(1.0 if loaded else 0.25)
     var response: float = config.turbo_response if target>boost else 9.0
     boost = lerpf(boost,target,1.0-exp(-response*dt))
     return (1.0+config.turbo_fraction*boost)/(1.0+config.turbo_fraction)

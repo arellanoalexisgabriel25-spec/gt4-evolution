@@ -33,6 +33,7 @@ var controls_path: String = ControlSettings.FILE_PATH
 var navigation
 var controller_label: Label
 var music_label: Label
+var music_choice: OptionButton
 var home_featured := ""
 var garage_featured := 0
 var duel_profile := "technical"
@@ -58,6 +59,7 @@ func _ready() -> void:
     navigation.tab_action = _controller_tab
     add_child(navigation)
     GameSession.menu_music.set_menu_active(true)
+    GameSession.menu_music.track_changed.connect(_music_changed)
     if not GameSession.last_notice.is_empty():
         notice.text = GameSession.last_notice
         GameSession.last_notice = ""
@@ -601,7 +603,27 @@ func _reset() -> void:
 
 func _settings() -> void:
     content.add_child(_label("MÚSICA DE MENÚ",22))
-    content.add_child(_label(GameSession.menu_music.TITLE,15))
+    music_choice = OptionButton.new()
+    music_choice.name = "MusicTrack"
+    for song in GameSession.menu_music.Playlist.SONGS:
+        music_choice.add_item(song.title)
+    music_choice.selected = GameSession.menu_music.track_index
+    music_choice.item_selected.connect(func(index):
+        GameSession.menu_music.select_track(str(GameSession.menu_music.Playlist.SONGS[index].id))
+        _save_controls())
+    content.add_child(music_choice)
+    var playback := HBoxContainer.new()
+    playback.add_child(_button("ANTERIOR",func(): _music_step(-1)))
+    playback.add_child(_button("SIGUIENTE",func(): _music_step(1)))
+    var shuffle := CheckButton.new()
+    shuffle.text = "ALEATORIO"
+    shuffle.button_pressed = GameSession.controls.music_shuffle
+    shuffle.toggled.connect(func(value):
+        GameSession.controls.music_shuffle = value
+        GameSession.menu_music.set_shuffle(value)
+        _save_controls())
+    playback.add_child(shuffle)
+    content.add_child(playback)
     music_label = _label("Volumen: %.0f%%" % (GameSession.controls.music_volume*100),15)
     content.add_child(music_label)
     var volume_slider := HSlider.new()
@@ -615,6 +637,7 @@ func _settings() -> void:
     controller_label = _label(GameSession.controls.controller.description(),14)
     content.add_child(controller_label)
     var clutch := OptionButton.new()
+    clutch.name = "ClutchMode"
     clutch.add_item("EMBRAGUE: LB / L1 · LT / L2 FRENA")
     clutch.add_item("EMBRAGUE ANALÓGICO: LT / L2 · B / CÍRCULO FRENA")
     clutch.selected = 1 if GameSession.controls.analog_clutch else 0
@@ -622,6 +645,7 @@ func _settings() -> void:
     content.add_child(clutch)
     for entry in [["Control de tracción (TCS)","traction_control"],["Freno antibloqueo (ABS)","abs_assist"]]:
         var toggle := CheckButton.new()
+        toggle.name = entry[1]
         toggle.text = entry[0]
         toggle.button_pressed = GameSession.controls.get(entry[1])
         toggle.toggled.connect(func(value): GameSession.controls.set(entry[1],value); _save_controls())
@@ -710,8 +734,18 @@ func _restore_controls() -> void:
     pending_binding = ""
     GameSession.controls.restore_defaults()
     GameSession.menu_music.set_volume(GameSession.controls.music_volume)
+    GameSession.menu_music.select_track(GameSession.controls.music_track_id)
+    GameSession.menu_music.set_shuffle(GameSession.controls.music_shuffle)
     _save_controls()
     _render()
+
+func _music_step(direction: int) -> void:
+    GameSession.menu_music.advance(direction)
+    _save_controls()
+
+func _music_changed(_id: String) -> void:
+    if is_instance_valid(music_choice):
+        music_choice.selected = GameSession.menu_music.track_index
 
 func _set_music_volume(value: float) -> void:
     GameSession.controls.music_volume = value

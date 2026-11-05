@@ -6,6 +6,7 @@ const ARROWS := {"accelerate":KEY_UP, "reverse":KEY_DOWN, "left":KEY_LEFT, "righ
 const TITLES := {"accelerate":"Acelerar", "reverse":"Frenar / reversa", "left":"Girar a la izquierda", "right":"Girar a la derecha", "brake":"Freno", "recover":"Recuperar vehículo", "pause":"Pausar","shift_up":"Subir marcha (¼ milla)","shift_down":"Bajar marcha (¼ milla)","clutch":"Embrague (¼ milla)","handbrake":"Freno de mano (¼ milla)"}
 const FILE_PATH := "user://controls_v1.json"
 const Controller = preload("res://scripts/controller_state.gd")
+const Playlist = preload("res://scripts/menu_playlist.gd")
 var controller = Controller.new()
 var keys: Dictionary = DEFAULT_KEYS.duplicate()
 var drag_keys: Dictionary = DRAG_KEYS.duplicate()
@@ -17,6 +18,8 @@ var analog_clutch := false
 var traction_control := false
 var abs_assist := true
 var music_volume := 0.35
+var music_track_id := "perra"
+var music_shuffle := false
 
 static func action(name: String) -> String:
     return "evo_" + name
@@ -49,6 +52,8 @@ func restore_defaults() -> void:
     traction_control = false
     abs_assist = true
     music_volume = 0.35
+    music_track_id = "perra"
+    music_shuffle = false
     apply()
 
 func apply() -> void:
@@ -121,9 +126,13 @@ func help_text() -> String:
     return "%s/↑ acelerar · %s/↓ reversa · %s/%s girar\n%s freno · %s recuperar · %s pausa · Esc garaje\nMando: RT/LT acelerar/frenar · B reversa\nStick/cruceta girar · X recuperar · Inicio pausa" % [key_label("accelerate"),key_label("reverse"),key_label("left"),key_label("right"),key_label("brake"),key_label("recover"),key_label("pause")]
 
 func to_dict() -> Dictionary:
-    return {"version":1, "keys":keys.duplicate(), "drag_keys":drag_keys.duplicate(),"deadzone":deadzone,"camera_mode":camera_mode,"keyboard_steering":keyboard_steering,"trigger_deadzone":trigger_deadzone,"analog_clutch":analog_clutch,"traction_control":traction_control,"abs_assist":abs_assist,"music_volume":music_volume}
+    return {"version":1, "keys":keys.duplicate(), "drag_keys":drag_keys.duplicate(),"deadzone":deadzone,"camera_mode":camera_mode,"keyboard_steering":keyboard_steering,"trigger_deadzone":trigger_deadzone,"analog_clutch":analog_clutch,"traction_control":traction_control,"abs_assist":abs_assist,"music_volume":music_volume,"music_track_id":music_track_id,"music_shuffle":music_shuffle}
 
 func from_dict(data: Dictionary) -> bool:
+    var song = data.get("music_track_id","perra")
+    var shuffled = data.get("music_shuffle",false)
+    if typeof(song)!=TYPE_STRING or Playlist.index_of(song)<0 or typeof(shuffled)!=TYPE_BOOL:
+        return false
     var triggers = data.get("trigger_deadzone",0.04)
     var music = data.get("music_volume",0.35)
     if typeof(triggers) not in [TYPE_FLOAT,TYPE_INT] or not is_finite(float(triggers)) or float(triggers)<0.0 or float(triggers)>0.2:
@@ -190,6 +199,8 @@ func from_dict(data: Dictionary) -> bool:
     keyboard_steering = float(steering)
     trigger_deadzone = float(triggers)
     music_volume = float(music)
+    music_track_id = song
+    music_shuffle = shuffled
     analog_clutch = data.get("analog_clutch",false)
     traction_control = data.get("traction_control",false)
     abs_assist = data.get("abs_assist",true)

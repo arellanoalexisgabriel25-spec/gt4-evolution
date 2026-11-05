@@ -5,13 +5,17 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.21"
-README = """GT4 EVOLUTION — PROTOTIPO 0.21 / LÍNEA VISUAL Y REFERENCIAS TÉCNICAS
+VERSION = "0.22"
+README = """GT4 EVOLUTION — PROTOTIPO 0.22 / PICADAS NOCTURNAS
 
 WINDOWS: extraé TODO el ZIP y abrí GT4Evolution.exe o JUGAR.cmd.
 Es un juego exportado independiente: no necesita Godot instalado ni importar el
 proyecto al iniciar. Conservá GT4Evolution.pck junto al ejecutable.
 El ZIP Proyecto contiene las fuentes: abrí juego/project.godot con Godot 4.6.3.
+
+¼ de milla nocturno con alumbrado cálido, faros y dos instrumentos analógicos.
+Corsa 5p, Amarok, Ranger cabina simple, EcoSport, Corolla y Palio 5p amplían
+la flota a diecinueve modelos aportados. Sus variantes mecánicas son provisionales.
 
 Interfaz oscura con azul acero y números monoespaciados, según GT4_UI_System.
 El 147 Vivace representa la referencia 1.4 BIO 1997: 63 CV, 10,4 kgfm y 807 kg antes de
@@ -75,10 +79,11 @@ según la transcripción de fabricante aportada. 13,2 s de 0–100 y 158 km/h so
 referencias de contraste, no aceleraciones impuestas por el juego.
 La pista original de 402,336 m se inspira en el ambiente del autódromo Gálvez.
 Los modos anteriores siguen disponibles; los eventos simulados se identifican.
-Música: Lezcano Alan — PERRA #Ritmomanijero, Prod Sketchy, aportada con autorización
-de redistribución; volumen en AJUSTES. No está cubierta por MIT.
+Música: trece temas aportados con autorización expresa de redistribución.
+AJUSTES permite elegir tema, anterior/siguiente, aleatorio y volumen.
+La música se desvanece en pista y retoma en los menús. No está cubierta por MIT.
 
-Ver juego/RELEASE-0.21.md en el ZIP Proyecto y documentacion/ en Windows para el
+Ver juego/RELEASE-0.22.md en el ZIP Proyecto y documentacion/ en Windows para el
 alcance exacto y resultados de validación. El entorno valida Linux y el mismo PCK;
 Windows y mando físico requieren prueba en esos equipos. Si no inicia, ejecutá
 DIAGNOSTICO.cmd y compartí juego.log. Licencias incluidas. No se distribuyen

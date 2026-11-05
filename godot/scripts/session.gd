@@ -2,7 +2,7 @@ extends Node
 
 const Economy = preload("res://scripts/economy.gd")
 const Career = preload("res://scripts/career.gd")
-const VERSION := "0.21"
+const VERSION := "0.22"
 const ControlSettings = preload("res://scripts/control_settings.gd")
 const Catalog = preload("res://scripts/car_catalog.gd")
 const DragClasses = preload("res://scripts/drag_class_rules.gd")
@@ -32,6 +32,9 @@ func _ready() -> void:
     menu_music = Music.new()
     add_child(menu_music)
     menu_music.set_volume(controls.music_volume)
+    menu_music.select_track(controls.music_track_id)
+    menu_music.set_shuffle(controls.music_shuffle)
+    menu_music.track_changed.connect(func(id): controls.music_track_id=id)
     Input.joy_connection_changed.connect(_controller_connection)
 
 func _controller_connection(device: int, connected: bool) -> void:
