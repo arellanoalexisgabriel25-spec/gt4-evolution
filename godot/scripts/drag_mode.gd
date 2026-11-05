@@ -265,7 +265,7 @@ func _physics_process(delta: float) -> void:
     if run.phase == "finished" and not handled_finish:
         if garage.settle(car.powertrain.wear,car.damage):
             if is_duel:
-                personal_best = GameSession.career.stock_drag_records.consider(GameSession.selected_vehicle,run.report())
+                personal_best = GameSession.career.stock_drag_records.consider_for_profile(GameSession.selected_vehicle,run.report(),garage.record_profile)
             else:
                 personal_best = garage.record_finish(run.report())
             handled_finish = true
@@ -273,7 +273,7 @@ func _physics_process(delta: float) -> void:
     _refresh_hud()
 
 func _refresh_hud() -> void:
-    var best: Dictionary = (GameSession.career.stock_drag_records if is_duel else GameSession.career.drag_records).best(GameSession.selected_vehicle)
+    var best: Dictionary = (GameSession.career.stock_drag_records if is_duel else GameSession.career.drag_records).best_for_profile(GameSession.selected_vehicle,garage.record_profile)
     hud.refresh({"procedure_phase":procedure.phase,"procedure_remaining":procedure.remaining,"procedure_message":procedure.status(),"procedure_ready":procedure.player_ready and procedure.rival_ready,"model":car.powertrain,"run":run,"settings":GameSession.controls,"name":car.model_name,"position":-car.position.z,"best":best,"staged":_staged(),"can_arm":_can_arm(),"message":message,"paused":paused,"personal_best":personal_best,"wear_start":attempt_wear_start,"impacts":car.damage.impacts,"damage":car.damage.cumulative,"duel":is_duel,"opponent_name":opponent_name,"opponent_model":opponent.model_name if is_duel else "","opponent_run":opponent_run,"opponent_gap":opponent.position.z-car.position.z if is_duel else 0.0,"duel_result":duel_result,"zero_to_hundred":car.zero_to_hundred,"class_data":class_data,"ground":car.ground_state})
 
 func _shift(direction: int) -> void:

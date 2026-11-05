@@ -1,5 +1,6 @@
 extends SubViewportContainer
 
+const Style = preload("res://scripts/racing_theme.gd")
 const Visual = preload("res://scripts/car_visual.gd")
 var model_name := ""
 var paint_color := Color("a12b39")
@@ -17,7 +18,7 @@ func _ready() -> void:
     var environment := WorldEnvironment.new()
     environment.environment = Environment.new()
     environment.environment.background_mode = Environment.BG_COLOR
-    environment.environment.background_color = Color("cdd5df")
+    environment.environment.background_color = Style.BACKGROUND
     environment.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     environment.environment.ambient_light_color = Color("c8d5e5")
     environment.environment.ambient_light_energy = 0.8
@@ -39,7 +40,7 @@ func _ready() -> void:
     stage.radial_segments = 64
     floor_mesh.mesh = stage
     floor_mesh.position.y = -0.12
-    floor_mesh.material_override = Visual.material(Color("8c9cae"),0.3,0.35)
+    floor_mesh.material_override = Visual.material(Style.ELEVATED,0.2,0.65)
     viewport.add_child(floor_mesh)
     car = Visual.new()
     car.model_name = model_name

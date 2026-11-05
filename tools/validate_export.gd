@@ -4,6 +4,10 @@ extends SceneTree
 # script, resource, scene and autoload below is loaded from that exact pack.
 const Catalog = preload("res://scripts/car_catalog.gd")
 const Visual = preload("res://scripts/car_visual.gd")
+const Style = preload("res://scripts/racing_theme.gd")
+const Config = preload("res://scripts/drag_vehicle_config.gd")
+const Reference = preload("res://scripts/technical_reference_data.gd")
+const Store = preload("res://scripts/save_store.gd")
 const Driver = preload("res://scripts/drag_rival_driver.gd")
 var checks := 0
 var failed := false
@@ -34,7 +38,7 @@ func await_automatic_start(scene) -> bool:
 
 func run() -> void:
     var session = root.get_node("GameSession")
-    check(session.VERSION=="0.20","The exported PCK carries the current game version")
+    check(session.VERSION=="0.21","The exported PCK carries the current game version")
     check(Catalog.DATA.size()==13,"The export contains all thirteen supplied car models")
     for name in Catalog.DATA:
         var profile: Dictionary = Catalog.DATA[name]
@@ -46,6 +50,8 @@ func run() -> void:
         check(visual.imported_model and visual.wheels.size()==4 and visual.front_pivots.size()==2,"The exported car has a body and four animatable wheels: "+name)
         visual.queue_free()
         await process_frame
+    check(Style.build().get_stylebox("panel","PanelContainer").bg_color==Color("1a2129"),"The exported UI carries the supplied dark visual palette")
+    check(is_equal_approx(Style.MONO.get_string_size("1111").x,Style.MONO.get_string_size("8888").x),"The exported numeric font is loaded with tabular widths")
     session.reset()
     var car_id := 0
     for car in session.game.cars:
@@ -80,5 +86,33 @@ func run() -> void:
     await process_frame
     await process_frame
     check(current_scene.name=="Main" and session.game.find_car(car_id).owner=="player","The exported duel returns to the same owned unit")
+    session.game.buy(11)
+    var revised: Dictionary = session.game.find_car(11)
+    for component in revised.health: revised.health[component]=100.0
+    var balance: int = session.game.balance
+    check(session.start_drag(11,"duel","technical","1","Fiat 500 Sport"),"The exported revised 147 enters a mixed physical factory race")
+    change_scene_to_file("res://scenes/drag.tscn")
+    await process_frame
+    await process_frame
+    scene = current_scene
+    var metrics: Dictionary = scene.car.powertrain.config.metrics()
+    check(metrics.curb_mass_kg==807.0 and absf(metrics.peak_torque_nm-101.98916)<0.0001 and absf(metrics.calculated_peak_power_cv-63.0)<0.0001,"The shipped physics actually uses the new 147 PDF anchors")
+    check(metrics.sources[0].sha256==Reference.DOCUMENT_SHA256 and metrics.estimated_fields.has("power_rpm"),"The exported fiche keeps its source and estimated power RPM distinct")
+    driver = Driver.new("technical")
+    scene.input_provider=func() -> Dictionary: return driver.controls(scene.car.powertrain,scene.run.clock,1.0/60.0)
+    check(await await_automatic_start(scene),"The revised exported car passes through the same automatic starter")
+    for frame in range(9000):
+        await physics_frame
+        if scene.duel.finished: break
+    check(scene.run.phase=="finished" and scene.opponent_run.phase=="finished","Both revised factory cars cover the actual measured course")
+    var current: Dictionary = session.career.stock_drag_records.best_for_profile(11,Reference.VIVACE_REVISION)
+    check(not current.is_empty() and is_equal_approx(current.et,scene.run.elapsed),"The exported result stores a measured profile-specific personal best")
+    var decoded: Dictionary = Store.decode(Store.encode(session.game,session.career))
+    check(decoded.error=="" and decoded.career.stock_drag_records.best_for_profile(11,Reference.VIVACE_REVISION).physics_profile==Reference.VIVACE_REVISION,"The exported game can save and load the physical revision metadata")
+    check(session.game.balance==balance,"The new physical reference cannot generate or lose credits on finish")
+    scene.input_provider=Callable()
+    scene._back_to_garage()
+    await process_frame
+    await process_frame
     if not failed: print("PASS: %d exported PCK assertions" % checks)
     quit(1 if failed else 0)

@@ -44,7 +44,7 @@ func label(parent: Node, value: String, font_size: int) -> Label:
     node.mouse_filter = Control.MOUSE_FILTER_IGNORE
     node.add_theme_font_override("font",Style.FONT)
     node.add_theme_font_size_override("font_size",font_size)
-    node.add_theme_color_override("font_color",Color.WHITE)
+    node.add_theme_color_override("font_color",Style.TEXT)
     parent.add_child(node)
     return node
 
@@ -59,7 +59,7 @@ func panel(rect: Rect2, anchor: Vector2 = Vector2.ZERO) -> PanelContainer:
     node.offset_top = rect.position.y
     node.offset_bottom = rect.end.y
     node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    node.add_theme_stylebox_override("panel",Style.panel(Color(0.025,0.06,0.11,0.78),8))
+    node.add_theme_stylebox_override("panel",Style.panel(Style.HUD_BACKGROUND,8))
     add_child(node)
     return node
 
@@ -106,12 +106,14 @@ func _ready() -> void:
     var row := HBoxContainer.new()
     numbers.add_child(row)
     gear_label = label(row,"N",50)
-    gear_label.add_theme_color_override("font_color",Color("f0d48c"))
+    gear_label.add_theme_color_override("font_color",Style.SELECTED)
     speed_label = label(row,"0",50)
     speed_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     speed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
     rpm_label = label(numbers,"KM/H    900 RPM",17)
     rpm_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+    for metric in [gear_label,speed_label,rpm_label,clock_label,reaction_label,best_label]:
+        metric.add_theme_font_override("font",Style.MONO)
     details_panel = panel(Rect2(18,-326,352,206),Vector2(0,1))
     # The pause menu shades the track; side diagnostics stay above that shade.
     details_panel.z_index = 2
@@ -130,7 +132,7 @@ func _ready() -> void:
     help_label.add_theme_color_override("font_shadow_color",Color.BLACK)
     help_label.add_theme_constant_override("shadow_offset_x",1)
     help_label.add_theme_constant_override("shadow_offset_y",1)
-    preparation_panel = panel(Rect2(-260,-112,520,92),Vector2(0.5,1))
+    preparation_panel = panel(Rect2(-310,-124,620,104),Vector2(0.5,1))
     preparation_label = label(preparation_panel,"",17)
     preparation_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     preparation_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -138,6 +140,8 @@ func _ready() -> void:
     var ticket_body := column(ticket_panel)
     ticket_body.add_theme_constant_override("separation",6)
     ticket_label = label(ticket_body,"",19)
+    ticket_label.add_theme_font_override("font",Style.MONO)
+    ticket_label.add_theme_font_size_override("font_size",16)
     ticket_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     wear_label = label(ticket_body,"",15)
     damage_label = label(ticket_body,"",14)
@@ -225,6 +229,7 @@ func refresh(data: Dictionary) -> void:
     if paused:
         status = "PAUSA · CRONÓMETRO DETENIDO"
     status_label.text = status
+    status_label.add_theme_color_override("font_color",Style.DANGER if run.phase=="invalid" or procedure_phase=="expired" else Style.TEXT)
     status_label.visible = not status.is_empty()
     details_panel.visible = paused
     help_label.visible = paused
@@ -262,16 +267,16 @@ func _lane_result(name: String, entry: Dictionary) -> String:
 
 func _draw() -> void:
     for i in range(24):
-        var color := Color("536473")
+        var color := Style.BORDER
         if float(i)/24.0<rpm_fraction:
-            color = Color("df3445") if i>=21 else Color("f2d78e")
+            color = Style.DANGER if i>=21 else Style.ACCENT.lerp(Style.HOVER,float(i)/24.0)
         draw_rect(Rect2(size.x-240+i*8.8,size.y-33,7,4),color)
     if tree_phase=="running":
         var track := Rect2(size.x*0.5-105,size.y-18,210,2)
         draw_rect(track,Color(0.1,0.15,0.2,0.7))
-        draw_rect(Rect2(track.position,Vector2(track.size.x*progress,2)),Color("e2ca83"))
+        draw_rect(Rect2(track.position,Vector2(track.size.x*progress,2)),Style.HOVER)
     if show_tree:
         for i in range(4):
             var on := (tree_phase=="countdown" and i<3 and tree_clock>=0.5+float(i)*0.5) or (tree_phase=="running" and i==3)
-            var color := Color("f1bb55") if i<3 else Color("60d58a")
+            var color := Style.WARNING if i<3 else Style.SUCCESS
             draw_circle(Vector2(size.x*0.5-48+i*32,108),9,color if on else Color("32434f"))

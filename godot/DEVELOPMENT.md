@@ -8,7 +8,15 @@ Develop functional increments on descriptive branches, preserve user work and sa
 
 Current priority: develop a compact quarter-mile environment, manual shifting, measurable driving skill, persistent mechanical use and original visuals. Large-circuit expansion is deferred. Existing circuit, career and AI modes remain available. A simulated result must always be labelled as such.
 
-## Current increment: 0.20
+## Current increment: 0.21
+
+`technical_reference_data.gd` holds exact supplied 1997 Vivace anchors and PDF hash. Both catalog/circuit and stock drag configuration consume those constants. 63CV,10.4kgfm and807kg are user-compilation claims; power RPM5500, fuel/mass convention, gearing and interpolation remain estimates. `tools/benchmark_stock.gd` reports a numerical90s protocol rather than factory/scene measurements. No other grouped variant overwrites a better-identified prior reference.
+
+`DragRecords.consider_for_profile`/`best_for_profile` isolate changed physical revisions while keeping unversioned historical tickets readable. The first new valid finish archives the previous active ticket; slower or invalid repeats cannot mutate history. Career JSON accepts absent `drag_record_history`/`stock_drag_record_history` for previous saves. Standard unversioned caller behavior remains compatible. A revised ticket cannot be relabelled as another profile.
+
+`racing_theme.gd` centralizes the supplied GT4_UI_System colors, rounded subtle panels, focus states and OFL fonts. Main services, preview stage/map, pause and both HUDs share it. Monospaced racing digits do not change advance widths. New functional layout checks exercise1280×720 and1280×800; driving controls/HUD visibility remain unchanged.
+
+## Previous increment: 0.20
 
 `drag_start_procedure.gd` owns the pure starter state (25s warm-up,30s staging,1.5s continuous ready hold). These durations are game policy, not the supplied regulation. `drag_mode.gd` advances it only during unpaused physics, samples both actual cars, and arms their existing timing runs once. Enter is no longer a start input. Authorized warm-up is ahead of the line; the disclosed staging assist brakes, aligns and holds before timing, preserving heat/wear/odometry and resetting only acceleration metrics. No reverse-gear return is claimed. Leaving the local2.5–35m zone or missing the call cancels this exhibition preparation, not an official championship penalty ladder.
 

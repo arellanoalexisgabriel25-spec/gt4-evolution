@@ -62,7 +62,7 @@ func _initialize() -> void:
         var standard = Config.from_vehicle(car,true)
         var report: Dictionary = standard.metrics()
         check(is_equal_approx(standard.mass,standard.curb_mass+75.0),"The test mass explicitly includes a 75 kg driver")
-        check(report.status=="development_estimate" and not report.manufacturer_verified and (not report.sources.is_empty() if id==12 else report.sources.is_empty()),"Unsupported model estimates are never labelled verified factory specifications")
+        check(report.status=="development_estimate" and not report.manufacturer_verified and (not report.sources.is_empty() if id in [11,12] else report.sources.is_empty()),"Unsupported model estimates are never labelled verified factory specifications")
         check(standard.factory_class and not standard.abs_assist and standard.tire_compound=="street","The baseline protocol excludes gameplay assists and non-stock tire compounds")
         check(is_equal_approx(standard.cg_height,0.48),"An unmodified flagship retains its configured centre of gravity")
         var sampled := 0.0

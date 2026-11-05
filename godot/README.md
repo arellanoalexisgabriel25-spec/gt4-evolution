@@ -1,8 +1,28 @@
-# GT4 Evolution · v0.20 / Calentamiento y largada automática
+# GT4 Evolution · v0.21 / Línea visual y referencias técnicas
 
 Prototipo independiente de automovilismo en Godot 4.6.3. El desarrollo se centra en un **¼ de milla de 402,336 m contra otro auto físico**, con largada, cambios manuales, marcas y desgaste en un entorno original inspirado en el ambiente del autódromo Gálvez. Conserva mercado, garaje, taller, tuning y los modos anteriores. La investigación de GT4 se consulta como referencia; no se incluyen su ejecutable, modelos, texturas ni circuitos comerciales.
 
-## Novedades v0.20
+## Novedades v0.21
+
+Se aplica la línea de `GT4_UI_System.zip`: fondos oscuros, azul acero, bordes finos,
+Barlow para interfaz y Roboto Mono para números. El tema compartido actualiza
+Inicio, garaje, concesionario, taller, tuning, carrera, movimientos, ajustes, pausa
+y HUD. La pasada conserva el centro despejado y los datos extensos en pausa.
+Se comprueban distribuciones 16:9 y 16:10 sin perder funciones ni navegación con mando.
+[Dirección visual](UI-VISUAL-SYSTEM.md).
+
+El **147 Vivace 1.4 BIO 1997** usa ahora **63 CV, 10,4 kgfm y 807 kg**, de la referencia
+aportada. Se añade explícitamente piloto 75 kg; el régimen de potencia 5500 RPM es
+estimado, y la caja/aerodinámica necesitan contraste. La potencia/par de la curva
+se comprueban sin forzar un ET o 0–100. Las marcas de la ficha anterior se conservan
+como históricas, separadas de las nuevas, con carga de partidas previas.
+[Revisión del PDF](TECHNICAL-REPORT-REVIEW-0.21.md) · [Banco numérico](STOCK-BENCHMARK-0.21.md).
+
+El compendio agrupa otras variantes: se conservan la referencia específica del
+Uno Fire 2014 y el 500 Sport de 100 CV. Los videos de YouTube devolvieron CONNECT 403;
+no se afirma haberlos visto ni extraído maniobras de ellos.
+
+## Estado histórico: novedades v0.20
 
 Se incorporan **calentamiento previo y largador automático**. El art.11 aportado permite calentar desde la línea hacia delante, con rojo intermitente/amarillas de fondo; la luz azul termina esa fase y llama a alinear. La ventana de 25 s, los 30 s para prepararse y el sostén de 1,5 s son parámetros de juego, no duraciones oficiales. Enter ya no arma el semáforo.
 
@@ -42,7 +62,7 @@ El duelo usa configuración de fábrica, neumáticos de calle y protocolo sin ay
 
 Se incorporan los modelos aportados del **147 y del Uno**, con derivados de render optimizados a partir de originales de aproximadamente un millón de triángulos, preservando UV y materiales; el conteo final y la revisión gráfica se registran en el informe de entrega. Los originales se archivan por separado. El Gol mantiene su GLB aportado sin modificar. **El modelo del Uno recibido es de cinco puertas**, aunque la variante objetivo del catálogo sigue siendo Uno Fire de tres puertas: la diferencia visual permanece explícita y su corrección requiere un modelo adecuado.
 
-El Uno se identifica como **Fire 1.3 8V de tres puertas, año 2014**. Su curva respeta los **68 CV a 5.250 RPM** y **11,3 kgf·m a 2.250 RPM** de la referencia de fabricante transcrita por el usuario. Los **13,2 s de 0–100 y 158 km/h** se registran como objetivos de contraste, sin imponerlos a la física. Los demás puntos de curva, masas, relaciones y prestaciones continúan siendo **estimaciones de desarrollo**. Los nuevos textos permiten transcribir reglas, pero no verifican datos de fabricante; no se obtuvieron fichas de V6 para calibrarlos. [Reglamentos, artículos y límites](REGULATIONS-REFERENCE.md) · [Fuentes de vehículos](STOCK-SOURCES.md) · [Revisión del PDF Fiat](FIAT-REPORT-REVIEW.md) · [Informe de entrega y estado de validación](RELEASE-0.20.md) · [Procedencia de modelos](assets/cars/README.md).
+El Uno se identifica como **Fire 1.3 8V de tres puertas, año 2014**. Su curva respeta los **68 CV a 5.250 RPM** y **11,3 kgf·m a 2.250 RPM** de la referencia de fabricante transcrita por el usuario. Los **13,2 s de 0–100 y 158 km/h** se registran como objetivos de contraste, sin imponerlos a la física. Los demás puntos de curva, masas, relaciones y prestaciones continúan siendo **estimaciones de desarrollo**. Los nuevos textos permiten transcribir reglas, pero no verifican datos de fabricante; no se obtuvieron fichas de V6 para calibrarlos. [Reglamentos, artículos y límites](REGULATIONS-REFERENCE.md) · [Fuentes de vehículos](STOCK-SOURCES.md) · [Revisión del PDF Fiat](FIAT-REPORT-REVIEW.md) · [Informe de entrega y estado de validación](RELEASE-0.21.md) · [Procedencia de modelos](assets/cars/README.md).
 
 ## Estado histórico: incorporado en v0.16
 
@@ -75,7 +95,7 @@ Informe técnico, archivos y resultados: [RELEASE-0.14.md](RELEASE-0.14.md).
 
 Comprá un auto y elegí **GARAJE → ¼ DE MILLA / MANUAL**. También hay acceso desde Inicio cuando tenés un vehículo. La práctica no cobra inscripción ni paga premios; registra distancia, desgaste y mejor ticket por unidad.
 
-1. El auto aparece en **N**, a 5 m delante de la línea. Tenés25 s de calentamiento autorizado; es opcional.
+1. El auto aparece en **N**, a 5 m delante de la línea. Tenés 25 s de calentamiento autorizado; es opcional.
 2. Mantené **C**, tocá **E** para primera y prepará RPM con C. En FWD, soltá C con ráfagas **W+H**. H frena sólo atrás: el auto puede avanzar. Para detenerlo, **C+Espacio**. No excedas la zona 2,5–35 m.
 3. La **luz azul** termina el calentamiento. El asistente frena/alinea y sostiene antes de cronometrar; mantené **primera+C**. Ambos listos durante 1,5 s activan el semáforo automáticamente, sin Enter. Hay 30 s para prepararse.
 4. Prepará RPM; esperá verde y soltá C para largar. Para cambiar, **C+E/Q**; podés mantener W. Pasar de RPM y cambiar mal tiene consecuencias.
@@ -146,7 +166,7 @@ La recuperación conserva las vueltas ya completadas y la distancia realmente re
 
 ## Límites actuales
 
-La conducción del circuito sigue siendo arcade. El ¼ de milla usa un modelo longitudinal con embrague, cambios manuales y daños mecánicos, asistencia lateral y temperaturas simplificadas. Hay duelos físicos y práctica individual; no hay campeonato de picadas, premios, llaves, finales ni verificación técnica homologada. Los pisos transcritos del reglamento no validan las prestaciones estimadas de los autos. El Uno aportado tiene cinco puertas, el catálogo apunta a tres; los GLB contienen detalles y luces horneados. No hay deformación visual ni simulación completa de neumáticos, suspensión, embrague o diferencial izquierda/derecha. Las colisiones usan cuerpos de personaje, sin intercambio realista de impulsos. Faltan conducción humana, Windows, mando físico y mediciones de rendimiento en GPU real. La evidencia y el estado de comprobación de esta versión se registran en [RELEASE-0.20.md](RELEASE-0.20.md).
+La conducción del circuito sigue siendo arcade. El ¼ de milla usa un modelo longitudinal con embrague, cambios manuales y daños mecánicos, asistencia lateral y temperaturas simplificadas. Hay duelos físicos y práctica individual; no hay campeonato de picadas, premios, llaves, finales ni verificación técnica homologada. Los pisos transcritos del reglamento no validan las prestaciones estimadas de los autos. El Uno aportado tiene cinco puertas, el catálogo apunta a tres; los GLB contienen detalles y luces horneados. No hay deformación visual ni simulación completa de neumáticos, suspensión, embrague o diferencial izquierda/derecha. Las colisiones usan cuerpos de personaje, sin intercambio realista de impulsos. Faltan conducción humana, Windows, mando físico y mediciones de rendimiento en GPU real. La evidencia y el estado de comprobación de esta versión se registran en [RELEASE-0.21.md](RELEASE-0.21.md).
 
 ## Desarrollo y pruebas
 

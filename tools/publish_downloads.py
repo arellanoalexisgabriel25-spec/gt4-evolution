@@ -87,6 +87,11 @@ La reacción cuenta para llegar primero. Un falso individual concede al rival
 la excepción del art. 12 aunque su ET caiga. Exhibición sin inscripción ni premios.
 Fábrica conserva salud del garaje y excluye preparaciones; «serie» oficial tiene
 otro alcance. La práctica individual y sus marcas anteriores siguen disponibles.
+La interfaz adopta fondos oscuros, azul acero y números monoespaciados según
+la guía GT4_UI_System aportada. El 147 Vivace usa la referencia 1.4 BIO 1997:
+63 CV, 10,4 kgfm, 807 kg más 75 kg de piloto; otros parámetros siguen estimados.
+Las marcas anteriores se conservan como históricas y no se mezclan con la
+nueva ficha. Ver TECHNICAL-REPORT-REVIEW-0.21.md y STOCK-BENCHMARK-0.21.md.
 Se incluyen 125, Duna, Cronos, Siena, Punto, Regatta y 500 Sport a los seis
 modelos anteriores. El garaje permite elegir un modelo rival distinto.
 El 500 utiliza 100 CV y caja de seis marchas; su estética Abarth es provisional.
@@ -101,7 +106,7 @@ y parámetros estimados; la calibración de prestaciones sigue pendiente.
 Ver STOCK-SOURCES.md. En Inicio podés elegir los trece modelos; en garaje,
 VER MODELO cambia la vista.
 El taller ofrece calle, deportivos o slick. Los impactos dejan daño mecánico
-persistente; recuperar no repara. Ver RELEASE-0.20.md y REGULATIONS-REFERENCE.md.
+persistente; recuperar no repara. Ver RELEASE-0.21.md y REGULATIONS-REFERENCE.md.
 
 Comprá un auto y abrí **GARAJE → DUELO ¼ DE MILLA / FÁBRICA**.
 Hay 25 s de calentamiento delante de línea, luego azul y 30 s de preparación.
@@ -142,9 +147,9 @@ Los archivos .sha256 permiten verificar los ZIP.
             files.append(("captura-" + path.name, path))
         readme += f"\n## Presentación {VERSION}\n\n"
         readme += "Capturas reales del juego en Linux con OpenGL por software. No son renders conceptuales.\n\n"
-        readme += "Tab / RB cambia entre seguimiento, cercana, capó y paragolpes; Shift / Y permite mirar atrás.\n"
+        readme += "Tab / RB cambia entre seguimiento, cercana, capó y paragolpes; Shift / R3 permite mirar atrás en picadas.\n"
         readme += "AJUSTES conserva la cámara inicial y permite suavizar la dirección del teclado.\n\n"
-        for title, shot in [("Calentamiento real", "44-burnout-preparation"), ("Luz azul y llamado del largador", "45-starter-call"), ("Telemetría al pausar", "46-paused-telemetry"), ("125 / Modelo adaptado", "34-125-showroom"), ("Duna / Modelo adaptado", "35-duna-showroom"), ("Cronos / Modelo adaptado", "36-cronos-showroom"), ("Siena / Modelo adaptado", "37-siena-showroom"), ("Punto / Modelo adaptado", "38-punto-showroom"), ("Regatta / Modelo adaptado", "39-regatta-showroom"), ("500 Sport / Carrocería Abarth provisional", "40-500-showroom"), ("500 Sport contra 133", "42-mixed-duel-driving"), ("Resultado entre modelos distintos", "43-mixed-duel-result"), ("Fiat 128 Súper Europa / Modelo aportado", "28-128-super-showroom"), ("Fiat 133 / Modelo aportado", "29-133-showroom"), ("Fiat 128 / Modelo aportado", "30-128-standard-showroom"), ("133 / Duelo de tracción trasera", "31-133-duel-staging"), ("133 / Carrera física", "32-133-duel-driving"), ("133 / Dos tickets medidos", "33-133-duel-result"), ("Dos autos de fábrica / Semáforo común", "25-duel-staging"), ("Carrera física contra un rival", "26-duel-driving"), ("Resultado por reacción más ET", "27-duel-result"), ("Gol Power / Modelo aportado", "20-gol-showroom"), ("Gol en una pasada manual real", "24-gol-driving"), ("Impacto real / Daños mecánicos", "23-impact-damage"), ("Taller / Compuestos de neumáticos", "21-tire-workshop"), ("147 Vivace / Modelo aportado", "18-147-showroom"), ("Uno Fire / Modelo aportado", "19-uno-showroom"), ("Inicio y autos insignia", "01-home"), ("Música, mando y ayudas", "04-settings"), ("Ticket de llegada real", "15-drag-ticket"), ("Pausa con mando", "17-controller-pause")]:
+        for title, shot in [("Inicio / Línea visual aportada", "01-home"), ("147 / Referencia técnica parcial", "47-reference-147-garage"), ("Tuning / Tema compartido", "48-tuning-system"), ("Carrera / Tema compartido", "49-career-system"), ("Movimientos / Tema compartido", "50-transactions-system"), ("HUD / Números monoespaciados", "42-mixed-duel-driving"), ("Calentamiento real", "44-burnout-preparation"), ("Luz azul y llamado del largador", "45-starter-call"), ("Telemetría al pausar", "46-paused-telemetry"), ("125 / Modelo adaptado", "34-125-showroom"), ("Duna / Modelo adaptado", "35-duna-showroom"), ("Cronos / Modelo adaptado", "36-cronos-showroom"), ("Siena / Modelo adaptado", "37-siena-showroom"), ("Punto / Modelo adaptado", "38-punto-showroom"), ("Regatta / Modelo adaptado", "39-regatta-showroom"), ("500 Sport / Carrocería Abarth provisional", "40-500-showroom"), ("500 Sport contra 133", "42-mixed-duel-driving"), ("Resultado entre modelos distintos", "43-mixed-duel-result"), ("Fiat 128 Súper Europa / Modelo aportado", "28-128-super-showroom"), ("Fiat 133 / Modelo aportado", "29-133-showroom"), ("Fiat 128 / Modelo aportado", "30-128-standard-showroom"), ("133 / Duelo de tracción trasera", "31-133-duel-staging"), ("133 / Carrera física", "32-133-duel-driving"), ("133 / Dos tickets medidos", "33-133-duel-result"), ("Dos autos de fábrica / Semáforo común", "25-duel-staging"), ("Carrera física contra un rival", "26-duel-driving"), ("Resultado por reacción más ET", "27-duel-result"), ("Gol Power / Modelo aportado", "20-gol-showroom"), ("Gol en una pasada manual real", "24-gol-driving"), ("Impacto real / Daños mecánicos", "23-impact-damage"), ("Taller / Compuestos de neumáticos", "21-tire-workshop"), ("147 Vivace / Modelo aportado", "18-147-showroom"), ("Uno Fire / Modelo aportado", "19-uno-showroom"), ("Inicio y autos insignia", "01-home"), ("Música, mando y ayudas", "04-settings"), ("Ticket de llegada real", "15-drag-ticket"), ("Pausa con mando", "17-controller-pause")]:
             readme += f"### {title}\n\n![{title}](captura-{shot}.png)\n\n"
     blob = git("hash-object", "-w", "--stdin", data=readme.encode())
     rows = [f"100644 blob {blob}\tREADME.md\n"]

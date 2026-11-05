@@ -5,10 +5,11 @@ extends RefCounted
 # beside each profile so later verified sheets can replace values without silently
 # turning model output into a manufacturer's specification.
 const EngineTorque = preload("res://scripts/engine_torque.gd")
+const TechnicalReference = preload("res://scripts/technical_reference_data.gd")
 const Additional = preload("res://scripts/additional_vehicle_data.gd")
 const TEST_DRIVER_KG := 75.0
 const PROFILES := {
-    "Fiat 147 Vivace": {"id":"147_vivace_provisional","variant":"Vivace · motor/año por verificar","curb_mass_kg":840.0,"peak_torque_nm":112.0,"redline_rpm":6200.0,"wheelbase_m":2.22,"rolling_radius_m":0.275,"gear_ratios":[3.91,2.24,1.47,1.04,0.86],"final_drive":3.76},
+    "Fiat 147 Vivace": {"id":"147_vivace_14_bio_1997_reference","variant":"Vivace 1.4 BIO · 1997 (compendio aportado)","curb_mass_kg":TechnicalReference.VIVACE_MASS_KG,"peak_torque_nm":TechnicalReference.VIVACE_TORQUE_NM,"redline_rpm":6200.0,"wheelbase_m":2.22,"rolling_radius_m":0.275,"gear_ratios":[3.91,2.24,1.47,1.04,0.86],"final_drive":3.76},
     "Fiat Uno Fire 3 puertas": {"id":"uno_fire_13_8v_2014_reference","variant":"Fire 1.3 8V · 3 puertas · 2014 (ref. aportada)","curb_mass_kg":910.0,"peak_torque_nm":110.815145,"redline_rpm":6300.0,"wheelbase_m":2.36,"rolling_radius_m":0.285,"gear_ratios":[3.91,2.16,1.48,1.12,0.90],"final_drive":3.73},
     "Volkswagen Gol Power 3 puertas": {"id":"gol_power_provisional","variant":"Power 3 puertas · motor/año por verificar","curb_mass_kg":980.0,"peak_torque_nm":143.0,"redline_rpm":6200.0,"wheelbase_m":2.47,"rolling_radius_m":0.29,"gear_ratios":[3.45,1.94,1.29,0.97,0.80],"final_drive":4.11},
     "Fiat 128 Súper Europa 1.5": {
@@ -46,7 +47,19 @@ static func for_model(model: String) -> Dictionary:
         profile["basis"] = "GT4 Evolution v0.15 estimates; external validation pending"
         profile["torque_rpm"] = [900.0,1500.0,2300.0,3000.0,3800.0,4600.0,5400.0,float(profile["redline_rpm"])]
         profile["torque_factors"] = [0.62,0.78,0.92,1.0,0.98,0.89,0.76,0.60]
-        if model=="Fiat Uno Fire 3 puertas":
+        if model=="Fiat 147 Vivace":
+            # No power RPM is supplied. 5500 RPM and interpolation remain
+            # explicit estimates; the analytical peak still respects 63 CV.
+            var anchor := EngineTorque.torque_for_cv_at_rpm(TechnicalReference.VIVACE_POWER_CV,5500.0)/float(profile.peak_torque_nm)
+            profile["torque_rpm"] = [900.0,1500.0,2300.0,3000.0,3800.0,4600.0,5500.0,6200.0]
+            profile["torque_factors"] = [0.62,0.78,0.93,1.0,0.97,0.90,anchor,0.60]
+            profile["record_revision"] = TechnicalReference.VIVACE_REVISION
+            profile["sources"] = TechnicalReference.vivace_sources()
+            profile["basis"] = "User compilation p1: 1997 1372cc BIO, 63 CV, 10.4 kgf m, 807 kg, 3742 mm; earlier report p3 supplies 3000 rpm torque. Power RPM 5500 estimated."
+            profile["mass_basis"] = "807 kg reported without fluid/fuel convention; assumed curb mass plus explicit driver"
+            profile["reference_targets"] = {"power_cv":63.0,"torque_kgfm":10.4,"torque_rpm":3000.0,"curb_mass_kg":807.0,"length_m":3.742,"manufacturer_verified":false}
+            profile["estimated_fields"] = ["power_rpm","mass_convention","redline_rpm","wheelbase_m","rolling_radius_m","gear_ratios","final_drive","drag_area_m2","curve_interpolation","drivetrain_efficiency","rotational_inertia"]
+        elif model=="Fiat Uno Fire 3 puertas":
             # Two supplied factory claims anchor the curve; all intervening
             # values remain estimates, not a recovered dynamometer trace.
             profile["peak_torque_nm"] = EngineTorque.kgfm_to_nm(11.3)
@@ -84,6 +97,11 @@ static func for_model(model: String) -> Dictionary:
             profile["reference_targets"] = {"power_cv":55.0,"curb_mass_kg":830.0,"manufacturer_verified":false}
     return profile
 
+# Only revised profiles opt in. Old records stay readable while new runs are
+# compared exclusively with their current physical data, never an older curve.
+static func record_revision(model: String) -> String:
+    return TechnicalReference.VIVACE_REVISION if model=="Fiat 147 Vivace" else ""
+
 # ISO tire-size geometry gives unloaded radius only. A loaded rolling radius
 # still requires a tire/circumference measurement; do not invent its deflection.
 static func unloaded_tire_radius_m(width_mm: float, aspect_percent: float, rim_inches: float) -> float:
@@ -98,13 +116,17 @@ static func metric_snapshot(config) -> Dictionary:
         "status":config.specification_status,"sources":config.specification_sources.duplicate(true),
         "manufacturer_verified":false,
         "curb_mass_kg":config.curb_mass,"driver_mass_kg":config.driver_mass,"test_mass_kg":config.mass,
-        "mass_basis":"development curb estimate; fuel-fill definition unverified",
+        "mass_basis":config.mass_basis,
+        "record_revision":config.record_revision,"estimated_fields":config.estimated_fields.duplicate(),
         "peak_torque_nm":config.peak_torque,
         "calculated_peak_power_kw":peak["kw"],"calculated_peak_power_cv":EngineTorque.kw_to_cv(float(peak["kw"])),
         "calculated_peak_power_rpm":peak["rpm"],"power_basis":"healthy full-load crankshaft curve, not a measured factory result",
         "gear_ratios":config.gear_ratios.duplicate(),"final_drive":config.final_drive,
         "rolling_radius_m":config.wheel_radius,"wheelbase_m":config.wheelbase,
         "drag_area_m2":config.drag_area,"air_density_kg_m3":config.air_density,
+        "rolling_resistance":config.rolling_resistance,"drivetrain_efficiency":config.drivetrain_efficiency,
+        "engine_inertia_kg_m2":config.engine_inertia,"wheel_inertia_per_axle_kg_m2":config.wheel_inertia,
+        "clutch_capacity_nm":config.clutch_capacity,"factory_abs":config.abs_assist,
         "factory_only":config.factory_class,
         "engine_position":config.engine_position,
         "reference_targets":config.reference_targets.duplicate(true),

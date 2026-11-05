@@ -2,6 +2,8 @@ extends RefCounted
 
 # One owner for measured usage: recovery and leaving settle the difference from
 # cumulative counters, so an attempt cannot erase wear or debit it a second time.
+const Specs = preload("res://scripts/stock_vehicle_specs.gd")
+var record_profile := ""
 var game
 var career
 var vehicle_id := 0
@@ -17,6 +19,7 @@ func begin(economy, profession, id: int) -> bool:
     game = economy
     career = profession
     vehicle_id = id
+    record_profile = Specs.record_revision(str(vehicle.get("model","")))
     return true
 
 func settle(wear: Dictionary, damage = null) -> bool:
@@ -49,7 +52,7 @@ func record_finish(ticket: Dictionary) -> bool:
     if not load("res://scripts/drag_records.gd").valid_ticket(ticket):
         return false
     recorded_attempt = true
-    return career.drag_records.consider(vehicle_id,ticket)
+    return career.drag_records.consider_for_profile(vehicle_id,ticket,record_profile)
 
 func next_attempt() -> void:
     recorded_attempt = false

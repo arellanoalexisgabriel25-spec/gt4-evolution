@@ -1,7 +1,7 @@
 extends SceneTree
 
 const DragDriver = preload("res://tests/drag_test_driver.gd")
-var output := "/workspace/artifacts/presentation-0.20"
+var output := "/workspace/artifacts/presentation-0.21"
 var capture_heat_done := false
 
 func _initialize() -> void:
@@ -409,6 +409,26 @@ func run() -> void:
     drag._back_to_garage()
     await process_frame
     await process_frame
+    session.reset()
+    session.game.buy(11)
+    session.menu_tab = "garaje"
+    change_scene_to_file("res://scenes/main.tscn")
+    await process_frame
+    await process_frame
+    await process_frame
+    # Scroll the actual owned-car card into view, as the player can do.
+    var garage_scroll: ScrollContainer = current_scene.content.get_parent()
+    for label in current_scene.content.find_children("*","Label",true,false):
+        if label.text.begins_with("FICHA PROVISIONAL"):
+            garage_scroll.scroll_vertical += maxi(0,int(label.global_position.y-garage_scroll.global_position.y-85.0))
+            break
+    await picture("47-reference-147-garage")
+    current_scene._change_tab("tuning")
+    await picture("48-tuning-system")
+    current_scene._change_tab("carrera")
+    await picture("49-career-system")
+    current_scene._change_tab("historial")
+    await picture("50-transactions-system")
     session.menu_music.set_menu_active(false)
     for i in range(20):
         await process_frame

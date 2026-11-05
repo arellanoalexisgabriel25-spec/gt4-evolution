@@ -192,7 +192,7 @@ func _promote() -> void:
         license = "A"
 
 func to_dict() -> Dictionary:
-    return {"schema_version":1, "license":license, "reputation":reputation, "completed":completed.duplicate(), "results":results.duplicate(true), "rivalries":rivalries.duplicate(true), "lap_records":lap_records.to_dict(),"drag_records":drag_records.to_dict(),"stock_drag_records":stock_drag_records.to_dict()}
+    return {"schema_version":1, "license":license, "reputation":reputation, "completed":completed.duplicate(), "results":results.duplicate(true), "rivalries":rivalries.duplicate(true), "lap_records":lap_records.to_dict(),"drag_records":drag_records.to_dict(),"stock_drag_records":stock_drag_records.to_dict(),"drag_record_history":drag_records.history_to_dict(),"stock_drag_record_history":stock_drag_records.history_to_dict()}
 
 func from_dict(data: Dictionary) -> bool:
     if typeof(data.get("stock_drag_records",{}))!=TYPE_DICTIONARY:
@@ -205,6 +205,10 @@ func from_dict(data: Dictionary) -> bool:
     var candidate_drag = DragRecords.new()
     if not candidate_drag.from_dict(data.get("drag_records",{})):
         return false
+    for entry in [["drag_record_history",candidate_drag],["stock_drag_record_history",candidate_stock]]:
+        var archive = data.get(entry[0],{})
+        if typeof(archive)!=TYPE_DICTIONARY or not entry[1].history_from_dict(archive):
+            return false
     if typeof(data.get("lap_records", {})) != TYPE_DICTIONARY:
         return false
     var candidate_records = LapRecords.new()

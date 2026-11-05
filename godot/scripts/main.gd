@@ -75,13 +75,15 @@ func _button(value: String, action: Callable) -> Button:
     var button := Button.new()
     button.text = value
     button.custom_minimum_size = Vector2(0, 42)
+    if value in ["COMPRAR","GUARDAR","DUELO ¼ DE MILLA / FÁBRICA"]:
+        button.theme_type_variation = "PrimaryButton"
     button.pressed.connect(action)
     return button
 
 func _build_interface() -> void:
     theme = Style.build()
     var bg := ColorRect.new()
-    bg.color = Color("cbd3df")
+    bg.color = Style.BACKGROUND
     bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
     add_child(bg)
@@ -94,25 +96,25 @@ func _build_interface() -> void:
     root.add_theme_constant_override("separation", 12)
     margin.add_child(root)
     var header := PanelContainer.new()
-    header.add_theme_stylebox_override("panel", Style.panel(Style.BLUE,14))
+    header.add_theme_stylebox_override("panel", Style.panel(Style.ELEVATED,14))
     root.add_child(header)
     var header_row := HBoxContainer.new()
     header.add_child(header_row)
-    var brand := _label("GT4  /  EVOLUTION", 34)
+    var brand := _label("GT4  /  EVOLUTION", 32)
     brand.add_theme_font_override("font",Style.FONT)
     brand.add_theme_color_override("font_color",Color.WHITE)
     brand.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     header_row.add_child(brand)
     license_badge = _label("",18)
     license_badge.add_theme_font_override("font",Style.FONT)
-    license_badge.add_theme_color_override("font_color",Color("b9cada"))
+    license_badge.add_theme_color_override("font_color",Style.SECONDARY)
     license_badge.custom_minimum_size.x = 200
     header_row.add_child(license_badge)
-    funds = _label("",26)
+    funds = _label("",22)
     funds.custom_minimum_size.x = 260
     funds.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-    funds.add_theme_font_override("font",Style.FONT)
-    funds.add_theme_color_override("font_color",Color("f3dfae"))
+    funds.add_theme_font_override("font",Style.MONO)
+    funds.add_theme_color_override("font_color",Style.TEXT)
     header_row.add_child(funds)
     var body := HBoxContainer.new()
     body.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -127,7 +129,7 @@ func _build_interface() -> void:
     sidebar.add_child(mode)
     var subtitle := _label("TU CAMINO EN EL
 AUTOMOVILISMO",11)
-    subtitle.add_theme_color_override("font_color",Color("68798d"))
+    subtitle.add_theme_color_override("font_color",Style.SECONDARY)
     sidebar.add_child(subtitle)
     for entry in [{"key":"inicio","title":"INICIO"},{"key":"garaje","title":"MI GARAJE"},{"key":"mercado","title":"CONCESIONARIO"},{"key":"carrera","title":"EVENTOS DE CARRERA"},{"key":"taller","title":"CENTRO DE SERVICIO"},{"key":"tuning","title":"TUNING SHOP"},{"key":"historial","title":"MOVIMIENTOS"},{"key":"ajustes","title":"AJUSTES"}]:
         var button := _button(entry["title"],_change_tab.bind(entry["key"]))
@@ -137,19 +139,19 @@ AUTOMOVILISMO",11)
         nav_buttons[entry["key"]] = button
     var version := _label("GT4 EVOLUTION
 VERSION " + GameSession.VERSION,11)
-    version.add_theme_color_override("font_color",Color("68798d"))
+    version.add_theme_color_override("font_color",Style.SECONDARY)
     sidebar.add_child(version)
     var workspace := PanelContainer.new()
     workspace.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     body.add_child(workspace)
     var page := VBoxContainer.new()
     workspace.add_child(page)
-    page_title = _label("",25)
+    page_title = _label("",23)
     page_title.add_theme_font_override("font",Style.FONT)
     page.add_child(page_title)
     var line := ColorRect.new()
-    line.color = Style.RED
-    line.custom_minimum_size.y = 3
+    line.color = Style.ACCENT
+    line.custom_minimum_size.y = 2
     page.add_child(line)
     var scroll := ScrollContainer.new()
     scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -203,12 +205,12 @@ func _render() -> void:
     page_title.text = titles.get(current_tab, "GT MODE")
     for key in nav_buttons:
         var selected: bool = key == current_tab
-        nav_buttons[key].add_theme_stylebox_override("normal",Style.panel(Style.BLUE if selected else Color("e8edf3"),9))
-        nav_buttons[key].add_theme_color_override("font_color",Color.WHITE if selected else Style.BLUE)
+        nav_buttons[key].add_theme_stylebox_override("normal",Style.navigation(selected))
+        nav_buttons[key].add_theme_color_override("font_color",Style.TEXT if selected else Style.SECONDARY)
         for state in ["hover","pressed"]:
-            nav_buttons[key].add_theme_stylebox_override(state,Style.panel(Style.BLUE if selected else Color("d9e5f2"),9))
+            nav_buttons[key].add_theme_stylebox_override(state,Style.navigation(selected,true))
         for state in ["font_focus_color","font_hover_color","font_pressed_color"]:
-            nav_buttons[key].add_theme_color_override(state,Color.WHITE if selected else Style.BLUE)
+            nav_buttons[key].add_theme_color_override(state,Style.TEXT if selected else Style.SECONDARY)
     for item in content.get_children():
         content.remove_child(item)
         item.queue_free()
@@ -244,7 +246,7 @@ func _home() -> void:
     intro.custom_minimum_size.x = 220
     intro.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     hero.add_child(intro)
-    intro.add_child(_label("402,336 M / CAJA MANUAL",25))
+    intro.add_child(_label("402,336 M / CAJA MANUAL",23))
     intro.add_child(_label("De fábrica a la pista. Una pasión por el ¼ de milla.",14))
     intro.add_child(_label(featured["model"],22))
     if featured["owner"]!="player":
@@ -381,9 +383,15 @@ func _garage() -> void:
         var best := career.lap_records.get_best(int(car["id"]))
         if best > 0.0:
             layout.add_child(_label("Mejor vuelta al club: %.2f s" % best, 15))
-        var drag_best := career.drag_records.best(int(car["id"]))
-        if not drag_best.is_empty():
-            layout.add_child(_label("Mejor ¼ de milla: %.3f s · trampa %.1f km/h · reacción %.3f s" % [drag_best.et,drag_best.trap_kmh,drag_best.reaction],15))
+        if not metrics["record_revision"].is_empty():
+            layout.add_child(_label("Referencia parcial: 1.4 BIO 1997 · 10,4 kgm · régimen de potencia y caja estimados",13))
+        for record_set in [[career.drag_records,"manual"],[career.stock_drag_records,"fábrica"]]:
+            var drag_best: Dictionary = record_set[0].best_for_profile(int(car["id"]),str(metrics["record_revision"]))
+            if not drag_best.is_empty():
+                layout.add_child(_label("Mejor ¼ de milla / %s: %.3f s · trampa %.1f km/h · reacción %.3f s" % [record_set[1],drag_best.et,drag_best.trap_kmh,drag_best.reaction],15))
+            var historical: Dictionary = record_set[0].previous_best(int(car["id"]),str(metrics["record_revision"]))
+            if not historical.is_empty():
+                layout.add_child(_label("Marca histórica / %s (ficha anterior): %.3f s" % [record_set[1],historical.et],13))
         var actions := HFlowContainer.new()
         actions.add_theme_constant_override("h_separation", 8)
         layout.add_child(actions)

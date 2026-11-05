@@ -105,3 +105,15 @@ transcripción aportada, sin afirmar que el entorno abrió el documento primario
 
 El informe PDF aportado se revisó por separado en [FIAT-REPORT-REVIEW.md](FIAT-REPORT-REVIEW.md).
 Su entrada Uno diésel no sustituye esta ficha Fire de nafta.
+
+
+## Compendio y línea visual aportados (0.21, 5 de noviembre de 2026)
+
+Se revisaron las cinco páginas de Informe Técnico Automotriz Completo.pdf.
+Se aplican los anclajes de la variante Vivace 1.4 BIO 1997, dejando masa/combustible,
+régimen de potencia y caja con sus límites explícitos. Se conserva la referencia
+previa más específica del Uno Fire 2014. Ver TECHNICAL-REPORT-REVIEW-0.21.md,
+STOCK-BENCHMARK-0.21.md y UI-VISUAL-SYSTEM.md.
+
+Los enlaces de YouTube del canal y el vivo mzLhNHNwW-I se intentaron con el proxy
+configurado: CONNECT 403 en ambos, sin contenido audiovisual recibido.

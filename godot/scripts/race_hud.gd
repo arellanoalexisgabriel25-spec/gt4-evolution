@@ -22,7 +22,7 @@ func _text(parent: Node, value: String, font_size: int) -> Label:
     label.text = value
     label.add_theme_font_override("font",Style.FONT)
     label.add_theme_font_size_override("font_size",font_size)
-    label.add_theme_color_override("font_color",Color.WHITE)
+    label.add_theme_color_override("font_color",Style.TEXT)
     parent.add_child(label)
     return label
 
@@ -36,7 +36,7 @@ func _panel(rect: Rect2, anchors: Vector2 = Vector2.ZERO) -> VBoxContainer:
     panel.offset_top = rect.position.y
     panel.offset_right = rect.end.x
     panel.offset_bottom = rect.end.y
-    panel.add_theme_stylebox_override("panel",Style.panel(Color(0.025,0.06,0.11,0.82),12))
+    panel.add_theme_stylebox_override("panel",Style.panel(Style.HUD_BACKGROUND,12))
     add_child(panel)
     var column := VBoxContainer.new()
     column.add_theme_constant_override("separation",2)
@@ -59,12 +59,14 @@ func _ready() -> void:
     var numbers := HBoxContainer.new()
     speed.add_child(numbers)
     gear_label = _text(numbers,"1",54)
-    gear_label.add_theme_color_override("font_color",Color("e8c76b"))
+    gear_label.add_theme_color_override("font_color",Style.SELECTED)
     speed_label = _text(numbers,"0",64)
     speed_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     speed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
     rpm_label = _text(speed,"KM/H     900 RPM",16)
     rpm_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+    for metric in [gear_label,speed_label,rpm_label,time_label,best_label]:
+        metric.add_theme_font_override("font",Style.MONO)
     camera_label = _text(speed,"SEGUIMIENTO",14)
     camera_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
     var actions := HBoxContainer.new()
@@ -136,7 +138,7 @@ func update_telemetry(data: Dictionary) -> void:
 func _draw() -> void:
     for i in range(20):
         var active := float(i)/20.0 < rpm_fraction
-        var color := Color("abbdca")
+        var color := Style.BORDER
         if active:
-            color = Color("d4313e") if i >= 16 else Color("f1e6c3")
+            color = Style.DANGER if i >= 16 else Style.HOVER
         draw_rect(Rect2(Vector2(size.x-265+i*12.2,size.y-193),Vector2(10,6)),color)

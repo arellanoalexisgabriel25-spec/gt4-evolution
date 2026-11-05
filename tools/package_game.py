@@ -5,13 +5,19 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.20"
-README = """GT4 EVOLUTION — PROTOTIPO 0.20 / CALENTAMIENTO Y LARGADA AUTOMÁTICA
+VERSION = "0.21"
+README = """GT4 EVOLUTION — PROTOTIPO 0.21 / LÍNEA VISUAL Y REFERENCIAS TÉCNICAS
 
 WINDOWS: extraé TODO el ZIP y abrí GT4Evolution.exe o JUGAR.cmd.
 Es un juego exportado independiente: no necesita Godot instalado ni importar el
 proyecto al iniciar. Conservá GT4Evolution.pck junto al ejecutable.
 El ZIP Proyecto contiene las fuentes: abrí juego/project.godot con Godot 4.6.3.
+
+Interfaz oscura con azul acero y números monoespaciados, según GT4_UI_System.
+El 147 Vivace representa la referencia 1.4 BIO 1997: 63 CV, 10,4 kgfm y 807 kg antes de
+sumar 75 kg de piloto. Régimen de potencia/caja siguen estimados. Las marcas de
+la ficha anterior se conservan como históricas; la nueva ficha tiene su propio PB.
+Ver TECHNICAL-REPORT-REVIEW-0.21.md y STOCK-BENCHMARK-0.21.md.
 
 Se incluyen 125, Duna, Cronos, Siena, Punto, Regatta y 500 Sport a los seis modelos
 anteriores. Inicio permite elegirlos y el garaje permite seleccionar el auto rival.
@@ -72,7 +78,7 @@ Los modos anteriores siguen disponibles; los eventos simulados se identifican.
 Música: Lezcano Alan — PERRA #Ritmomanijero, Prod Sketchy, aportada con autorización
 de redistribución; volumen en AJUSTES. No está cubierta por MIT.
 
-Ver juego/RELEASE-0.20.md en el ZIP Proyecto y documentacion/ en Windows para el
+Ver juego/RELEASE-0.21.md en el ZIP Proyecto y documentacion/ en Windows para el
 alcance exacto y resultados de validación. El entorno valida Linux y el mismo PCK;
 Windows y mando físico requieren prueba en esos equipos. Si no inicia, ejecutá
 DIAGNOSTICO.cmd y compartí juego.log. Licencias incluidas. No se distribuyen

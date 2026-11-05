@@ -3,15 +3,16 @@ extends RefCounted
 # Stable names are also used by old save files. New offers are appended, so no
 # existing persistent vehicle ID changes when the flagship range is introduced.
 const FLAGSHIPS := ["Fiat 147 Vivace", "Fiat Uno Fire 3 puertas", "Volkswagen Gol Power 3 puertas"]
+const TechnicalReference = preload("res://scripts/technical_reference_data.gd")
 const Additional = preload("res://scripts/additional_vehicle_data.gd")
 const NATIONALS = Additional.MODELS
 const CLASSICS := ["Fiat 128 Súper Europa 1.5", "Fiat 133", "Fiat 128 estándar"]
 const DATA := {
     "Fiat 147 Vivace": {
-        "key":"fiat_147", "price":3400, "mass":840.0, "torque":112.0,
+        "key":"fiat_147", "price":3400, "mass":TechnicalReference.VIVACE_MASS_KG, "torque":TechnicalReference.VIVACE_TORQUE_NM,
         "redline":6200.0, "wheelbase":2.22, "radius":0.275,
         "gears":[3.91,2.24,1.47,1.04,0.86], "final_drive":3.76,
-        "size":Vector3(1.54,1.38,3.58), "paint":Color("c5c2b3"),
+        "size":Vector3(1.54,1.38,TechnicalReference.VIVACE_LENGTH_M), "paint":Color("c5c2b3"),
         "asset":"res://assets/cars/fiat_147/fiat_147.glb"
     },
     "Fiat Uno Fire 3 puertas": {
