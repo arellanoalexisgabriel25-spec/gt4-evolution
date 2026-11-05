@@ -45,7 +45,7 @@ func run() -> void:
     for child in menu.content.get_children():
         if child is GridContainer:
             grid = child
-    check(grid is GridContainer and grid.get_child_count() == 16,"The dealership retains ten legacy offers, three flagships and the three new classics")
+    check(grid is GridContainer and grid.get_child_count() == 23,"The dealership retains the sixteen prior offers and includes the seven new cars")
     var balance: int = session.game.balance
     var button_found := false
     if grid is GridContainer:

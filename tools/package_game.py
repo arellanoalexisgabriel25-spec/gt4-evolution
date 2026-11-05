@@ -5,17 +5,20 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.18"
-README = """GT4 EVOLUTION — PROTOTIPO 0.18 / FIAT CLÁSICOS Y CONTACTO DE NEUMÁTICOS
+VERSION = "0.19"
+README = """GT4 EVOLUTION — PROTOTIPO 0.19 / FLOTA FIAT Y DUELOS ENTRE MODELOS
 
 WINDOWS: extraé TODO el ZIP y abrí GT4Evolution.exe o JUGAR.cmd.
 Es un juego exportado independiente: no necesita Godot instalado ni importar el
 proyecto al iniciar. Conservá GT4Evolution.pck junto al ejecutable.
 El ZIP Proyecto contiene las fuentes: abrí juego/project.godot con Godot 4.6.3.
 
-Se incorporan los modelos aportados de Fiat 128 Súper Europa, Fiat 133 y Fiat 128.
-Los derivados optimizados conservan las texturas originales y la colisión sigue
-siendo independiente de las mallas visuales. El 133 usa tracción trasera; los 128,
+Se suman 125, Duna, Cronos, Siena, Punto, Regatta y 500 Sport a los seis modelos
+anteriores. Inicio permite elegirlos y el garaje permite seleccionar el auto rival.
+El 500 usa la ficha Sport: 100 CV, 13,1 kgfm y seis marchas; su carrocería aportada
+tiene estética Abarth provisional. No se le asignó potencia de Abarth.
+Los derivados optimizados usan texturas derivadas de las aportadas; la colisión
+sigue siendo independiente de las mallas visuales. El 133 usa tracción trasera; los 128,
 delantera. Los parámetros sin ficha completa siguen siendo estimaciones.
 Se conservan 147 Vivace, Uno Fire y Gol Power. El Uno recibido tiene cinco puertas,
 referencia visual provisional de la variante de tres puertas del catálogo.
@@ -56,7 +59,7 @@ Los modos anteriores siguen disponibles; los eventos simulados se identifican.
 Música: Lezcano Alan — PERRA #Ritmomanijero, Prod Sketchy, aportada con autorización
 de redistribución; volumen en AJUSTES. No está cubierta por MIT.
 
-Ver juego/RELEASE-0.18.md en el ZIP Proyecto y documentacion/ en Windows para el
+Ver juego/RELEASE-0.19.md en el ZIP Proyecto y documentacion/ en Windows para el
 alcance exacto y resultados de validación. El entorno valida Linux y el mismo PCK;
 Windows y mando físico requieren prueba en esos equipos. Si no inicia, ejecutá
 DIAGNOSTICO.cmd y compartí juego.log. Licencias incluidas. No se distribuyen

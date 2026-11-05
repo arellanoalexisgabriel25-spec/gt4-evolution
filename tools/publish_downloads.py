@@ -69,7 +69,7 @@ def main():
                 if manifest.get("same_pck_linux_smoke") != "passed":
                     raise SystemExit("The exported PCK has not passed its release-runtime smoke test")
                 if manifest.get("same_pck_physical_test") != "passed":
-                    raise SystemExit("The exported PCK has not passed its six-model and physical-duel checks")
+                    raise SystemExit("The exported PCK has not passed its full-fleet and physical-duel checks")
                 validate_export(manifest, archive.read("GT4Evolution.exe"), archive.read("GT4Evolution.pck"), sources)
     base = f"https://github.com/{identity}/raw/refs/heads/{branch}"
     readme = f"""# GT4 Evolution {VERSION} · Descargas
@@ -87,7 +87,9 @@ La reacción cuenta para llegar primero. Un falso individual concede al rival
 la excepción del art. 12 aunque su ET caiga. Exhibición sin inscripción ni premios.
 Fábrica conserva salud del garaje y excluye preparaciones; «serie» oficial tiene
 otro alcance. La práctica individual y sus marcas anteriores siguen disponibles.
-Se suman Fiat 128 Súper Europa, Fiat 133 y Fiat 128 con sus modelos aportados.
+Se incorporan 125, Duna, Cronos, Siena, Punto, Regatta y 500 Sport a los seis
+modelos anteriores. El garaje permite elegir un modelo rival distinto.
+El 500 utiliza 100 CV y caja de seis marchas; su estética Abarth es provisional.
 El 133 tiene tracción trasera y los 128 delantera, con perfiles diferenciados.
 El contacto distingue superficies, apoyo y ruedas sin suelo; el agarre respeta
 la capacidad actual del piso y el frenado registra la energía disipada.
@@ -96,10 +98,10 @@ con texturas conservadas y ruedas animadas. El Uno suministrado tiene cinco puer
 referencia visual provisional de la variante de tres puertas del catálogo.
 El Gol conserva el modelo aportado original. Las fichas distinguen datos aportados
 y parámetros estimados; la calibración de prestaciones sigue pendiente.
-Ver STOCK-SOURCES.md. En Inicio podés elegir los seis modelos; en garaje,
+Ver STOCK-SOURCES.md. En Inicio podés elegir los trece modelos; en garaje,
 VER MODELO cambia la vista.
 El taller ofrece calle, deportivos o slick. Los impactos dejan daño mecánico
-persistente; recuperar no repara. Ver RELEASE-0.18.md y REGULATIONS-REFERENCE.md.
+persistente; recuperar no repara. Ver RELEASE-0.19.md y REGULATIONS-REFERENCE.md.
 
 Comprá un auto y abrí **GARAJE → ¼ DE MILLA / MANUAL**. Mantené C, tocá E
 para primera, iniciá el árbol con Enter y esperá el verde. Regulá W para las RPM,
@@ -122,8 +124,9 @@ Esta rama contiene únicamente distribución y no se integra en main.
 Los archivos .sha256 permiten verificar los ZIP.
 """
     if args.screenshots:
-        shots = ["01-home", "02-dealer", "03-garage", "04-settings", "05-camera-0", "06-camera-1", "07-camera-2", "08-camera-3", "09-look-back", "10-race-grid", "11-drag-staging", "12-drag-tree", "13-drag-driving", "14-drag-close", "15-drag-ticket", "16-drag-red-light", "17-controller-pause", "18-147-showroom", "19-uno-showroom", "20-gol-showroom", "21-tire-workshop", "22-gol-staging", "23-impact-damage", "24-gol-driving", "25-duel-staging", "26-duel-driving", "27-duel-result", "28-128-super-showroom", "29-133-showroom", "30-128-standard-showroom", "31-133-duel-staging", "32-133-duel-driving", "33-133-duel-result"]
+        shots = (ROOT / "tools/presentation_shots.txt").read_text().splitlines()
         for shot in shots:
+            if not re.fullmatch(r"[a-z0-9-]+",shot): raise SystemExit("Invalid screenshot name")
             path = args.screenshots / (shot + ".png")
             header = path.read_bytes()[:24]
             if (path.stat().st_size > 5 * 1024 * 1024 or header[:8] != b"\x89PNG\r\n\x1a\n"
@@ -134,7 +137,7 @@ Los archivos .sha256 permiten verificar los ZIP.
         readme += "Capturas reales del juego en Linux con OpenGL por software. No son renders conceptuales.\n\n"
         readme += "Tab / RB cambia entre seguimiento, cercana, capó y paragolpes; Shift / Y permite mirar atrás.\n"
         readme += "AJUSTES conserva la cámara inicial y permite suavizar la dirección del teclado.\n\n"
-        for title, shot in [("Fiat 128 Súper Europa / Modelo aportado", "28-128-super-showroom"), ("Fiat 133 / Modelo aportado", "29-133-showroom"), ("Fiat 128 / Modelo aportado", "30-128-standard-showroom"), ("133 / Duelo de tracción trasera", "31-133-duel-staging"), ("133 / Carrera física", "32-133-duel-driving"), ("133 / Dos tickets medidos", "33-133-duel-result"), ("Dos autos de fábrica / Semáforo común", "25-duel-staging"), ("Carrera física contra un rival", "26-duel-driving"), ("Resultado por reacción más ET", "27-duel-result"), ("Gol Power / Modelo aportado", "20-gol-showroom"), ("Gol en una pasada manual real", "24-gol-driving"), ("Impacto real / Daños mecánicos", "23-impact-damage"), ("Taller / Compuestos de neumáticos", "21-tire-workshop"), ("147 Vivace / Modelo aportado", "18-147-showroom"), ("Uno Fire / Modelo aportado", "19-uno-showroom"), ("Inicio y autos insignia", "01-home"), ("Música, mando y ayudas", "04-settings"), ("Ticket de llegada real", "15-drag-ticket"), ("Pausa con mando", "17-controller-pause")]:
+        for title, shot in [("125 / Modelo adaptado", "34-125-showroom"), ("Duna / Modelo adaptado", "35-duna-showroom"), ("Cronos / Modelo adaptado", "36-cronos-showroom"), ("Siena / Modelo adaptado", "37-siena-showroom"), ("Punto / Modelo adaptado", "38-punto-showroom"), ("Regatta / Modelo adaptado", "39-regatta-showroom"), ("500 Sport / Carrocería Abarth provisional", "40-500-showroom"), ("500 Sport contra 133", "42-mixed-duel-driving"), ("Resultado entre modelos distintos", "43-mixed-duel-result"), ("Fiat 128 Súper Europa / Modelo aportado", "28-128-super-showroom"), ("Fiat 133 / Modelo aportado", "29-133-showroom"), ("Fiat 128 / Modelo aportado", "30-128-standard-showroom"), ("133 / Duelo de tracción trasera", "31-133-duel-staging"), ("133 / Carrera física", "32-133-duel-driving"), ("133 / Dos tickets medidos", "33-133-duel-result"), ("Dos autos de fábrica / Semáforo común", "25-duel-staging"), ("Carrera física contra un rival", "26-duel-driving"), ("Resultado por reacción más ET", "27-duel-result"), ("Gol Power / Modelo aportado", "20-gol-showroom"), ("Gol en una pasada manual real", "24-gol-driving"), ("Impacto real / Daños mecánicos", "23-impact-damage"), ("Taller / Compuestos de neumáticos", "21-tire-workshop"), ("147 Vivace / Modelo aportado", "18-147-showroom"), ("Uno Fire / Modelo aportado", "19-uno-showroom"), ("Inicio y autos insignia", "01-home"), ("Música, mando y ayudas", "04-settings"), ("Ticket de llegada real", "15-drag-ticket"), ("Pausa con mando", "17-controller-pause")]:
             readme += f"### {title}\n\n![{title}](captura-{shot}.png)\n\n"
     blob = git("hash-object", "-w", "--stdin", data=readme.encode())
     rows = [f"100644 blob {blob}\tREADME.md\n"]

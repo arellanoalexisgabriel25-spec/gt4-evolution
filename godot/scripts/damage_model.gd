@@ -42,8 +42,9 @@ func tick(delta: float) -> void:
 # Returns the damage points newly counted; 0 when ignored. Frames within the
 # cooldown belong to the same crash: only the increase over what was already
 # counted is added, so a later, harder frame is not lost.
-func record(before: Vector2, after: Vector2, forward: Vector2) -> float:
+func record(before: Vector2, after: Vector2, forward: Vector2, engine_position: String = "front") -> float:
     latest_damage.clear()
+    if engine_position not in ["front","mid","rear"]: return 0.0
     if not before.is_finite() or not after.is_finite() or not forward.is_finite() or forward.length() < 0.5:
         return 0.0
     var change := after - before
@@ -54,7 +55,18 @@ func record(before: Vector2, after: Vector2, forward: Vector2) -> float:
     var counted := points if fresh else points - event_points
     if counted <= 0.0:
         return 0.0
-    var zone: Dictionary = ZONES[classify(change, forward.normalized())]
+    var direction := classify(change,forward.normalized())
+    var zone: Dictionary = ZONES[direction].duplicate()
+    # Coarse compartment layout: rear/mid engines receive direct rear impact
+    # damage instead of inheriting the front-engine car's allocation. Shares
+    # still sum to one; total crash severity and once-only settlement are intact.
+    if engine_position in ["rear","mid"]:
+        if direction=="front":
+            zone["chasis"] += float(zone.get("motor",0.0))
+            zone.erase("motor")
+        elif direction=="rear":
+            zone["chasis"] -= 0.25
+            zone["motor"] = 0.25
     for component in zone:
         var added := counted * float(zone[component])
         pending[component] = float(pending.get(component, 0.0)) + added

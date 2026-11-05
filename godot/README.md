@@ -1,8 +1,18 @@
-# GT4 Evolution · v0.18 / Clásicos argentinos y contacto físico
+# GT4 Evolution · v0.19 / Flota Fiat y duelos entre modelos
 
 Prototipo independiente de automovilismo en Godot 4.6.3. El desarrollo se centra en un **¼ de milla de 402,336 m contra otro auto físico**, con largada, cambios manuales, marcas y desgaste en un entorno original inspirado en el ambiente del autódromo Gálvez. Conserva mercado, garaje, taller, tuning y los modos anteriores. La investigación de GT4 se consulta como referencia; no se incluyen su ejecutable, modelos, texturas ni circuitos comerciales.
 
-## Novedades v0.18
+## Novedades v0.19
+
+Se integran **125, Duna, Cronos, Siena, Punto, Regatta y 500 Sport**. Son trece modelos aportados disponibles en Inicio y veintitrés ofertas con las anteriores; se conservan las unidades, IDs y partidas. El selector de Inicio permite recorrer la flota sin recortar el mapa. En el garaje se puede elegir **otro modelo como rival**, con configuración, masa y equipamiento independientes; la opción de mismo modelo sigue disponible para comparar pilotos.
+
+Por indicación del usuario, el **500 utiliza la ficha Sport de 100 CV a 6.000 RPM, 13,1 kgf·m a 4.250 RPM y seis marchas**. El modelo aportado tiene aspecto Abarth: se conserva como representación visual provisional, sin asignarle potencia de Abarth. El Punto posterior/regional usa un perfil provisional 1.4 Fire; no se confunde con el europeo de 2002 descrito en el informe. Los datos no aportados siguen estimados.
+
+Los daños directos al motor distinguen compartimentos delantero, central y trasero. Se conserva la severidad total, el guardado y la liquidación única: un 133 no recibe automáticamente el reparto de motor frontal del 125. Se corrige también la aceptación de valores de embrague no finitos al cambiar de marcha.
+
+Los siete nuevos modelos tienen geometría y texturas optimizadas; los originales se preservan separados. Las PNG externas, mipmaps y compresión de importación se verifican dentro del paquete exportado. Se conserva el GLB original del Gol y se comprime su textura importada para mantener manejable la descarga. [Informe de esta entrega](RELEASE-0.19.md) · [Procedencia de modelos](assets/cars/README.md).
+
+## Estado histórico: novedades v0.18
 
 Se suman **Fiat 128 Súper Europa 1.5, Fiat 133 y Fiat 128 estándar** con los modelos aportados. Se eligen en Inicio y se compran en el concesionario. Los tres insignia siguen encabezando la gama; los IDs anteriores y las partidas se conservan. El 133 tiene motor/reparto trasero y tracción **RWD**, mientras ambos 128 son **FWD**. El Súper Europa usa los datos aportados de 82 CV a 5.600 RPM y 12 kgf·m a 3.000 RPM; el 133 y el 128 estándar toman las referencias de 34 y 55 CV del informe. Los parámetros no especificados permanecen estimados.
 

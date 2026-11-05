@@ -3,6 +3,8 @@ extends RefCounted
 # Stable names are also used by old save files. New offers are appended, so no
 # existing persistent vehicle ID changes when the flagship range is introduced.
 const FLAGSHIPS := ["Fiat 147 Vivace", "Fiat Uno Fire 3 puertas", "Volkswagen Gol Power 3 puertas"]
+const Additional = preload("res://scripts/additional_vehicle_data.gd")
+const NATIONALS = Additional.MODELS
 const CLASSICS := ["Fiat 128 Súper Europa 1.5", "Fiat 133", "Fiat 128 estándar"]
 const DATA := {
     "Fiat 147 Vivace": {
@@ -49,7 +51,15 @@ const DATA := {
         "drivetrain":"FWD", "front_weight_bias":0.62,
         "size":Vector3(1.59,1.42,3.855), "paint":Color("202222"),
         "asset":"res://assets/cars/fiat_128_standard/fiat_128_standard.glb", "wheel_segmentation":"contour"
-    }
+    },
+    "Fiat 125": Additional.DATA["Fiat 125"],
+    "Fiat Duna": Additional.DATA["Fiat Duna"],
+    "Fiat Cronos": Additional.DATA["Fiat Cronos"],
+    "Fiat Siena": Additional.DATA["Fiat Siena"],
+    "Fiat Punto": Additional.DATA["Fiat Punto"],
+    "Fiat Regatta": Additional.DATA["Fiat Regatta"],
+    "Fiat 500 Sport": Additional.DATA["Fiat 500 Sport"],
+
 }
 
 static func definition(model: String) -> Dictionary:
@@ -63,7 +73,7 @@ static func has_definition(model: String) -> bool:
 
 static func market_order(cars: Array) -> Array:
     var ordered: Array = []
-    for model in FLAGSHIPS+CLASSICS:
+    for model in FLAGSHIPS+CLASSICS+NATIONALS:
         for car in cars:
             if car.get("model")==model:
                 ordered.append(car)

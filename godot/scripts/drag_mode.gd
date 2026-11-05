@@ -94,17 +94,19 @@ func _ready() -> void:
 
 func _create_opponent(vehicle: Dictionary) -> void:
     opponent = Actor.new()
-    opponent.model_name = str(vehicle.get("model",""))
+    opponent.model_name = GameSession.drag_opponent_model if not GameSession.drag_opponent_model.is_empty() else str(vehicle.get("model",""))
     opponent.driver_name = opponent_name
     opponent.color = Color("345c8a")
     opponent.position = Vector3(-Strip.LANE_X,0.75,0)
     opponent.collision_layer = 2
     opponent.collision_mask = 3
     var stock: Dictionary = vehicle.duplicate(true)
+    stock["model"] = opponent.model_name
+    stock["upgrades"] = []
+    stock["tire_compound"] = "street"
     for component in stock.get("health",{}):
         stock["health"][component] = 100.0
     opponent.powertrain.config = Config.from_vehicle(stock,true)
-    opponent.powertrain.config.abs_assist = car.powertrain.config.abs_assist
     opponent.powertrain.traction_control = car.powertrain.traction_control
     opponent.powertrain.reset(false)
     add_child(opponent)
@@ -220,7 +222,7 @@ func _physics_process(delta: float) -> void:
 
 func _refresh_hud() -> void:
     var best: Dictionary = (GameSession.career.stock_drag_records if is_duel else GameSession.career.drag_records).best(GameSession.selected_vehicle)
-    hud.refresh({"model":car.powertrain,"run":run,"settings":GameSession.controls,"name":car.model_name,"position":-car.position.z,"best":best,"staged":_staged(),"can_arm":_can_arm(),"message":message,"paused":paused,"personal_best":personal_best,"wear_start":attempt_wear_start,"impacts":car.damage.impacts,"damage":car.damage.cumulative,"duel":is_duel,"opponent_name":opponent_name,"opponent_run":opponent_run,"opponent_gap":opponent.position.z-car.position.z if is_duel else 0.0,"duel_result":duel_result,"zero_to_hundred":car.zero_to_hundred,"class_data":class_data,"ground":car.ground_state})
+    hud.refresh({"model":car.powertrain,"run":run,"settings":GameSession.controls,"name":car.model_name,"position":-car.position.z,"best":best,"staged":_staged(),"can_arm":_can_arm(),"message":message,"paused":paused,"personal_best":personal_best,"wear_start":attempt_wear_start,"impacts":car.damage.impacts,"damage":car.damage.cumulative,"duel":is_duel,"opponent_name":opponent_name,"opponent_model":opponent.model_name if is_duel else "","opponent_run":opponent_run,"opponent_gap":opponent.position.z-car.position.z if is_duel else 0.0,"duel_result":duel_result,"zero_to_hundred":car.zero_to_hundred,"class_data":class_data,"ground":car.ground_state})
 
 func _shift(direction: int) -> void:
     if enabled and not leaving and not paused and run.phase not in ["finished","invalid"]:

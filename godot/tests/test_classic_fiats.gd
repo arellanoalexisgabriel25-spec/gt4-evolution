@@ -43,14 +43,14 @@ func measured_pass(config) -> Dictionary:
 func _initialize() -> void:
     var game = Economy.new()
     game.seed_demo()
-    check(game.cars.size()==16 and Catalog.FLAGSHIPS.size()==3 and Catalog.CLASSICS.size()==3,"The three classics extend the lineup while the original three remain flagships")
+    check(game.cars.size()==Economy.MODELS.size() and Catalog.FLAGSHIPS.size()==3 and Catalog.CLASSICS.size()==3,"The three classics extend the lineup while the original three remain flagships")
     check(game.find_car(11).model==Catalog.FLAGSHIPS[0] and game.find_car(13).model==Catalog.FLAGSHIPS[2],"Existing flagship IDs remain stable")
     check(game.find_car(14).model==Catalog.CLASSICS[0] and game.find_car(15).model==Catalog.CLASSICS[1] and game.find_car(16).model==Catalog.CLASSICS[2],"New offers append after all thirteen existing units")
     check(Catalog.has_definition(Catalog.CLASSICS[0]) and not Catalog.flagship(Catalog.CLASSICS[0]) and not Catalog.has_definition("Unknown"),"Supported models and flagship identity have separate meanings")
     var ordered := Catalog.market_order(game.cars)
     var ids := {}
     for car in ordered: ids[car.id]=true
-    check(ordered.size()==16 and ids.size()==16 and ordered[0].id==11 and ordered[3].id==14 and ordered[4].id==15 and ordered[5].id==16,"Market order includes every unit exactly once and keeps flagships first")
+    check(ordered.size()==Economy.MODELS.size() and ids.size()==Economy.MODELS.size() and ordered[0].id==11 and ordered[3].id==14 and ordered[4].id==15 and ordered[5].id==16,"Market order includes every unit exactly once and keeps flagships first")
     game.buy(12)
     game.find_car(12).health.motor=73.25
     game.find_car(12).history.append({"event":"preserved","points":1.25})
@@ -62,7 +62,7 @@ func _initialize() -> void:
     restored.ensure_flagship_offers()
     restored.ensure_flagship_offers()
     var after: Dictionary = restored.to_dict()
-    check(restored.cars.size()==16 and after.balance==before.balance and after.ledger==before.ledger,"Classic migration is idempotent and never charges or creates credits")
+    check(restored.cars.size()==Economy.MODELS.size() and after.balance==before.balance and after.ledger==before.ledger,"Classic migration is idempotent and never charges or creates credits")
     check(after.cars.slice(0,13)==before.cars,"Migration preserves ownership, health, equipment, history and every old unit")
     var occupied: Dictionary = prior.duplicate(true)
     var custom: Dictionary = occupied.cars[0].duplicate(true)
@@ -74,7 +74,7 @@ func _initialize() -> void:
     restored.ensure_flagship_offers()
     ids.clear()
     for car in restored.cars: ids[car.id]=true
-    check(restored.cars.size()==17 and ids.size()==17 and restored.find_car(14).model=="Unidad preservada","Occupied IDs are retained and the new units receive free IDs without duplication")
+    check(restored.cars.size()==Economy.MODELS.size()+1 and ids.size()==Economy.MODELS.size()+1 and restored.find_car(14).model=="Unidad preservada","Occupied IDs are retained and the new units receive free IDs without duplication")
     var configurations: Array = []
     var passes: Array = []
     for id in [14,15,16]:

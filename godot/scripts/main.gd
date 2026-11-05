@@ -37,11 +37,16 @@ var home_featured := ""
 var garage_featured := 0
 var duel_profile := "technical"
 var duel_class := "1"
+var duel_opponent_model := ""
 
 func _ready() -> void:
     game = GameSession.game
     game.ensure_flagship_offers()
     career = GameSession.career
+    if GameSession.drag_format=="duel":
+        duel_profile = GameSession.drag_rival_profile
+        duel_class = GameSession.drag_class_id
+        duel_opponent_model = GameSession.drag_opponent_model
     current_tab = GameSession.menu_tab
     GameSession.menu_tab = "inicio"
     _build_interface()
@@ -240,21 +245,24 @@ func _home() -> void:
     intro.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     hero.add_child(intro)
     intro.add_child(_label("402,336 M / CAJA MANUAL",25))
-    intro.add_child(_label("Clásicos argentinos. Una pasión por el ¼ de milla.",14))
+    intro.add_child(_label("De fábrica a la pista. Una pasión por el ¼ de milla.",14))
     intro.add_child(_label(featured["model"],22))
     if featured["owner"]!="player":
         intro.add_child(_button("VISITAR EL CONCESIONARIO",_change_tab.bind("mercado")))
     else:
         intro.add_child(_button("DUELO ¼ DE MILLA / FÁBRICA",_drag_duel.bind(int(featured["id"]))))
-    var lineup := HBoxContainer.new()
-    intro.add_child(lineup)
-    var models: Array = Catalog.FLAGSHIPS+Catalog.CLASSICS
+    var selector := OptionButton.new()
+    selector.custom_minimum_size.y = 32
+    selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    var models: Array = []
+    for entry in Catalog.market_order(game.cars):
+        var name := str(entry["model"])
+        if not models.has(name): models.append(name)
     for index in range(models.size()):
-        var choice := _button(["147","UNO","GOL","128 S","133","128"][index],_feature.bind(models[index]))
-        choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-        choice.custom_minimum_size.y = 32
-        choice.add_theme_font_size_override("font_size",18)
-        lineup.add_child(choice)
+        selector.add_item(models[index])
+        if str(models[index])==str(featured["model"]): selector.select(index)
+    selector.item_selected.connect(func(index): _feature(str(models[index])))
+    intro.add_child(selector)
     var map = CityMap.new()
     map.destination_selected.connect(_change_tab)
     content.add_child(map)
@@ -311,6 +319,16 @@ func _garage() -> void:
     rivals.select(["technical","aggressive","conservative"].find(duel_profile))
     rivals.item_selected.connect(func(index): duel_profile=["technical","aggressive","conservative"][index])
     content.add_child(rivals)
+    var opponent_models := OptionButton.new()
+    opponent_models.add_item("RIVAL: MISMO MODELO / COMPARAR PILOTOS")
+    opponent_models.set_item_metadata(0,"")
+    for model in Catalog.FLAGSHIPS+Catalog.CLASSICS+Catalog.NATIONALS:
+        var index := opponent_models.item_count
+        opponent_models.add_item("RIVAL: "+str(model))
+        opponent_models.set_item_metadata(index,str(model))
+        if str(model)==duel_opponent_model: opponent_models.select(index)
+    opponent_models.item_selected.connect(func(index): duel_opponent_model=str(opponent_models.get_item_metadata(index)))
+    content.add_child(opponent_models)
     var classes := OptionButton.new()
     classes.add_item("LIBRE / PRIMERA LLEGADA")
     classes.set_item_metadata(0,"")
@@ -358,6 +376,8 @@ func _garage() -> void:
             if targets.has("top_speed_kmh"): details.append("máxima %.0f km/h" % float(targets.top_speed_kmh))
             if targets.has("power_cv"): details.append("%.0f CV" % float(targets.power_cv))
             layout.add_child(_label("%s · referencia: %s · calibración pendiente" % [metrics["variant"]," / ".join(details)],13))
+        else:
+            layout.add_child(_label(str(metrics["variant"])+" · perfil provisional",13))
         var best := career.lap_records.get_best(int(car["id"]))
         if best > 0.0:
             layout.add_child(_label("Mejor vuelta al club: %.2f s" % best, 15))
@@ -525,7 +545,7 @@ func _drag_3d(id: int) -> void:
     get_tree().change_scene_to_file("res://scenes/drag.tscn")
 
 func _drag_duel(id: int) -> void:
-    if not GameSession.start_drag(id,"duel",duel_profile,duel_class):
+    if not GameSession.start_drag(id,"duel",duel_profile,duel_class,duel_opponent_model):
         notice.text = "El auto no está disponible o tenés una inscripción pendiente."
         return
     get_tree().change_scene_to_file("res://scenes/drag.tscn")

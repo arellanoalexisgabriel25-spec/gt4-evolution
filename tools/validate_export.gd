@@ -19,8 +19,8 @@ func _initialize() -> void:
 
 func run() -> void:
     var session = root.get_node("GameSession")
-    check(session.VERSION=="0.18","The exported PCK carries the current game version")
-    check(Catalog.DATA.size()==6,"The export contains all six supplied car models")
+    check(session.VERSION=="0.19","The exported PCK carries the current game version")
+    check(Catalog.DATA.size()==13,"The export contains all thirteen supplied car models")
     for name in Catalog.DATA:
         var profile: Dictionary = Catalog.DATA[name]
         check(ResourceLoader.exists(str(profile.asset)),"The exported model resolves through its imported resource: "+name)

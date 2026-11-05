@@ -2,8 +2,9 @@ extends Node
 
 const Economy = preload("res://scripts/economy.gd")
 const Career = preload("res://scripts/career.gd")
-const VERSION := "0.18"
+const VERSION := "0.19"
 const ControlSettings = preload("res://scripts/control_settings.gd")
+const Catalog = preload("res://scripts/car_catalog.gd")
 const DragClasses = preload("res://scripts/drag_class_rules.gd")
 const Music = preload("res://scripts/menu_music.gd")
 var controls = ControlSettings.new()
@@ -16,6 +17,7 @@ var driving_mode := "practice"
 var drag_format := "practice"
 var drag_rival_profile := "technical"
 var drag_class_id := ""
+var drag_opponent_model := ""
 var last_notice := ""
 var menu_tab := "inicio"
 var entry_ticket: Dictionary = {}
@@ -46,6 +48,7 @@ func reset() -> void:
     driving_mode = "practice"
     drag_format = "practice"
     drag_class_id = ""
+    drag_opponent_model = ""
     last_notice = ""
     menu_tab = "inicio"
     entry_ticket = {}
@@ -57,7 +60,9 @@ func start_driving(car_id: int, mode: String = "practice") -> bool:
     driving_mode = mode
     return true
 
-func start_drag(car_id: int, format: String = "practice", profile: String = "technical", class_id: String = "") -> bool:
+func start_drag(car_id: int, format: String = "practice", profile: String = "technical", class_id: String = "", opponent_model: String = "") -> bool:
+    if not opponent_model.is_empty() and (format!="duel" or not Catalog.has_definition(opponent_model)):
+        return false
     # A reference time band is a game choice, never official admission.
     if not class_id.is_empty() and (format!="duel" or class_id=="L1" or DragClasses.class_by_id(class_id).is_empty()):
         return false
@@ -67,6 +72,7 @@ func start_drag(car_id: int, format: String = "practice", profile: String = "tec
     drag_format = format
     drag_rival_profile = profile
     drag_class_id = class_id
+    drag_opponent_model = opponent_model
     return true
 
 func enter_track_event(event_id: String, car_id: int) -> String:

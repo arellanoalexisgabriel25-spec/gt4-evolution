@@ -2,6 +2,9 @@ extends RefCounted
 
 # The supplied GLB has a single static mesh. Partition its triangles into body
 # and wheel regions without changing the source file or losing UVs/materials.
+# Configured wheel envelopes are visual estimates for the scanned body. Only
+# their crossing triangles are clipped, keeping UVs continuous and the fender fixed.
+# Source and subdivided render face counts are reported separately.
 # Cache render meshes across showroom and race instances. Physical collision is
 # deliberately separate: these detailed visual triangles are never colliders.
 static var cache: Dictionary = {}
@@ -62,6 +65,81 @@ static func _wheel_contour(vertices: PackedVector3Array, approximate: Vector3, r
         return fallback
     return {"center":approximate+center_delta,"radius":radii.x,"radii":radii,"fitted":true}
 
+static func _visual_vertex(index: int, positions: PackedVector3Array, normals: PackedVector3Array, uv: PackedVector2Array, normal_basis: Basis) -> Array:
+    return [positions[index],(normal_basis*normals[index]).normalized() if normals.size()==positions.size() else Vector3.UP,uv[index] if uv.size()==positions.size() else Vector2.ZERO]
+
+static func _interpolate_visual(a: Array, b: Array, weight: float) -> Array:
+    return [a[0].lerp(b[0],weight),a[1].lerp(b[1],weight),a[2].lerp(b[2],weight)]
+
+# Split a convex polygon across a plane. Both pieces preserve original winding
+# and interpolate UV/normals at the same cut, avoiding holes from whole-face masks.
+static func _split_visual_polygon(polygon: Array, normal: Vector3, distance: float) -> Array:
+    var inside: Array = []
+    var outside: Array = []
+    var previous: Array = polygon[-1]
+    var previous_distance: float = normal.dot(previous[0])-distance
+    for current in polygon:
+        var current_distance: float = normal.dot(current[0])-distance
+        var previous_inside := previous_distance>=0.0
+        var current_inside := current_distance>=0.0
+        if previous_inside!=current_inside:
+            var weight := previous_distance/(previous_distance-current_distance)
+            var crossing := _interpolate_visual(previous,current,weight)
+            inside.append(crossing)
+            outside.append(crossing)
+        if current_inside: inside.append(current)
+        else: outside.append(current)
+        previous=current
+        previous_distance=current_distance
+    return [inside,outside]
+
+static func _triangulate_visual(polygon: Array, target: Array) -> void:
+    if polygon.size()<3: return
+    for index in range(1,polygon.size()-1):
+        var a: Vector3 = polygon[index][0]-polygon[0][0]
+        var b: Vector3 = polygon[index+1][0]-polygon[0][0]
+        if a.cross(b).length_squared()<1e-18: continue
+        target.append_array([polygon[0],polygon[index],polygon[index+1]])
+
+static func _visual_wheel_candidates(a: Vector3, b: Vector3, c: Vector3, contours: Array, width: float) -> Array[int]:
+    var minimum := a.min(b).min(c)
+    var maximum := a.max(b).max(c)
+    var result: Array[int] = []
+    for wheel in range(contours.size()):
+        var contour: Dictionary = contours[wheel]
+        var center: Vector3 = contour.center
+        var radii: Vector2 = contour.radii
+        if maximum.y<center.y-radii.x or minimum.y>center.y+radii.x or maximum.z<center.z-radii.y or minimum.z>center.z+radii.y:
+            continue
+        if (maximum.x if center.x>0.0 else -minimum.x)<width*0.31: continue
+        result.append(wheel)
+    return result
+
+static func _inside_visual_wheel(point: Vector3, contour: Dictionary, width: float) -> bool:
+    var offset: Vector3 = point-contour.center
+    return point.x*signf(contour.center.x)>=width*0.31 and Vector2(offset.y/contour.radii.x,offset.z/contour.radii.y).length_squared()<=1.0
+
+static func _clip_visual_wheel(triangle: Array, contour: Dictionary, width: float) -> Dictionary:
+    var center: Vector3 = contour.center
+    var radii: Vector2 = contour.radii
+    var side := signf(center.x)
+    var min_y := minf(triangle[0][0].y,minf(triangle[1][0].y,triangle[2][0].y))
+    var max_y := maxf(triangle[0][0].y,maxf(triangle[1][0].y,triangle[2][0].y))
+    var min_z := minf(triangle[0][0].z,minf(triangle[1][0].z,triangle[2][0].z))
+    var max_z := maxf(triangle[0][0].z,maxf(triangle[1][0].z,triangle[2][0].z))
+    if max_y<center.y-radii.x or min_y>center.y+radii.x or max_z<center.z-radii.y or min_z>center.z+radii.y:
+        return {}
+    var max_x := maxf(triangle[0][0].x*side,maxf(triangle[1][0].x*side,triangle[2][0].x*side))
+    if max_x<width*0.31: return {}
+    var inside: Array = triangle
+    var outside: Array = []
+    for plane in contour.planes:
+        var pieces := _split_visual_polygon(inside,plane.normal,plane.d)
+        inside=pieces[0]
+        if pieces[1].size()>=3: outside.append(pieces[1])
+        if inside.size()<3: return {}
+    return {"inside":inside,"outside":outside}
+
 static func _render_material(source: Material) -> Material:
     if not source is BaseMaterial3D or source.albedo_texture!=null or not source.emission_enabled or source.emission_texture==null:
         return source
@@ -92,7 +170,9 @@ static func build(profile: Dictionary) -> Dictionary:
         return {}
     # One source may be normalized for more than one configured variant.
     var segmentation := str(profile.get("wheel_segmentation","color"))
-    var cache_key := [path,size_value,float(radius_value),float(wheelbase_value),segmentation]
+    var configured: Array = profile.get("visual_wheels",[]) if segmentation=="configured_clip" else []
+    if segmentation=="configured_clip" and configured.size()!=4: return {}
+    var cache_key := [path,size_value,float(radius_value),float(wheelbase_value),segmentation,configured.duplicate(true)]
     if cache.has(cache_key):
         return cache[cache_key]
     if path.is_empty() or not ResourceLoader.exists(path):
@@ -142,15 +222,61 @@ static func build(profile: Dictionary) -> Dictionary:
     var contours: Array = []
     for wheel in range(4):
         contours.append(_wheel_contour(transformed,centers[wheel],radius,size.x,scale) if segmentation=="contour" else {"center":centers[wheel],"radius":radius,"radii":Vector2(radius,radius),"fitted":false})
+    if not configured.is_empty():
+        for wheel in range(4):
+            var setting = configured[wheel]
+            if not setting is Dictionary:
+                source.free()
+                return {}
+            var configured_center = setting.get("center")
+            var configured_radii = setting.get("radii")
+            if typeof(configured_center)!=TYPE_VECTOR3 or typeof(configured_radii)!=TYPE_VECTOR2:
+                source.free()
+                return {}
+            if not configured_center.is_finite() or not configured_radii.is_finite() or configured_radii.x<=0.0 or configured_radii.y<=0.0:
+                source.free()
+                return {}
+            centers[wheel]=configured_center
+            var planes: Array[Plane] = [Plane(Vector3(signf(configured_center.x),0,0),size.x*0.31)]
+            for segment in range(32):
+                var angle := TAU*float(segment)/32.0
+                var normal := Vector3(0,-cos(angle)/configured_radii.x,-sin(angle)/configured_radii.y)
+                planes.append(Plane(normal,normal.dot(configured_center)-1.0))
+            contours[wheel]={"center":configured_center,"radius":configured_radii.x,"radii":configured_radii,"fitted":false,"configured":true,"planes":planes}
     var groups: Array = [[],[],[],[],[]]
+    var clipped: Array = [[],[],[],[],[]]
     var source_material: Material = mesh_node.mesh.surface_get_material(0)
     var material: Material = _render_material(source_material)
     var diffuse: Image
-    if material is BaseMaterial3D and material.albedo_texture!=null:
+    if configured.is_empty() and material is BaseMaterial3D and material.albedo_texture!=null:
         diffuse = material.albedo_texture.get_image()
         if diffuse!=null and diffuse.is_compressed():
             diffuse.decompress()
     for triangle in range(0,indices.size(),3):
+        if not configured.is_empty():
+            var a: Vector3 = transformed[indices[triangle]]
+            var b: Vector3 = transformed[indices[triangle+1]]
+            var c: Vector3 = transformed[indices[triangle+2]]
+            var candidates := _visual_wheel_candidates(a,b,c,contours,size.x)
+            var assigned := false
+            for wheel in candidates:
+                if _inside_visual_wheel(a,contours[wheel],size.x) and _inside_visual_wheel(b,contours[wheel],size.x) and _inside_visual_wheel(c,contours[wheel],size.x):
+                    groups[wheel+1].append_array([indices[triangle],indices[triangle+1],indices[triangle+2]])
+                    assigned=true
+                    break
+            if assigned: continue
+            if not candidates.is_empty():
+                var vertices_of_face: Array = []
+                for corner in range(3): vertices_of_face.append(_visual_vertex(indices[triangle+corner],transformed,normals,uv,normal_basis))
+                for wheel in candidates:
+                    var partition := _clip_visual_wheel(vertices_of_face,contours[wheel],size.x)
+                    if partition.is_empty(): continue
+                    _triangulate_visual(partition.inside,clipped[wheel+1])
+                    for polygon in partition.outside: _triangulate_visual(polygon,clipped[0])
+                    assigned=true
+                    break
+            if not assigned: groups[0].append_array([indices[triangle],indices[triangle+1],indices[triangle+2]])
+            continue
         var midpoint := (transformed[indices[triangle]]+transformed[indices[triangle+1]]+transformed[indices[triangle+2]])/3.0
         var group := 0
         var wheel_surface := true
@@ -188,11 +314,12 @@ static func build(profile: Dictionary) -> Dictionary:
                 group = wheel+1
                 break
         groups[group].append_array([indices[triangle],indices[triangle+1],indices[triangle+2]])
-    for group in groups:
-        if group.is_empty():
+    for group in range(5):
+        if groups[group].is_empty() and clipped[group].is_empty():
             source.free()
             return {}
     for wheel in range(4):
+        if not configured.is_empty(): continue
         var wheel_box := AABB(transformed[groups[wheel+1][0]],Vector3.ZERO)
         for vertex in groups[wheel+1]:
             wheel_box = wheel_box.expand(transformed[vertex])
@@ -212,14 +339,18 @@ static func build(profile: Dictionary) -> Dictionary:
             if uv.size()==vertices.size():
                 surface.set_uv(uv[vertex])
             surface.add_vertex(transformed[vertex]-offset)
+        for vertex in clipped[group]:
+            surface.set_normal(Vector3(vertex[1]).normalized())
+            surface.set_uv(vertex[2])
+            surface.add_vertex(vertex[0]-offset)
         if normals.size()!=vertices.size():
             surface.generate_normals()
         if uv.size()==vertices.size() and material is BaseMaterial3D and material.normal_enabled and material.normal_texture!=null:
             surface.generate_tangents()
         surface.index()
         meshes.append(surface.commit())
-        counts.append(int(groups[group].size()/3))
+        counts.append(int((groups[group].size()+clipped[group].size())/3))
     source.free()
-    var result := {"meshes":meshes,"centers":centers,"triangle_counts":counts,"source_triangles":int(indices.size()/3),"size":size,"material_mode":"baked_lit" if material!=source_material else "source","wheel_segmentation":segmentation,"contours":contours}
+    var result := {"meshes":meshes,"centers":centers,"triangle_counts":counts,"source_triangles":int(indices.size()/3),"render_triangles":counts.reduce(func(total,value): return total+value,0),"size":size,"material_mode":"baked_lit" if material!=source_material else "source","wheel_segmentation":segmentation,"contours":contours}
     cache[cache_key] = result
     return result

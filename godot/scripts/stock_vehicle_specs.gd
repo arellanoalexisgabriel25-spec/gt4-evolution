@@ -5,6 +5,7 @@ extends RefCounted
 # beside each profile so later verified sheets can replace values without silently
 # turning model output into a manufacturer's specification.
 const EngineTorque = preload("res://scripts/engine_torque.gd")
+const Additional = preload("res://scripts/additional_vehicle_data.gd")
 const TEST_DRIVER_KG := 75.0
 const PROFILES := {
     "Fiat 147 Vivace": {"id":"147_vivace_provisional","variant":"Vivace · motor/año por verificar","curb_mass_kg":840.0,"peak_torque_nm":112.0,"redline_rpm":6200.0,"wheelbase_m":2.22,"rolling_radius_m":0.275,"gear_ratios":[3.91,2.24,1.47,1.04,0.86],"final_drive":3.76},
@@ -37,6 +38,7 @@ const PROFILES := {
 }
 
 static func for_model(model: String) -> Dictionary:
+    if Additional.DATA.has(model): return Additional.profile(model)
     var profile: Dictionary = PROFILES.get(model,{}).duplicate(true)
     if not profile.is_empty():
         profile["status"] = "development_estimate"
@@ -104,6 +106,7 @@ static func metric_snapshot(config) -> Dictionary:
         "rolling_radius_m":config.wheel_radius,"wheelbase_m":config.wheelbase,
         "drag_area_m2":config.drag_area,"air_density_kg_m3":config.air_density,
         "factory_only":config.factory_class,
+        "engine_position":config.engine_position,
         "reference_targets":config.reference_targets.duplicate(true),
         "rotational_equivalent_mass_kg":2.0*config.wheel_inertia/(config.wheel_radius*config.wheel_radius)
     }

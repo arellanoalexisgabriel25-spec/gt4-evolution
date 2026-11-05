@@ -15,8 +15,9 @@ la textura evita que los guardabarros pintados giren junto con los neumáticos.
 Los pivotes visuales se calculan desde la geometría separada. La colisión utiliza
 un volumen simple independiente. Las texturas ya contienen detalles y luces
 horneados; no se presenta el resultado como una carrocería con deformación física.
-La importación usa `Embed as Uncompressed`: las imágenes permanecen dentro de
-la escena importada. No requiere copias PNG externas generadas junto al GLB.
+La importación inicial usó `Embed as Uncompressed`; desde 0.19 utiliza
+`Embed as Basis Universal` para comprimir las texturas de la escena importada.
+El GLB fuente no cambia y no requiere copias PNG externas generadas junto a él.
 
 El GLB no identifica autor ni licencia en sus metadatos, únicamente el exportador
 Blender/glTF. Se conserva como recurso aportado por el usuario, con los derechos
@@ -129,3 +130,42 @@ Estos recursos se incluyen tanto en el proyecto fuente como en el PCK de la
 exportación de juego. El paquete Windows de esta entrega utiliza una plantilla
 oficial de exportación; no necesita distribuir el editor completo para ejecutar
 los modelos. Los originales permanecen separados de ambos paquetes jugables.
+
+
+## Incorporación 0.19 / siete modelos adicionales
+
+Se preservan los seis GLB anteriores. Se añaden Fiat 125, Duna, Cronos, Siena,
+Punto, Regatta y 500. Los siete originales se conservan intactos en el directorio
+separado de referencias. El 500 es visualmente Abarth; por instrucción del usuario
+utiliza la ficha mecánica del **500 Sport 1.4 16V de 100 CV y seis marchas** ya aportada,
+sin atribuirle la potencia de una versión Abarth. El Punto es de carrocería regional
+posterior al Punto europeo 2002 del PDF: su perfil 1.4 Fire de 87 CV es estimado, no una
+transcripción de esa ficha de 130 CV. La identidad visual no certifica año ni motor.
+
+Los nuevos derivados se simplifican hacia 40.000 triángulos, fijando costuras UV;
+Cronos y Punto conservan más por los límites de esas costuras. Se generan texturas
+RGB PNG de 1024² a partir de las originales de 2048² con filtro Lanczos. **Las texturas
+nuevas están reprocesadas**, no son byteidénticas. Las imágenes externas son recursos
+explícitos del proyecto, con mipmaps y compresión VRAM; sus PNG e importaciones se
+incluyen en el ZIP fuente y se comprueba que el PCK resuelva todas sus referencias.
+
+El Gol conserva su GLB original y texturas fuente de 2048². Su importación cambia a
+`Embed as Basis Universal` para reducir memoria y distribución, conservando la
+geometría y los materiales PBR. El resto de GLB anteriores no se modifica.
+
+| Modelo | Triángulos originales → derivados | SHA256 GLB original | SHA256 GLB derivado |
+| --- | ---: | --- | --- |
+| 125 | 500,000 → 39,998 | `e5b0f4a1b5c29c535f2ccbeea2d711247c044bb206ccde1cfa5173b3acfb6dff` | `9deb681986dce6803e5cd88b7bdf40c4deb3c1283f825d792899c7ef13aeadf4` |
+| Duna | 450,000 → 39,998 | `54189607f196c0e4c564b894af1db118c9ee676705e1760c373580f4b965750d` | `330fa96c06b9f81185753292a59901e464b7e2d039bd87a89bd172cc8a147200` |
+| Cronos | 500,000 → 51,432 | `7a0c5af1feeedb8023ffd273c0d80766abdd1e5f381cfbef6a94ad0186aee646` | `a510e262b0cb564253d0195cbf6eb53d4484167cd91c6ef2d1d751fbb82a2c59` |
+| Siena | 350,000 → 39,998 | `5e0372ad09594e31c135d483c7dff7d9373359523ffcbd0beab4fe725e51d2dc` | `bc3111f79ac5d3b207d63d874fd0b575c906c5f1659bccec3d8846c4cdfb7899` |
+| Punto | 500,000 → 40,832 | `7a20917fa0450280290166601adfae0c70bee06c0ca8c22236091cae7fb9de00` | `9dc25d46683f37ff0392d14a044758093858886799fca23588fdeca6f6a368b9` |
+| Regatta | 450,000 → 39,998 | `b3e7cab593cd9965d5f818c74d54df77f5c7d35395f26f816bb8aa5229a5ae77` | `482eb397a8b2eaed3988e26428a2fdd261d5867a7487864d5465ddec2ea3b2ec` |
+| 500 / aspecto Abarth | 150,000 → 39,996 | `85167682c9242a4b4f9cc2fe8dc250ec08cbf06866a3e0d6af3d3acddca57b85` | `7e62696a96a45dc9138d5f3489ea8c6e6b6b998c2b7561aeb815d95f687f2bad` |
+
+`tools/optimize_fleet_models.py` reproduce la simplificación y textura externa
+con Blender 4.3.2 y Pillow. La importación conserva la orientación +Z de las fuentes;
+la escala del juego es una normalización visual estimada, no una medición real.
+Los recursos no indican una licencia de autor verificable en sus metadatos;
+se conservan como aportes del usuario con derechos de sus autores, sin relicenciarlos
+bajo MIT. Los rigs son aproximaciones sobre escaneos, no suspensión articulada.

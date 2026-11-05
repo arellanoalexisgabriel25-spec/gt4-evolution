@@ -104,6 +104,8 @@ func kinetic_energy_j() -> float:
     return 0.5*config.mass*speed_mps*speed_mps+0.5*config.engine_inertia*engine_omega*engine_omega+0.5*config.wheel_inertia*axles.omega.length_squared()
 
 func shift(direction: int, clutch: float) -> bool:
+    if not is_finite(clutch) or clutch<0.0 or clutch>1.0:
+        return false
     if direction not in [-1,1] or shift_timer > 0.0:
         return false
     var next := clampi(gear+direction,0,config.gear_ratios.size())

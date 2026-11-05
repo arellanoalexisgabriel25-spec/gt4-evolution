@@ -69,7 +69,7 @@ func _ready() -> void:
     reaction_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     var rival := VBoxContainer.new()
     panel(Rect2(-490,20,230,105),Vector2(1,0)).add_child(rival)
-    opponent_label = label(rival,"",19)
+    opponent_label = label(rival,"",16)
     var actions := HBoxContainer.new()
     actions.set_anchors_preset(Control.PRESET_TOP_RIGHT)
     actions.offset_left = -250
@@ -148,8 +148,10 @@ func refresh(data: Dictionary) -> void:
     if is_duel:
         var other = data["opponent_run"]
         var gap := float(data.get("opponent_gap",0.0))
-        opponent_label.text = "VS " + str(data["opponent_name"]).to_upper()+"\n"+("RIVAL %.1f m DETRÁS" % gap if gap>=0 else "RIVAL %.1f m DELANTE" % -gap)+"\nET %s · RT %s" % [("%.3f" % other.elapsed) if other.launch_time>=0 else "—",("%.3f" % other.reaction) if other.launch_time>=0 else "—"]
+        opponent_label.text = str(data["opponent_name"]).to_upper()+" · "+("%.1f m ATRÁS" % gap if gap>=0 else "%.1f m DELANTE" % -gap)+"\n"+str(data.get("opponent_model",""))+"\nET %s · RT %s" % [("%.3f" % other.elapsed) if other.launch_time>=0 else "—",("%.3f" % other.reaction) if other.launch_time>=0 else "—"]
     var category: Dictionary = data.get("class_data",{})
+    if is_duel and not str(data.get("opponent_model","")).is_empty():
+        opponent_label.tooltip_text = str(data["opponent_model"])
     clock_label.text = "%.3f s" % run.elapsed
     reaction_label.text = "REACCIÓN  %s" % ("%.3f s" % run.reaction if run.launch_time >= 0 else "—")
     gear_label.text = "N" if model.gear == 0 else str(model.gear)

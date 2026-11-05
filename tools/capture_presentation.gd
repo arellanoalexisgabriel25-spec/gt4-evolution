@@ -1,7 +1,7 @@
 extends SceneTree
 
 const DragDriver = preload("res://tests/drag_test_driver.gd")
-var output := "/workspace/artifacts/presentation-0.18"
+var output := "/workspace/artifacts/presentation-0.19"
 
 func _initialize() -> void:
     var args := OS.get_cmdline_user_args()
@@ -176,7 +176,7 @@ func run() -> void:
     await process_frame
     await process_frame
     current_scene._change_tab("inicio")
-    for entry in [["Fiat 147 Vivace","18-147-showroom"],["Fiat Uno Fire 3 puertas","19-uno-showroom"],["Volkswagen Gol Power 3 puertas","20-gol-showroom"],["Fiat 128 Súper Europa 1.5","28-128-super-showroom"],["Fiat 133","29-133-showroom"],["Fiat 128 estándar","30-128-standard-showroom"]]:
+    for entry in [["Fiat 147 Vivace","18-147-showroom"],["Fiat Uno Fire 3 puertas","19-uno-showroom"],["Volkswagen Gol Power 3 puertas","20-gol-showroom"],["Fiat 128 Súper Europa 1.5","28-128-super-showroom"],["Fiat 133","29-133-showroom"],["Fiat 128 estándar","30-128-standard-showroom"],["Fiat 125","34-125-showroom"],["Fiat Duna","35-duna-showroom"],["Fiat Cronos","36-cronos-showroom"],["Fiat Siena","37-siena-showroom"],["Fiat Punto","38-punto-showroom"],["Fiat Regatta","39-regatta-showroom"],["Fiat 500 Sport","40-500-showroom"]]:
         current_scene._feature(entry[0])
         await picture(entry[1])
     current_scene._change_tab("taller")
@@ -301,6 +301,42 @@ func run() -> void:
         return
     drag._refresh_hud()
     await picture("33-133-duel-result")
+    Engine.time_scale = 1.0
+    drag.input_provider = Callable()
+    drag._back_to_garage()
+    await process_frame
+    await process_frame
+    session.reset()
+    session.game.buy(23)
+    for component in session.game.find_car(23)["health"]:
+        session.game.find_car(23)["health"][component] = 100.0
+    session.start_drag(23,"duel","technical","","Fiat 133")
+    change_scene_to_file("res://scenes/drag.tscn")
+    await process_frame
+    await process_frame
+    drag = current_scene
+    var mixed_driver := DragDriver.new()
+    drag.input_provider = func() -> Dictionary: return mixed_driver.controls(drag.car.powertrain,drag.run.clock,drag.get_physics_process_delta_time())
+    await settle_drag(drag)
+    await picture("41-mixed-duel-staging")
+    if not arm_drag(drag): return
+    Engine.time_scale = 3.0
+    while -drag.car.position.z<60 and not drag.duel.finished:
+        await physics_frame
+    drag.set_physics_process(false)
+    drag.camera.snap()
+    drag._refresh_hud()
+    await picture("42-mixed-duel-driving")
+    drag.set_physics_process(true)
+    while not drag.duel.finished:
+        await physics_frame
+    drag.set_physics_process(false)
+    if drag.run.phase!="finished" or drag.opponent_run.phase!="finished" or drag.opponent.model_name!="Fiat 133":
+        push_error("The mixed-model exported demonstration did not produce two real arrivals.")
+        quit(1)
+        return
+    drag._refresh_hud()
+    await picture("43-mixed-duel-result")
     Engine.time_scale = 1.0
     drag.input_provider = Callable()
     drag._back_to_garage()

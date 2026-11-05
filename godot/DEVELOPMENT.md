@@ -8,7 +8,15 @@ Develop functional increments on descriptive branches, preserve user work and sa
 
 Current priority: develop a compact quarter-mile environment, manual shifting, measurable driving skill, persistent mechanical use and original visuals. Large-circuit expansion is deferred. Existing circuit, career and AI modes remain available. A simulated result must always be labelled as such.
 
-## Current increment: 0.18
+## Current increment: 0.19
+
+Seven new models are authored once in `additional_vehicle_data.gd`, consumed by catalog and stock specifications. Stable names and IDs 17–23 extend the previous sixteen offers; legacy offers, saves and finances stay unchanged. Distinguish a supplied guide claim from an estimated parameter or a body scan's appearance. The 500 uses the user's explicit Sport 100 CV reference, with the supplied Abarth body still labelled provisional; do not infer turbo/Abarth performance from graphics.
+
+`GameSession.start_drag` has a fifth optional supported opponent model. Empty preserves the previous same-model duel. The AI car is a deep copy configured independently and cannot mutate the seller's unit. Invalid formats/models reject atomically before player selection. Garage choice persists during the session, not as a new save schema. Damage's fourth optional engine position defaults to legacy front allocation, with explicit rear/mid compartment redistribution that conserves severity. Manual shifting rejects malformed clutch values without mechanical side effects; valid clutch mistakes still wear the transmission.
+
+Runtime textures and visual wheel geometry are separate from physical wheelbase/radius. Seven sources use explicit mipmapped PNG imports; the Gol's original GLB is unchanged and its import compresses embedded textures. Optimize originals only into separate derivatives. `presentation_shots.txt` is the single expected-capture list used by rendering checks and publication.
+
+## Historical increment: 0.18
 
 Three appended classic offers retain IDs 1–13: 128 Súper Europa 1.5 (ID14), rear-drive 133 (ID15), standard 128 (ID16). `Catalog.FLAGSHIPS` remains the original three; `CLASSICS` and `has_definition` separate market priority from supported profiles. Legacy offer migration remains idempotent and collision-safe. Supplied manufacturer-report claims and estimated fields remain distinct.
 
@@ -54,7 +62,7 @@ manufacturer powertrain or a reason to silently alter the catalogue variant.
 Final asset counts and source-state test/capture results belong in the release
 report after measurement; no previous release's passing count certifies 0.17.
 
-## Architecture through 0.18
+## Architecture through 0.19
 
 | Module | Responsibility |
 | --- | --- |

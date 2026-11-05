@@ -46,6 +46,7 @@ var mass: float:
 @export var suspension_health := 100.0
 @export var chassis_health := 100.0
 @export var steering_factor := 1.0
+var engine_position := "front"
 var factory_class := false
 var profile_id := "generic_development"
 var variant_label := "Variante no identificada"
@@ -89,6 +90,8 @@ static func from_vehicle(vehicle: Dictionary, factory: bool = false):
         result.specification_status = str(local["status"])
         result.specification_sources = local["sources"].duplicate(true)
         result.reference_targets = local.get("reference_targets",{}).duplicate(true)
+        result.engine_position = str(local.get("engine_position","rear" if name.contains("133") or name.contains("MR2") else "front"))
+        result.turbo_fraction = float(local.get("turbo_fraction",0.0))
     if name.contains("Civic") or name.contains("Levin") or name.contains("FTO"):
         result.redline_rpm = 7800.0
         result.torque_rpm = PackedFloat32Array([900,1800,2800,3800,4800,6000,7000,7800])
@@ -98,6 +101,7 @@ static func from_vehicle(vehicle: Dictionary, factory: bool = false):
         result.torque_curve = PackedFloat32Array([0.55,0.65,0.84,1.0,0.99,0.92,0.80,0.66])
     if name.contains("MR2"):
         result.front_weight_bias = 0.44
+        result.engine_position = "mid"
     if name.contains("Impreza"):
         result.awd_front_split = 0.50
     result.clutch_capacity = result.peak_torque*1.7
@@ -123,7 +127,7 @@ static func from_vehicle(vehicle: Dictionary, factory: bool = false):
     if factory:
         # Baseline test protocol excludes gameplay assists. Exact factory safety
         # equipment is not established by the broad model names in old saves.
-        result.abs_assist = false
+        result.abs_assist = bool(local.get("factory_abs",false))
     return result
 
 func metrics() -> Dictionary:

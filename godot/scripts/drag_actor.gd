@@ -56,7 +56,7 @@ func drive_manual(delta: float, controls: Dictionary, _road: bool = true) -> voi
     move_and_slide()
     # Compare the requested velocity AFTER propulsion/braking with the resolved
     # collision velocity. Normal acceleration and recovery are never impacts.
-    if is_on_wall() and damage.record(incoming,Vector2(velocity.x,velocity.z),Vector2(forward.x,forward.z))>0.0:
+    if is_on_wall() and damage.record(incoming,Vector2(velocity.x,velocity.z),Vector2(forward.x,forward.z),powertrain.config.engine_position)>0.0:
         powertrain.config.apply_damage(damage.latest_damage)
     powertrain.speed_mps = maxf(0,Vector3(velocity.x,0,velocity.z).dot(forward))
     measured_acceleration = (powertrain.speed_mps-speed_before)/maxf(delta,0.000001)
