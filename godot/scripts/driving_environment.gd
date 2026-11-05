@@ -1,7 +1,7 @@
 extends Resource
 
 # SI units. Standard dry air is a development baseline, not measured Gálvez weather.
-const REVISION := "longitudinal_023"
+const REVISION := "transmission_chassis_024"
 const STANDARD_GRAVITY := 9.81
 const DRY_AIR_GAS_CONSTANT := 287.05
 @export var air_temperature_c := 20.0

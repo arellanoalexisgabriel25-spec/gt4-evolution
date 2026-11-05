@@ -69,3 +69,6 @@
 69-cvt-driving
 70-cvt-result
 71-physics-telemetry
+72-transmission-settings
+73-reverse-driving
+74-manual-chassis-telemetry

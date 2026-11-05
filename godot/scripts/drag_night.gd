@@ -20,6 +20,7 @@ static func environment() -> Environment:
     result.fog_light_color = Color("101b2b")
     result.fog_light_energy = 0.45
     result.fog_density = 0.0018
+    result.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     return result
 
 func _mesh(size: Vector3, point: Vector3, color: Color, emitting: bool = false) -> void:
@@ -37,6 +38,28 @@ func _mesh(size: Vector3, point: Vector3, color: Color, emitting: bool = false) 
     node.material_override = mat
     node.position = point
     add_child(node)
+
+func _batch_boxes(size: Vector3, points: Array[Vector3], color: Color, emitting: bool = false) -> void:
+    var instances := MultiMeshInstance3D.new()
+    var shapes := MultiMesh.new()
+    shapes.transform_format = MultiMesh.TRANSFORM_3D
+    var mesh := BoxMesh.new()
+    mesh.size = size
+    shapes.mesh = mesh
+    shapes.instance_count = points.size()
+    for index in range(points.size()):
+        shapes.set_instance_transform(index,Transform3D(Basis.IDENTITY,points[index]))
+    instances.multimesh = shapes
+    var mat := StandardMaterial3D.new()
+    mat.albedo_color = color
+    mat.roughness = 0.72
+    if emitting:
+        mat.emission_enabled = true
+        mat.emission = color
+        mat.emission_energy_multiplier = 0.8
+    instances.material_override = mat
+    instances.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    add_child(instances)
 
 func _ready() -> void:
     var world := WorldEnvironment.new()
@@ -74,6 +97,24 @@ func _ready() -> void:
             _mesh(Vector3(0.02,0.45,6),Vector3(x-5.02,height-2.0-float(row)*1.7,z),Color("8c805b"),true)
     for z in range(14,-85,-16):
         _mesh(Vector3(0.05,0.2,7.5),Vector3(17.35,2.75,z),Color("acc5dd"),true)
+    # Small repeated reflectors and alternating barrier panels give a useful
+    # speed/depth reference without extra lights, textures or collision shapes.
+    var reflectors: Array[Vector3] = []
+    for z in range(16,-706,-16):
+        for side in [-1.0,1.0]:
+            reflectors.append(Vector3(side*9.50,0.78,z))
+    _batch_boxes(Vector3(0.025,0.16,0.12),reflectors,Color("d3a46c"),true)
+    var panels: Array[Vector3] = []
+    for z in range(16,-110,-8):
+        for side in [-1.0,1.0]:
+            panels.append(Vector3(side*9.51,0.40,z))
+    _batch_boxes(Vector3(0.015,0.32,3.8),panels,Color("29485e"))
+    # A distant original track-side gantry silhouette frames the finish.
+    for side in [-1.0,1.0]:
+        _mesh(Vector3(0.35,7,0.35),Vector3(side*11.4,3.5,-402.5),Color("304252"))
+    _mesh(Vector3(23,0.7,0.4),Vector3(0,7.1,-402.5),Color("21364a"))
+    for x in [-7.5,7.5]:
+        _mesh(Vector3(4.8,0.12,0.08),Vector3(x,7.5,-402.22),Color("e0af68"),true)
 
 func update_focus(z: float) -> void:
     var section := clampi(int(floor(z/SPACING)),-22,0)

@@ -46,6 +46,8 @@ var duel = Duel.new()
 var duel_result: Dictionary = {}
 var opponent_audio
 var opponent_name := "Nico Vega"
+var _sampled_controls: Dictionary = {}
+var _last_player_ready := false
 
 func _ready() -> void:
     GameSession.menu_music.set_menu_active(false)
@@ -68,6 +70,7 @@ func _ready() -> void:
         car.powertrain.config.abs_assist = GameSession.controls.abs_assist
         car.powertrain.traction_control = GameSession.controls.traction_control
     car.powertrain.reset(false)
+    _apply_transmission_preferences()
     add_child(car)
     camera = Camera.new()
     camera.target = car
@@ -140,6 +143,42 @@ func _controls() -> Dictionary:
     controls["clutch"] = GameSession.controls.clutch_input()
     return controls
 
+func _apply_transmission_preferences() -> void:
+    car.powertrain.shift_mode = GameSession.controls.shift_mode
+    car.powertrain.auto_rev_match = GameSession.controls.auto_rev_match
+
+func _readiness_issue(controls: Dictionary) -> String:
+    var model = car.powertrain
+    if not _mechanically_ready(): return "MECÁNICA NO APTA · Revisá el taller"
+    if model.gear<0: return "MARCHA ATRÁS · Seleccioná N y luego primera"
+    if model.gear==0: return "PUNTO MUERTO · Seleccioná D" if model.config.transmission_type=="cvt" else "PUNTO MUERTO · Embrague y subir marcha"
+    if model.gear!=1: return "ALINEACIÓN · Seleccioná primera"
+    if not model.engine_running: return model.shift_hint()
+    if absf(model.speed_mps)>=0.10: return "ALINEACIÓN · Detené el auto"
+    if not _staged(): return "ALINEACIÓN · Esperá apoyo y posición estable"
+    if model.config.transmission_type=="cvt":
+        if maxf(float(controls.get("brake",0.0)),-float(controls.get("throttle",0.0)))<0.7: return "MANTENÉ EL FRENO PARA ALINEAR"
+    elif model.shift_mode=="manual" and float(controls.get("clutch",0.0))<model.config.clutch_release_pedal:
+        return "MANTENÉ EL EMBRAGUE PARA ALINEAR"
+    elif model.shift_mode!="manual" and model.effective_clutch_pedal<model.config.clutch_release_pedal:
+        return "ACOPLE ASISTIDO · ESPERÁ EL DESEMBRAGUE"
+    return ""
+
+func _launch_hint(controls: Dictionary) -> String:
+    if run.phase!="running": return ""
+    var model = car.powertrain
+    if model.clutch_health<=0.0: return "TRANSMISIÓN AGOTADA · REQUIERE TALLER" if model.config.transmission_type=="cvt" else "EMBRAGUE AGOTADO · REQUIERE TALLER"
+    if not model.engine_running: return model.shift_hint()
+    if model.gear==0: return "VERDE · PUNTO MUERTO, SELECCIONÁ UNA MARCHA"
+    if model.gear<0: return "MARCHA ATRÁS · NO ES UNA LARGADA VÁLIDA"
+    if absf(model.speed_mps)>8.0 or (run.launch_time>=0.0 and run.elapsed>5.0): return ""
+    if float(controls.get("handbrake",0.0))>0.15: return "FRENO DE MANO APLICADO · LIBERALO PARA LARGAR"
+    if maxf(float(controls.get("brake",0.0)),-float(controls.get("throttle",0.0)))>0.15: return "FRENO APLICADO · LIBERALO PARA LARGAR"
+    if model.config.transmission_type!="cvt" and model.shift_mode=="manual" and float(controls.get("clutch",0.0))>=model.config.clutch_release_pedal:
+        return "VERDE · SOLTÁ PROGRESIVAMENTE EL EMBRAGUE"
+    if float(controls.get("throttle",0.0))<0.05: return "VERDE · ACELERÁ Y CONTROLÁ EL ACOPLE"
+    return ""
+
 func _controller_connection(device: int, connected: bool) -> void:
     if not connected and device==last_pad and enabled and not leaving:
         paused = true
@@ -153,13 +192,12 @@ func _in_lane() -> bool:
 func _staged() -> bool:
     return absf(car.position.z)<=0.10 and absf(car.powertrain.speed_mps)<0.10 and _in_lane() and int(car.ground_state.get("wheels_on_ground",0))==4
 
-func _ready_for_start() -> bool:
-    var controls := _controls()
-    var pedal_ready: bool = maxf(float(controls.get("brake",0.0)),-float(controls.get("throttle",0.0)))>=0.7 if car.powertrain.config.transmission_type=="cvt" else float(controls.get("clutch",0.0))>=0.7
-    return enabled and not paused and _mechanically_ready() and run.phase == "preparation" and _staged() and car.powertrain.gear == 1 and car.powertrain.engine_running and pedal_ready
+func _ready_for_start(controls: Dictionary = {}) -> bool:
+    if controls.is_empty(): controls=_controls()
+    return enabled and not paused and run.phase=="preparation" and _readiness_issue(controls).is_empty()
 
-func _can_arm() -> bool:
-    return procedure.phase=="countdown" and _ready_for_start()
+func _can_arm(controls: Dictionary = {}) -> bool:
+    return procedure.phase=="countdown" and _ready_for_start(controls)
 
 func _opponent_ready() -> bool:
     if not is_duel:
@@ -170,7 +208,7 @@ func _warmup_in_zone() -> bool:
     # Both axles of every supplied stock car begin ahead of the painted line.
     return -car.position.z>=2.5 and -car.position.z<=WARMUP_LIMIT and _in_lane() and not car.is_on_wall()
 
-func _advance_procedure(delta: float) -> void:
+func _advance_procedure(delta: float, controls: Dictionary = {}) -> void:
     if run.phase!="preparation":
         return
     if procedure.phase=="burnout" and not _warmup_in_zone():
@@ -183,18 +221,20 @@ func _advance_procedure(delta: float) -> void:
             alignment_pending = false
             camera.snap()
     var previous_phase: String = procedure.phase
-    procedure.advance(delta,_ready_for_start() and not alignment_pending,_opponent_ready() and not alignment_pending)
+    if controls.is_empty(): controls=_controls()
+    _last_player_ready = _ready_for_start(controls) and not alignment_pending
+    procedure.advance(delta,_last_player_ready,_opponent_ready() and not alignment_pending)
     if previous_phase=="burnout" and procedure.phase=="staging":
         alignment_pending = true
     if procedure.consume_start():
-        _arm()
+        _arm(controls)
 
 func _mechanically_ready() -> bool:
     var model = car.powertrain
-    return model.config.engine_health-float(model.wear["motor"])>=20.0 and model.config.brake_health-float(model.wear["frenos"])>=40.0 and model.config.tire_health-float(model.wear["neumaticos"])>=40.0
+    return model.config.engine_health-float(model.wear["motor"])>=20.0 and model.config.brake_health-float(model.wear["frenos"])>=40.0 and model.config.tire_health-float(model.wear["neumaticos"])>=40.0 and model.clutch_health>0.0
 
-func _arm() -> void:
-    if not _can_arm():
+func _arm(controls: Dictionary = {}) -> void:
+    if not _can_arm(controls):
         procedure.cancel_start("ALINEACIÓN PERDIDA · R PARA REPETIR")
         message = procedure.reason
         message_time = 3.0
@@ -233,6 +273,8 @@ func _physics_process(delta: float) -> void:
     if message_time == 0.0:
         message = ""
     var controls := _controls().duplicate()
+    _sampled_controls = controls.duplicate()
+    _apply_transmission_preferences()
     if not _mechanically_ready():
         controls["throttle"] = 0.0
         controls["brake"] = 1.0
@@ -242,6 +284,12 @@ func _physics_process(delta: float) -> void:
     if procedure.phase=="staging":
         # The disclosed staging assist holds the car while the driver prepares
         # first gear and physically holds the clutch. It ends at tree arming.
+        controls["clutch"] = 1.0
+        controls["brake"] = 1.0
+        controls["handbrake"] = 0.0
+    if car.powertrain.shift_mode!="manual" and car.powertrain.config.transmission_type!="cvt" and run.phase=="countdown":
+        # Assisted clutch still needs a preparation hold. It ends at the actual
+        # green; manual drivers retain full responsibility for an early release.
         controls["clutch"] = 1.0
         controls["brake"] = 1.0
         controls["handbrake"] = 0.0
@@ -258,7 +306,7 @@ func _physics_process(delta: float) -> void:
     garage.measured_distance = car.distance_m
     if is_duel:
         _advance_opponent(delta)
-    _advance_procedure(delta)
+    _advance_procedure(delta,_sampled_controls)
     run.advance(delta,-car.position.z,car.powertrain.speed_mps,_in_lane() and not car.is_on_wall())
     if is_duel:
         opponent_run.advance(delta,-opponent.position.z,opponent.powertrain.speed_mps,absf(opponent.position.x+Strip.LANE_X)<=2.7 and not opponent.is_on_wall())
@@ -276,7 +324,7 @@ func _physics_process(delta: float) -> void:
 
 func _refresh_hud() -> void:
     var best: Dictionary = (GameSession.career.stock_drag_records if is_duel else GameSession.career.drag_records).best_for_profile(GameSession.selected_vehicle,garage.record_profile)
-    hud.refresh({"procedure_phase":procedure.phase,"procedure_remaining":procedure.remaining,"procedure_message":procedure.status(),"procedure_ready":procedure.player_ready and procedure.rival_ready,"model":car.powertrain,"run":run,"settings":GameSession.controls,"name":car.model_name,"position":-car.position.z,"best":best,"staged":_staged(),"can_arm":_can_arm(),"message":message,"paused":paused,"personal_best":personal_best,"wear_start":attempt_wear_start,"impacts":car.damage.impacts,"damage":car.damage.cumulative,"duel":is_duel,"opponent_name":opponent_name,"opponent_model":opponent.model_name if is_duel else "","opponent_run":opponent_run,"opponent_gap":opponent.position.z-car.position.z if is_duel else 0.0,"duel_result":duel_result,"zero_to_hundred":car.zero_to_hundred,"class_data":class_data,"ground":car.ground_state})
+    hud.refresh({"readiness_issue":_readiness_issue(_sampled_controls) if procedure.phase=="staging" else "","launch_hint":_launch_hint(_sampled_controls),"procedure_phase":procedure.phase,"procedure_remaining":procedure.remaining,"procedure_message":procedure.status(),"procedure_ready":procedure.player_ready and procedure.rival_ready,"model":car.powertrain,"run":run,"settings":GameSession.controls,"name":car.model_name,"position":-car.position.z,"best":best,"staged":_staged(),"can_arm":procedure.phase=="countdown" and _last_player_ready,"message":message,"paused":paused,"personal_best":personal_best,"wear_start":attempt_wear_start,"impacts":car.damage.impacts,"damage":car.damage.cumulative,"duel":is_duel,"opponent_name":opponent_name,"opponent_model":opponent.model_name if is_duel else "","opponent_run":opponent_run,"opponent_gap":opponent.position.z-car.position.z if is_duel else 0.0,"duel_result":duel_result,"zero_to_hundred":car.zero_to_hundred,"class_data":class_data,"ground":car.ground_state})
 
 func _shift(direction: int) -> void:
     if enabled and not leaving and not paused and run.phase not in ["finished","invalid"]:
@@ -290,6 +338,8 @@ func _recover() -> void:
         message_time = 5.0
         return
     car.recover(Vector3(Strip.LANE_X,0.75,-WARMUP_POSITION))
+    _sampled_controls.clear()
+    _last_player_ready = false
     procedure.reset()
     alignment_pending = false
     attempt_wear_start = car.powertrain.wear.duplicate(true)
@@ -322,9 +372,9 @@ func _input(event: InputEvent) -> void:
     if not enabled or leaving or (event is InputEventKey and event.echo):
         return
     var pad: bool = event is InputEventJoypadButton and fresh
-    if event.is_action_pressed(Controls.action("shift_up")) or (pad and event.button_index==JOY_BUTTON_A):
+    if GameSession.controls.key_event_pressed(event,"shift_up") or event.is_action_pressed(Controls.action("shift_up")) or (pad and event.button_index==JOY_BUTTON_A):
         _shift(1)
-    elif event.is_action_pressed(Controls.action("shift_down")) or (pad and event.button_index==JOY_BUTTON_Y):
+    elif GameSession.controls.key_event_pressed(event,"shift_down") or event.is_action_pressed(Controls.action("shift_down")) or (pad and event.button_index==JOY_BUTTON_Y):
         _shift(-1)
     elif event.is_action_pressed(Controls.action("recover")) or (pad and event.button_index==JOY_BUTTON_X):
         _recover()

@@ -11,7 +11,7 @@ func controls(model, clock: float, delta: float) -> Dictionary:
         model.shift(1,1.0)
     if clock < 2.0+reaction_delay:
         return {"throttle":clampf((launch_rpm-model.rpm)/1100.0,0,0.8),"clutch":1.0,"brake":1.0,"steer":0.0}
-    if shift_hold > 0.0:
+    if shift_hold > 0.0 or model.shift_timer>0.0:
         shift_hold = maxf(0,shift_hold-delta)
         return {"throttle":0.0,"clutch":1.0,"brake":0.0,"steer":0.0}
     # Wait for the previous gear to synchronize. A still-revving engine after

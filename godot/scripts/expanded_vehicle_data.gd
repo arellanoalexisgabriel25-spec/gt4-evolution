@@ -47,7 +47,7 @@ const DATA := {
             {"center":Vector3(0.73038,-0.27,1.321),"radii":Vector2(0.23,0.303)},
         ],
         "power_cv":115.0, "power_rpm":6000.0, "torque_rpm":4000.0,
-        "variant":"1ª generación · Active 1.6 EC5 · MT5 provisional", "source_page":3, "power_reference":true, "factory_abs":true,
+        "variant":"1ª generación · Active 1.6 EC5 · MT5 provisional", "source_page":3, "power_reference":true, "reference_torque_nm":150.0, "factory_abs":true,
     },
     "Volkswagen Polo Classic": {
         "key":"polo", "catalog_revision":"023", "price":6200, "mass":1040.0, "torque":140.0,
@@ -77,7 +77,7 @@ const DATA := {
             {"center":Vector3(0.73542,-0.179,1.3545),"radii":Vector2(0.321,0.346)},
         ],
         "power_cv":110.0, "power_rpm":5750.0, "torque_rpm":4000.0,
-        "variant":"1.6 MSI · MT5 provisional; aspecto deportivo del escaneo", "source_page":2, "power_reference":true, "factory_abs":true,
+        "variant":"1.6 MSI · MT5 provisional; aspecto deportivo del escaneo", "source_page":2, "power_reference":true, "reference_torque_nm":155.0, "factory_abs":true,
     },
     "Chevrolet Onix": {
         "key":"onix", "catalog_revision":"023", "price":8400, "mass":1060.0, "torque":126.0,

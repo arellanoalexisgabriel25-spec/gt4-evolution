@@ -56,6 +56,13 @@ func _initialize() -> void:
     model.limiter = true
     model.feedback_time = 0.0
     check(not model.shift_hint().contains("Subí"),"CVT feedback never asks the player for a nonexistent manual upshift")
+    var reverse = Model.new()
+    reverse.config = config
+    reverse.reset(false)
+    check(reverse.request_shift(-1,0.0) and reverse.gear==-1,"The automatic selector also supports reverse from neutral without a clutch pedal")
+    for step in range(240): reverse.step(1.0/60.0,0.45,0.0,0.0)
+    check(reverse.speed_mps< -1.0 and reverse.wheel_torque_nm<0.0 and reverse.cvt.converter_heat_j>0.0,"CVT reverse sends finite converter torque through a negative fixed ratio and moves backward")
+    check(not reverse.request_shift(1,0.0),"A CVT selector rejects moving direction changes")
     print("CVT evidence: measured travel ",accumulated," m; speed ",model.speed_mps*3.6," km/h; heat ",model.cvt.converter_heat_j," J")
     if not failed: print("PASS: %d CVT power-flow assertions" % checks)
     quit(1 if failed else 0)

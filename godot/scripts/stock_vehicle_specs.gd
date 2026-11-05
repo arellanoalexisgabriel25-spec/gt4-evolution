@@ -42,9 +42,9 @@ const PROFILES := {
 }
 
 static func for_model(model: String) -> Dictionary:
-    if Expanded.DATA.has(model): return Expanded.profile(model)
-    if Regional.DATA.has(model): return Regional.profile(model)
-    if Additional.DATA.has(model): return Additional.profile(model)
+    if Expanded.DATA.has(model): return _calibration_metadata(Expanded.profile(model))
+    if Regional.DATA.has(model): return _calibration_metadata(Regional.profile(model))
+    if Additional.DATA.has(model): return _calibration_metadata(Additional.profile(model))
     var profile: Dictionary = PROFILES.get(model,{}).duplicate(true)
     if not profile.is_empty():
         profile["status"] = "development_estimate"
@@ -79,7 +79,7 @@ static func for_model(model: String) -> Dictionary:
             var anchor := EngineTorque.torque_for_cv_at_rpm(82.0,5600.0)/float(profile["peak_torque_nm"])
             profile["torque_rpm"] = [900.0,1500.0,2300.0,3000.0,3800.0,4600.0,5600.0,6000.0,6500.0]
             profile["torque_factors"] = [0.60,0.76,0.91,1.0,0.99,0.95,anchor,0.74,0.60]
-            profile["sources"] = [{"kind":"manufacturer_report_transcribed_by_user","document":"Informe de Modelos Fiat.pdf","page":2,"primary_document_verified":false}]
+            profile["sources"] = [TechnicalReference.fiat_source(2)]
             profile["basis"] = "Supplied 1990 1.5 claims: 82 DIN CV at 5600 rpm and 12 kgf m at 3000 rpm; mass and gearing estimated"
             profile["reference_targets"] = {"power_cv":82.0,"power_rpm":5600.0,"torque_kgfm":12.0,"torque_rpm":3000.0,"manufacturer_verified":false}
         elif model=="Fiat 133":
@@ -88,7 +88,7 @@ static func for_model(model: String) -> Dictionary:
             var anchor := EngineTorque.torque_for_cv_at_rpm(34.0,5000.0)/float(profile["peak_torque_nm"])
             profile["torque_rpm"] = [900.0,1500.0,2300.0,3200.0,3800.0,4600.0,5000.0,5800.0]
             profile["torque_factors"] = [0.58,0.78,0.93,1.0,0.99,0.93,anchor,0.64]
-            profile["sources"] = [{"kind":"manufacturer_report_transcribed_by_user","document":"Informe de Modelos Fiat.pdf","page":2,"primary_document_verified":false}]
+            profile["sources"] = [TechnicalReference.fiat_source(2)]
             profile["basis"] = "Supplied 133 guide: 843cc, 34 CV, 680 kg, 120 km/h; torque, power RPM, exact version and gearing estimated"
             profile["reference_targets"] = {"power_cv":34.0,"curb_mass_kg":680.0,"top_speed_kmh":120.0,"manufacturer_verified":false}
         elif model=="Fiat 128 estándar":
@@ -97,9 +97,32 @@ static func for_model(model: String) -> Dictionary:
             var anchor := EngineTorque.torque_for_cv_at_rpm(55.0,5600.0)/float(profile["peak_torque_nm"])
             profile["torque_rpm"] = [900.0,1500.0,2300.0,3000.0,3800.0,4600.0,5600.0,6200.0]
             profile["torque_factors"] = [0.60,0.76,0.91,1.0,0.98,0.90,anchor,0.64]
-            profile["sources"] = [{"kind":"manufacturer_report_transcribed_by_user","document":"Informe de Modelos Fiat.pdf","page":1,"primary_document_verified":false}]
+            profile["sources"] = [TechnicalReference.fiat_source(1)]
             profile["basis"] = "Supplied standard 128 guide: 1116cc, 55 CV, 830 kg; torque, power RPM, exact year and gearing estimated"
             profile["reference_targets"] = {"power_cv":55.0,"curb_mass_kg":830.0,"manufacturer_verified":false}
+    return _calibration_metadata(profile)
+
+# A source-backed peak does not certify the rest of a vehicle. In particular,
+# neither supplied report contains individual forward/reverse/final ratios.
+# Mark shared defaults explicitly, including older Uno/Gol profiles that had no
+# estimate list. This changes provenance only, never physical calibration.
+static func _calibration_metadata(profile: Dictionary) -> Dictionary:
+    if profile.is_empty(): return profile
+    var estimated: Array = profile.get("estimated_fields",[]).duplicate()
+    for field in ["mass_convention","redline_rpm","wheelbase_m","rolling_radius_m","gear_ratios","reverse_ratio","final_drive","drag_area_m2","rolling_resistance","curve_interpolation","drivetrain_efficiency","engine_inertia","wheel_inertia","clutch_capacity_nm","front_weight_bias","cg_height_m","suspension_pitch_stiffness_nm_rad","suspension_pitch_damping_nms_rad","suspension_pitch_inertia_kg_m2","differential_type","differential_bias_ratio","differential_preload_nm"]:
+        if not estimated.has(field): estimated.append(field)
+    var targets: Dictionary = profile.get("reference_targets",{})
+    if not targets.has("curb_mass_kg") and not estimated.has("curb_mass_kg"):
+        estimated.append("curb_mass_kg")
+    if not targets.has("torque_kgfm") and not targets.has("torque_nm") and not estimated.has("peak_torque_nm"):
+        estimated.append("peak_torque_nm")
+    if not targets.has("power_cv") and not estimated.has("power_cv"):
+        estimated.append("power_cv")
+    if not targets.has("power_rpm") and not estimated.has("power_rpm"):
+        estimated.append("power_rpm")
+    if not targets.has("torque_rpm") and not estimated.has("torque_peak_rpm"):
+        estimated.append("torque_peak_rpm")
+    profile["estimated_fields"] = estimated
     return profile
 
 # Engine-sheet and simulation revisions both define a comparable record series.
@@ -115,8 +138,35 @@ static func unloaded_tire_radius_m(width_mm: float, aspect_percent: float, rim_i
         return 0.0
     return rim_inches*0.0254*0.5+width_mm*0.001*aspect_percent/100.0
 
+# Pure zero-slip kinematics. Use signed speed and signed gear ratio: reverse
+# wheel motion through a negative ratio still produces positive engine RPM.
+# These equations cannot predict top speed, tire slip or an acceleration time.
+static func synchronous_engine_rpm(speed_mps: float, gear_ratio: float, final_drive: float, rolling_radius_m: float) -> float:
+    if not _valid_gearing(speed_mps,gear_ratio,final_drive,rolling_radius_m): return 0.0
+    return speed_mps/rolling_radius_m*gear_ratio*final_drive*60.0/TAU
+
+static func speed_at_engine_rpm(rpm: float, gear_ratio: float, final_drive: float, rolling_radius_m: float) -> float:
+    if not _valid_gearing(rpm,gear_ratio,final_drive,rolling_radius_m): return 0.0
+    return rpm*TAU/60.0*rolling_radius_m/(gear_ratio*final_drive)
+
+static func _valid_gearing(value: float, gear_ratio: float, final_drive: float, radius_m: float) -> bool:
+    return is_finite(value) and is_finite(gear_ratio) and is_finite(final_drive) and is_finite(radius_m) and absf(gear_ratio)>0.000001 and final_drive>0.0 and radius_m>0.0
+
+static func _reported_fields(targets: Dictionary) -> Array:
+    var fields: Array = []
+    for field in ["power_cv","power_rpm","curb_mass_kg","length_m"]:
+        if targets.has(field): fields.append(field)
+    if targets.has("torque_kgfm") or targets.has("torque_nm"): fields.append("peak_torque_nm")
+    if targets.has("torque_rpm"): fields.append("torque_peak_rpm")
+    return fields
+
 static func metric_snapshot(config) -> Dictionary:
     var peak: Dictionary = EngineTorque.maximum_power(config)
+    var speed_per_1000: Array = []
+    var redline_speeds: Array = []
+    for ratio in config.gear_ratios:
+        speed_per_1000.append(speed_at_engine_rpm(1000.0,float(ratio),config.final_drive,config.wheel_radius)*3.6)
+        redline_speeds.append(speed_at_engine_rpm(config.redline_rpm,float(ratio),config.final_drive,config.wheel_radius)*3.6)
     return {
         "profile_id":config.profile_id,"variant":config.variant_label,
         "status":config.specification_status,"sources":config.specification_sources.duplicate(true),
@@ -128,6 +178,15 @@ static func metric_snapshot(config) -> Dictionary:
         "calculated_peak_power_kw":peak["kw"],"calculated_peak_power_cv":EngineTorque.kw_to_cv(float(peak["kw"])),
         "calculated_peak_power_rpm":peak["rpm"],"power_basis":"healthy full-load crankshaft curve, not a measured factory result",
         "gear_ratios":config.gear_ratios.duplicate(),"final_drive":config.final_drive,
+        "reverse_ratio":config.reverse_ratio,
+        "gear_speed_kmh_per_1000_rpm":speed_per_1000,
+        "geared_redline_speed_kmh":redline_speeds,
+        "reverse_speed_kmh_per_1000_rpm":speed_at_engine_rpm(1000.0,-absf(config.reverse_ratio),config.final_drive,config.wheel_radius)*3.6,
+        "gearing_basis":"zero-slip kinematics of configured ratios; not a measured top speed",
+        "gear_list_basis":"launch gear only; CVT varies its ratio" if config.transmission_type=="cvt" else "fixed forward gears",
+        "cvt_ratio_range":[config.cvt_min_ratio,config.cvt_max_ratio] if config.transmission_type=="cvt" else [],
+        "reported_fields":_reported_fields(config.reference_targets),
+        "calibration_status":"source anchors with estimated dynamics; factory acceleration not validated",
         "transmission_type":config.transmission_type,
         "rolling_radius_m":config.wheel_radius,"wheelbase_m":config.wheelbase,
         "drag_area_m2":config.drag_area,"air_density_kg_m3":config.air_density,

@@ -3,6 +3,7 @@ extends RefCounted
 # Body identification comes from inspecting the supplied meshes. Engine choices
 # are explicit development variants, not identification by a badge or body scan.
 const Torque = preload("res://scripts/engine_torque.gd")
+const ReferenceData = preload("res://scripts/technical_reference_data.gd")
 const MODELS := ["Chevrolet Corsa 5 puertas","Volkswagen Amarok","Ford Ranger cabina simple","Ford EcoSport","Toyota Corolla","Fiat Palio 5 puertas"]
 const DATA := {
     "Chevrolet Corsa 5 puertas": {
@@ -21,7 +22,7 @@ const DATA := {
         ],
         "power_cv":92.0, "power_rpm":5600.0, "torque_rpm":2800.0,
         "variant":"Hatch 5p · 1.6 MPFI 8V · provisional", "source_page":2,
-        "power_reference":true, "factory_abs":false
+        "power_reference":true, "reference_torque_nm":138.0, "factory_abs":false
     },
     "Volkswagen Amarok": {
         "key":"amarok", "price":11200, "mass":1857.0, "torque":340.0,
@@ -39,7 +40,7 @@ const DATA := {
         ],
         "power_cv":140.0, "power_rpm":4000.0, "torque_rpm":1750.0,
         "variant":"2.0 TDI 140 · MT6 · 4×2 · carrocería y versión provisionales", "source_page":2,
-        "power_reference":true, "factory_abs":true, "turbo_fraction":0.55,
+        "power_reference":true, "reference_torque_nm":340.0, "factory_abs":true, "turbo_fraction":0.55,
         "idle_rpm":800.0, "spool_rpm":1000.0, "boost_span_rpm":650.0,
         "engine_inertia":0.38, "wheel_inertia":6.5
     },
@@ -79,7 +80,7 @@ const DATA := {
         ],
         "power_cv":99.0, "power_rpm":5500.0, "torque_rpm":4250.0,
         "variant":"1.6 Rocam 8V · MT5 · 4×2 · provisional", "source_page":4,
-        "power_reference":true, "factory_abs":false
+        "power_reference":true, "reference_torque_nm":150.0, "factory_abs":false
     },
     "Toyota Corolla": {
         "key":"corolla", "price":9700, "mass":1130.0, "torque":150.0,
@@ -131,7 +132,13 @@ static func profile_data(data: Dictionary) -> Dictionary:
     var diesel: bool = data.get("turbo_fraction",0.0)>0.0
     var sources: Array = []
     if data.power_reference:
-        sources.append({"kind":"user_secondary_compilation","document":"Informe Técnico Automotriz Completo.pdf","page":data.source_page,"primary_document_verified":false})
+        sources.append(ReferenceData.compilation_source(int(data.source_page)))
+    var targets: Dictionary = {"power_cv":float(data.power_cv)} if data.power_reference else {}
+    # A numeric engine claim does not identify the scanned body/year/trim.
+    # Keep variant_mapping estimated even when the reported peak is present.
+    if data.has("reference_torque_nm"): targets["torque_nm"] = float(data.reference_torque_nm)
+    var estimated := ["variant_mapping","curb_mass_kg","peak_torque_nm","power_rpm","torque_peak_rpm","gear_ratios","final_drive","drag_area_m2","curve_interpolation","dimensions","rolling_radius_m","cg_height_m","front_weight_bias","turbo_response","factory_abs","engine_inertia","wheel_inertia"]+([] if data.power_reference else ["power_cv"])
+    if targets.has("torque_nm"): estimated.erase("peak_torque_nm")
     return {
         "id":str(data.key)+"_development_"+str(data.get("catalog_revision","022")), "record_revision":str(data.key)+"_factory_"+str(data.get("catalog_revision","022")), "variant":str(data.variant),
         "status":"development_estimate", "sources":sources,
@@ -149,6 +156,6 @@ static func profile_data(data: Dictionary) -> Dictionary:
         "engine_inertia":float(data.get("engine_inertia",0.26)), "wheel_inertia":float(data.get("wheel_inertia",3.2)),
         "torque_rpm":[800.0 if diesel else 900.0,1200.0 if diesel else 1500.0,torque_rpm,peak_rpm,float(data.redline)],
         "torque_factors":[0.55,0.76,1.0,anchor,0.32 if diesel else 0.55],
-        "reference_targets":{"power_cv":float(data.power_cv)} if data.power_reference else {},
-        "estimated_fields":["variant_mapping","curb_mass_kg","peak_torque_nm","power_rpm","torque_peak_rpm","gear_ratios","final_drive","drag_area_m2","curve_interpolation","dimensions","rolling_radius_m","cg_height_m","front_weight_bias","turbo_response","factory_abs","engine_inertia","wheel_inertia"]+([] if data.power_reference else ["power_cv"])
+        "reference_targets":targets,
+        "estimated_fields":estimated
     }

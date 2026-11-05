@@ -21,6 +21,28 @@ var mass: float:
 @export var peak_torque := 145.0
 @export var engine_inertia := 0.26
 @export var clutch_capacity := 230.0
+@export var reverse_ratio := 3.35
+@export var shift_time := 0.18
+@export var gearbox_input_inertia := 0.015
+@export var synchronizer_torque := 12.0
+@export var synchronizer_max_time := 1.2
+@export var synchronizer_tolerance_rpm := 60.0
+@export var clutch_release_pedal := 0.70
+@export var clutch_bite_pedal := 0.30
+@export var clutch_engage_time := 0.20
+@export var clutch_disengage_time := 0.08
+@export var clutch_heat_capacity := 6500.0
+@export var clutch_cooling_w_per_k := 22.0
+@export var clutch_fade_start_c := 220.0
+@export var clutch_fade_end_c := 500.0
+@export var clutch_wear_per_joule := 0.00000004
+@export var overrev_wear_per_second := 8.0
+@export var suspension_pitch_stiffness_nm_rad := 80000.0
+@export var suspension_pitch_damping_nms_rad := 9000.0
+@export var suspension_pitch_inertia_kg_m2 := 1200.0
+@export var differential_type := "open"
+@export var differential_bias_ratio := 3.0
+@export var differential_preload_nm := 0.0
 @export var wheel_inertia := 3.2 # kg m² PER AXLE; still an estimated parameter
 @export var drag_area := 0.64
 @export var rolling_resistance := 0.014
@@ -136,6 +158,18 @@ static func from_vehicle(vehicle: Dictionary, factory: bool = false):
     if name.contains("Impreza"):
         result.awd_front_split = 0.50
     result.clutch_capacity = result.peak_torque*1.7
+    # Reduced pitch and clutch properties are explicit development estimates.
+    # Scale body inertia/spring/damper by curb mass until measured axle data is
+    # available; a spec resource can override each parameter independently.
+    var mass_scale: float = result.curb_mass/1000.0
+    result.suspension_pitch_stiffness_nm_rad *= mass_scale
+    result.suspension_pitch_damping_nms_rad *= mass_scale
+    result.suspension_pitch_inertia_kg_m2 *= mass_scale
+    for parameter in ["reverse_ratio","shift_time","gearbox_input_inertia","synchronizer_torque","synchronizer_max_time","synchronizer_tolerance_rpm","clutch_capacity","clutch_release_pedal","clutch_bite_pedal","clutch_engage_time","clutch_disengage_time","clutch_heat_capacity","clutch_cooling_w_per_k","clutch_fade_start_c","clutch_fade_end_c","clutch_wear_per_joule","overrev_wear_per_second","suspension_pitch_stiffness_nm_rad","suspension_pitch_damping_nms_rad","suspension_pitch_inertia_kg_m2","differential_bias_ratio","differential_preload_nm"]:
+        if local.has(parameter): result.set(parameter,float(local[parameter]))
+    result.differential_type = str(local.get("differential_type","open"))
+    for estimated in ["reverse_ratio","clutch_thermal_and_friction","synchronizer_parameters","pitch_spring_damper_inertia","differential_internal_parameters"]:
+        if not result.estimated_fields.has(estimated): result.estimated_fields.append(estimated)
     # Rotor/drum thermal masses are explicit estimates scaled to vehicle size.
     result.brake_heat_capacity *= result.curb_mass/1000.0
     result.estimated_fields.append("brake_heat_capacity_j_k")

@@ -5,8 +5,8 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.23"
-README = """GT4 EVOLUTION — PROTOTIPO 0.23 / FUERZAS, GRAVEDAD Y CVT
+VERSION = "0.24"
+README = """GT4 EVOLUTION — PROTOTIPO 0.24 / TRANSMISIÓN MANUAL Y CHASIS
 
 WINDOWS: extraé TODO el ZIP y abrí GT4Evolution.exe o JUGAR.cmd.
 Es un juego exportado independiente: no necesita Godot instalado ni importar el
@@ -17,9 +17,14 @@ Gravedad unificada 9,81 m/s², contacto sobre pendientes, viento/densidad del ai
 y frenos con temperatura y pérdida progresiva de eficacia. Se conservan los
 récords anteriores como históricos; la nueva dinámica tiene su propia serie.
 Yaris sedán, Ka 3p, 208, Polo Classic, Virtus, Onix y Corolla Cross se suman.
-En Cross: CVT aproximada, E selecciona D y Q N estando detenido, freno sostenido
+En Cross: CVT aproximada, selector R/N/D con Q/E estando detenido, freno sostenido
 al alinear y soltalo al verde. No requiere embrague; LT siempre frena.
-Ver PHYSICS-0.23.md: no es una simulación hiperrealista completa.
+Ver MANUAL-TRANSMISSION-0.24.md y CALIBRATION-0.24.md para ecuaciones y límites.
+Caja manual con sincronización finita, reversa, calor y desgaste del embrague,
+sobrerégimen mecánico y rechazo de cambios. W, S y C son pedales independientes.
+Suspensión de cabeceo y diferencial abierto/LSD/bloqueado configurables.
+AJUSTES permite embrague automático, semiautomática y rev-matching opcionales;
+manual total y sin rev-match por defecto. Las ayudas no salvan una mala reducción.
 
 ¼ de milla nocturno con alumbrado cálido, faros y dos instrumentos analógicos.
 Corsa 5p, Amarok, Ranger cabina simple, EcoSport, Corolla y Palio 5p amplían
@@ -58,8 +63,8 @@ y conserva la salud de tu unidad. La categoría oficial Serie tiene otro alcance
 PREPARACIÓN: hay 25 s de calentamiento autorizado delante de la línea y luego
 30 s para prepararse. Son duraciones del juego, no tiempos oficiales publicados.
 Rojo intermitente/amarillas fondo: calentar; azul: fin y llamado a alinear (art.11).
-El asistente frena, alinea y sostiene sólo antes de cronometrar; no hay reversa manual
-ni simulación del regreso. Se conservan calor, desgaste y uso. Primera+embrague
+El asistente frena, alinea y sostiene sólo antes de cronometrar. La reversa es
+manual; el regreso a línea sigue asistido. Se conservan calor, desgaste y uso. Primera+embrague
 sostenidos y ambos autos alineados activan el árbol automáticamente. Enter no inicia.
 
 CONTROLES: C embrague, E sube marcha, Q baja, W acelera, S/Espacio frena.
@@ -69,6 +74,10 @@ Zona de calentamiento 2,5–35 m delante de la línea; excederla cancela esta pr
 No hace falta calentar todo el tiempo: demasiado calor y patinamiento desgastan.
 Al llamado, mantené primera+C y prepará RPM; esperá verde y soltá C para largar.
 Para cambiar, C+E o C+Q; podés mantener W, con limitador y desgaste normales.
+REVERSA: detenido, C+Q desde N. Desde primera: bajar a N, esperar el selector,
+bajar otra vez a R. Al verde liberá C/freno de mano; mantener C impide transmitir par.
+Esperá la sincronización y controlá el acople: reducciones excesivas dañan el motor.
+La palanca selecciona al instante; la transmisión entrega par al terminar el acople.
 R repite conservando uso/calor; P pausa, Esc garaje, Tab cámara. La telemetría
 completa y la ayuda aparecen al pausar; durante la pasada queda instrumental compacto.
 Mando: RT acelera, LT/B frena, LB embrague, A sube, Y baja, L3 freno de mano,
@@ -91,7 +100,7 @@ Música: trece temas aportados con autorización expresa de redistribución.
 AJUSTES permite elegir tema, anterior/siguiente, aleatorio y volumen.
 La música se desvanece en pista y retoma en los menús. No está cubierta por MIT.
 
-Ver juego/RELEASE-0.23.md en el ZIP Proyecto y documentacion/ en Windows para el
+Ver juego/RELEASE-0.24.md en el ZIP Proyecto y documentacion/ en Windows para el
 alcance exacto y resultados de validación. El entorno valida Linux y el mismo PCK;
 Windows y mando físico requieren prueba en esos equipos. Si no inicia, ejecutá
 DIAGNOSTICO.cmd y compartí juego.log. Licencias incluidas. No se distribuyen

@@ -39,7 +39,7 @@ func _initialize() -> void:
         check(absf(metrics.calculated_peak_power_cv-powers[index])<0.003,"The actual crankshaft curve reproduces its declared development power")
         check(config.transmission_type==("cvt" if index==6 else "manual"),"The Cross CVT remains distinct from the six manual drivetrains")
         check(not metrics.manufacturer_verified and config.estimated_fields.has("variant_mapping"),"A body scan is never presented as a verified engine/year identification")
-        check(config.record_revision.ends_with("__longitudinal_023") and metrics.test_mass_kg==config.curb_mass+75.0,"Each new record series identifies dynamics separately from the mass and factory sheet")
+        check(config.record_revision.ends_with("__"+load("res://scripts/driving_environment.gd").REVISION) and metrics.test_mass_kg==config.curb_mass+75.0,"Each new record series identifies dynamics separately from the mass and factory sheet")
         if index in [0,1,3,5]:
             check(metrics.sources.is_empty() and config.estimated_fields.has("power_cv"),"Old Yaris/Ka/Polo/Onix bodies do not silently inherit unrelated modern PDF variants")
         else:

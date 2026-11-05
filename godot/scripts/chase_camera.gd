@@ -1,5 +1,6 @@
 extends Camera3D
 
+const Catalog = preload("res://scripts/car_catalog.gd")
 const MODES := ["SEGUIMIENTO", "CERCANA", "CAPÓ", "PARAGOLPES"]
 var target: Node3D
 var race_peer: Node3D
@@ -37,14 +38,18 @@ func _peer_framing() -> float:
 func _offset(speed: float) -> Vector3:
     var distance := base_distance
     var height := base_height
+    var dimensions: Vector3 = Catalog.definition(str(target.get("model_name"))).get("size",Vector3(1.8,1.4,3.9))
+    var extra_length := maxf(0.0,dimensions.z-3.9)
+    distance += extra_length*0.45
+    height += maxf(0.0,dimensions.y-1.4)*0.35
     if mode == 1:
         distance = 4.5
         height = 1.7
     elif mode == 2:
-        distance = -2.1 if look_back else -0.80
-        height = 0.68
+        distance = -dimensions.z*0.5-0.12 if look_back else -dimensions.z*0.29
+        height = maxf(0.56,dimensions.y*0.42)
     elif mode == 3:
-        distance = -2.1
+        distance = -dimensions.z*0.5-0.12
         height = 0.12
     else:
         distance += clampf(speed,0.0,45.0) * 0.035
@@ -82,6 +87,9 @@ func _aim(speed: float) -> void:
     if framing>0.0:
         point.x += clampf(race_peer.global_position.x-point.x,-8.0,8.0)*0.5*framing
         point.z += clampf(race_peer.global_position.z-point.z,-6.0,6.0)*0.15*framing
+    var pitch = target.get("wheel_pitch")
+    if typeof(pitch) in [TYPE_INT,TYPE_FLOAT]:
+        point.y += sin(clampf(float(pitch),-0.35,0.35))*ahead
     look_at(point + Vector3.UP * height - back * ahead,Vector3.UP)
 
 func _process(delta: float) -> void:

@@ -9,6 +9,7 @@ const Config = preload("res://scripts/drag_vehicle_config.gd")
 const Reference = preload("res://scripts/technical_reference_data.gd")
 const Store = preload("res://scripts/save_store.gd")
 const Driver = preload("res://scripts/drag_rival_driver.gd")
+const Model = preload("res://scripts/manual_powertrain.gd")
 var checks := 0
 var failed := false
 
@@ -38,7 +39,22 @@ func await_automatic_start(scene) -> bool:
 
 func run() -> void:
     var session = root.get_node("GameSession")
-    check(session.VERSION=="0.23","The exported PCK carries the current game version")
+    check(session.VERSION=="0.24","The exported PCK carries the current game version")
+    check(session.controls.shift_mode=="manual" and not session.controls.auto_rev_match,"The shipping defaults disclose manual control without rev-matching assistance")
+    var gearbox_car = Model.new()
+    gearbox_car.rpm = 6000.0
+    gearbox_car.throttle = 1.0
+    check(gearbox_car.request_shift(1,1.0),"The packaged manual gearbox accepts clutch plus full throttle")
+    for tick in range(40): gearbox_car.step(1.0/120.0,1.0,1.0,0.0)
+    check(gearbox_car.gear==1 and gearbox_car.rpm>5000.0 and gearbox_car.speed_mps==0.0,"Selection preserves a free-revving motor and transmits no torque through an open clutch")
+    check(gearbox_car.request_shift(1,1.0),"The packaged synchronized gearbox accepts a consecutive WOT upshift")
+    var reverse = Model.new()
+    check(reverse.request_shift(-1,1.0),"The packaged manual gearbox selects real reverse from neutral")
+    for tick in range(40): reverse.step(1.0/120.0,0.5,1.0,0.0)
+    for tick in range(240): reverse.step(1.0/120.0,0.5,0.0,0.0)
+    check(reverse.speed_mps< -1.0 and reverse.wheel_torque_nm<0.0,"Reverse applies signed axle torque and moves backward in the packaged physics")
+    check(reverse.clutch_temperature>20.0 and reverse.wear.transmision>0.0,"The packaged launch dissipates clutch energy into temperature and persistent wear")
+    check(reverse.axles.suspension!=null and reverse.config.differential_type=="open","The packaged chassis uses the configurable reduced suspension and factory open differential baseline")
     check(Catalog.DATA.size()==26,"The export contains all twenty-six supplied car models")
     for song in session.menu_music.Playlist.SONGS:
         check(session.menu_music.select_track(song.id),"The exported playlist loads the shipped stream: "+song.id)

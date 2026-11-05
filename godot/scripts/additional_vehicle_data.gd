@@ -3,6 +3,7 @@ extends RefCounted
 # One authoring definition per new car. Visual measurements, prices and missing
 # mechanical parameters are development estimates; references remain separate.
 const TorqueData = preload("res://scripts/engine_torque.gd")
+const ReferenceData = preload("res://scripts/technical_reference_data.gd")
 const MODELS := ["Fiat 125","Fiat Duna","Fiat Cronos","Fiat Siena","Fiat Punto","Fiat Regatta","Fiat 500 Sport"]
 const DATA := {
     "Fiat 125": {
@@ -136,9 +137,13 @@ static func profile(model: String) -> Dictionary:
     var sources: Array = []
     var targets: Dictionary = {}
     if data.power_reference:
-        sources.append({"kind":"manufacturer_report_transcribed_by_user","document":"Informe de Modelos Fiat.pdf","page":data.source_page,"primary_document_verified":false})
+        sources.append(ReferenceData.fiat_source(int(data.source_page)))
         targets["power_cv"] = float(data.power_cv)
     var estimated := ["curb_mass_kg","peak_torque_nm","power_rpm","torque_peak_rpm","gear_ratios","final_drive","drag_area_m2","curve_interpolation","dimensions","rolling_radius_m"]
+    if not data.power_reference: estimated.append("power_cv")
+    if model=="Fiat 125":
+        targets["curb_mass_kg"] = 1020.0
+        estimated.erase("curb_mass_kg")
     if model=="Fiat 500 Sport":
         for field in ["peak_torque_nm","power_rpm","torque_peak_rpm"]: estimated.erase(field)
         targets.merge({"power_rpm":6000.0,"torque_kgfm":13.1,"torque_rpm":4250.0,"zero_to_hundred_s":10.5,"top_speed_kmh":182.0})

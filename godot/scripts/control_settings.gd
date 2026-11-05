@@ -7,6 +7,7 @@ const TITLES := {"accelerate":"Acelerar", "reverse":"Frenar / reversa", "left":"
 const FILE_PATH := "user://controls_v1.json"
 const Controller = preload("res://scripts/controller_state.gd")
 const Playlist = preload("res://scripts/menu_playlist.gd")
+const SHIFT_MODES := ["manual","auto_clutch","semi_auto"]
 var controller = Controller.new()
 var keys: Dictionary = DEFAULT_KEYS.duplicate()
 var drag_keys: Dictionary = DRAG_KEYS.duplicate()
@@ -20,6 +21,8 @@ var abs_assist := true
 var music_volume := 0.35
 var music_track_id := "perra"
 var music_shuffle := false
+var shift_mode := "manual"
+var auto_rev_match := false
 
 static func action(name: String) -> String:
     return "evo_" + name
@@ -54,6 +57,8 @@ func restore_defaults() -> void:
     music_volume = 0.35
     music_track_id = "perra"
     music_shuffle = false
+    shift_mode = "manual"
+    auto_rev_match = false
     apply()
 
 func apply() -> void:
@@ -82,10 +87,15 @@ static func pad_sample(steer: float, accelerator: float, brake: float, reverse: 
     return {"throttle":clampf(maxf(0.0, axis(accelerator, zone)) - (1.0 if reverse else 0.0), -1.0, 1.0), "steer":axis(steer, zone), "brake":maxf(0.0, axis(brake, zone))}
 
 func read_controls(manual_mode: bool = false, automatic: bool = false) -> Dictionary:
-    var throttle := Input.get_action_strength(action("accelerate")) - Input.get_action_strength(action("reverse"))
-    var steer := (Input.get_action_strength(action("right")) - Input.get_action_strength(action("left"))) * keyboard_steering
-    var brake := Input.get_action_strength(action("brake"))
-    var handbrake := Input.get_action_strength(action("handbrake")) if manual_mode else 0.0
+    var throttle := key_strength("accelerate") - key_strength("reverse")
+    var steer := (key_strength("right") - key_strength("left")) * keyboard_steering
+    var brake := key_strength("brake")
+    if manual_mode:
+        # Drag direction is selected by the gearbox. S/Down is a separate brake
+        # pedal, so a W+S throttle blip is possible while braking (heel-toe).
+        throttle = key_strength("accelerate")
+        brake = maxf(brake,key_strength("reverse"))
+    var handbrake := key_strength("handbrake") if manual_mode else 0.0
     if controller.selected()>=0:
         throttle += maxf(0,axis(controller.axis_value(JOY_AXIS_TRIGGER_RIGHT),trigger_deadzone))-(1.0 if controller.pressed(JOY_BUTTON_B) and not manual_mode else 0.0)
         steer += axis(controller.axis_value(JOY_AXIS_LEFT_X),deadzone)+(1.0 if controller.pressed(JOY_BUTTON_DPAD_RIGHT) else 0.0)-(1.0 if controller.pressed(JOY_BUTTON_DPAD_LEFT) else 0.0)
@@ -97,6 +107,22 @@ func read_controls(manual_mode: bool = false, automatic: bool = false) -> Dictio
             handbrake = 1.0
     return {"throttle":clampf(throttle, -1.0, 1.0), "steer":clampf(steer, -1.0, 1.0), "brake":brake,"handbrake":handbrake}
 
+# Poll physical pedals as well as their InputMap actions. The lever event can
+# arrive before an action state is updated or after a focused Control handled
+# the event. This reads simultaneous keys without consuming or latching them.
+# Window focus loss is still handled by Godot, unlike a custom held-key cache.
+func key_strength(name: String) -> float:
+    var value := Input.get_action_strength(action(name))
+    var code: int = all_keys().get(name,0)
+    if code>0 and Input.is_physical_key_pressed(code): value=1.0
+    if ARROWS.has(name) and Input.is_physical_key_pressed(int(ARROWS[name])): value=1.0
+    return value
+
+func key_event_pressed(event: InputEvent, name: String) -> bool:
+    if not event is InputEventKey or not event.pressed or event.echo: return false
+    var code: int = event.physical_keycode if event.physical_keycode>0 else event.keycode
+    return code==int(all_keys().get(name,0))
+
 func all_keys() -> Dictionary:
     var bindings := keys.duplicate()
     bindings.merge(drag_keys)
@@ -107,7 +133,7 @@ func key_label(name: String) -> String:
     return "Espacio" if code == KEY_SPACE else OS.get_keycode_string(code)
 
 func clutch_input() -> float:
-    var value := Input.get_action_strength(action("clutch"))
+    var value := key_strength("clutch")
     if analog_clutch:
         value = maxf(value,maxf(0,axis(controller.axis_value(JOY_AXIS_TRIGGER_LEFT),trigger_deadzone)))
     if controller.pressed(JOY_BUTTON_LEFT_SHOULDER):
@@ -126,9 +152,13 @@ func help_text() -> String:
     return "%s/↑ acelerar · %s/↓ reversa · %s/%s girar\n%s freno · %s recuperar · %s pausa · Esc garaje\nMando: RT/LT acelerar/frenar · B reversa\nStick/cruceta girar · X recuperar · Inicio pausa" % [key_label("accelerate"),key_label("reverse"),key_label("left"),key_label("right"),key_label("brake"),key_label("recover"),key_label("pause")]
 
 func to_dict() -> Dictionary:
-    return {"version":1, "keys":keys.duplicate(), "drag_keys":drag_keys.duplicate(),"deadzone":deadzone,"camera_mode":camera_mode,"keyboard_steering":keyboard_steering,"trigger_deadzone":trigger_deadzone,"analog_clutch":analog_clutch,"traction_control":traction_control,"abs_assist":abs_assist,"music_volume":music_volume,"music_track_id":music_track_id,"music_shuffle":music_shuffle}
+    return {"version":1, "keys":keys.duplicate(), "drag_keys":drag_keys.duplicate(),"deadzone":deadzone,"camera_mode":camera_mode,"keyboard_steering":keyboard_steering,"trigger_deadzone":trigger_deadzone,"analog_clutch":analog_clutch,"traction_control":traction_control,"abs_assist":abs_assist,"music_volume":music_volume,"music_track_id":music_track_id,"music_shuffle":music_shuffle,"shift_mode":shift_mode,"auto_rev_match":auto_rev_match}
 
 func from_dict(data: Dictionary) -> bool:
+    var mode = data.get("shift_mode","manual")
+    var matching = data.get("auto_rev_match",false)
+    if typeof(mode)!=TYPE_STRING or not SHIFT_MODES.has(mode) or typeof(matching)!=TYPE_BOOL:
+        return false
     var song = data.get("music_track_id","perra")
     var shuffled = data.get("music_shuffle",false)
     if typeof(song)!=TYPE_STRING or Playlist.index_of(song)<0 or typeof(shuffled)!=TYPE_BOOL:
@@ -201,6 +231,8 @@ func from_dict(data: Dictionary) -> bool:
     music_volume = float(music)
     music_track_id = song
     music_shuffle = shuffled
+    shift_mode = mode
+    auto_rev_match = matching
     analog_clutch = data.get("analog_clutch",false)
     traction_control = data.get("traction_control",false)
     abs_assist = data.get("abs_assist",true)

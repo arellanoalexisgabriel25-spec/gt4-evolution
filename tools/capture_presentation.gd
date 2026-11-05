@@ -1,7 +1,7 @@
 extends SceneTree
 
 const DragDriver = preload("res://tests/drag_test_driver.gd")
-var output := "/workspace/artifacts/presentation-0.23"
+var output := "/workspace/artifacts/presentation-0.24"
 var capture_heat_done := false
 
 func _initialize() -> void:
@@ -387,6 +387,12 @@ func run() -> void:
     drag._refresh_hud()
     print("Rendered burnout temperature: ",cold_front," -> ",drag.car.powertrain.axles.temperatures.x,"; slip power ",drag.car.powertrain.axles.slip_power)
     await picture("44-burnout-preparation")
+    # Pause an actual loaded manual driveline. Temperatures, clutch condition,
+    # pitch and differential forces come from the same burnout, not seeded UI.
+    drag.paused = true
+    drag._refresh_hud()
+    await picture("74-manual-chassis-telemetry")
+    drag.paused = false
     capture_heat_done = true
     drag.set_physics_process(true)
     for frame in range(800):
@@ -432,6 +438,12 @@ func run() -> void:
     session.menu_music.select_track("butakera")
     current_scene._change_tab("ajustes")
     await picture("57-playlist-settings")
+    # The assistance choices are below the playlist. Scroll the real controls
+    # into view without changing the player's default full-manual selection.
+    var settings_scroll: ScrollContainer = current_scene.content.get_parent()
+    var transmission_choice: OptionButton = current_scene.content.get_node("TransmissionAssist")
+    settings_scroll.scroll_vertical += maxi(0,int(transmission_choice.global_position.y-settings_scroll.global_position.y-55.0))
+    await picture("72-transmission-settings")
     if not session.menu_music.player.playing or session.menu_music.track_id()!="butakera":
         push_error("The new Ogg playlist track did not play in the actual menu.")
         quit(1)
@@ -524,6 +536,42 @@ func run() -> void:
     drag._back_to_garage()
     await process_frame
     await process_frame
+    # Reverse is demonstrated by powered backwards CharacterBody movement in
+    # the actual strip scene. No speed, wheel RPM or actor position is assigned.
+    session.reset()
+    session.game.buy(11)
+    for part in session.game.find_car(11).health: session.game.find_car(11).health[part]=100.0
+    session.start_drag(11)
+    change_scene_to_file("res://scenes/drag.tscn")
+    await process_frame
+    await process_frame
+    drag = current_scene
+    await settle_drag(drag)
+    var reverse_start: float = drag.car.position.z
+    if not drag.car.powertrain.shift(-1,1.0):
+        push_error("The rendered manual car did not accept reverse from neutral.")
+        quit(1)
+        return
+    drag.input_provider = func() -> Dictionary:
+        return {"throttle":0.65,"clutch":1.0 if drag.car.powertrain.shift_timer>0.0 else 0.0,"brake":0.0,"handbrake":0.0,"steer":0.0}
+    for frame in range(150):
+        await physics_frame
+        if drag.car.powertrain.speed_mps< -0.4 and drag.car.position.z>reverse_start+0.3: break
+    if drag.car.powertrain.gear!=-1 or drag.car.powertrain.speed_mps>= -0.4 or drag.car.position.z<=reverse_start+0.3:
+        push_error("The reverse capture did not produce powered backwards movement.")
+        quit(1)
+        return
+    print("Rendered reverse evidence: ",{"gear":drag.car.powertrain.gear,"speed_mps":drag.car.powertrain.speed_mps,"backwards_metres":drag.car.position.z-reverse_start})
+    drag.set_physics_process(false)
+    drag.camera.mode = 1
+    drag.camera.snap()
+    drag._refresh_hud()
+    await picture("73-reverse-driving")
+    drag.input_provider = Callable()
+    drag._back_to_garage()
+    await process_frame
+    await process_frame
+    await create_timer(0.12,true,false,true).timeout
     session.menu_music.set_menu_active(false)
     for i in range(20):
         await process_frame

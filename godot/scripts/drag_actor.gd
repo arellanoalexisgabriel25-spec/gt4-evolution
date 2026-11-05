@@ -116,6 +116,7 @@ func drive_manual(delta: float, controls: Dictionary, _road: bool = true) -> voi
         distance_m += measured
     if is_on_wall():
         contact_count += 1
+    visual.suspension_pitch = powertrain.axles.suspension.angle_rad
     visual.road_pitch = wheel_pitch
     visual.update_motion(delta,powertrain.speed_mps,steer,powertrain.axles.filtered_acceleration/maxf(powertrain.config.gravity_mps2,0.1),brake,powertrain.axles.omega*powertrain.config.wheel_radius)
 

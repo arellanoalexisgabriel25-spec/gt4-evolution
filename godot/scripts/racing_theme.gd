@@ -35,6 +35,10 @@ static func panel(color: Color = PANEL, padding: float = 16.0) -> StyleBoxFlat:
     box.content_margin_right = padding
     box.content_margin_top = padding
     box.content_margin_bottom = padding
+    # Consistent depth on service cards and popups without adding image assets.
+    box.shadow_color = Color(0.0,0.0,0.0,0.22)
+    box.shadow_size = 5
+    box.shadow_offset = Vector2(0,2)
     return box
 
 static func navigation(selected: bool, hovered: bool = false) -> StyleBoxFlat:
@@ -61,6 +65,7 @@ static func build() -> Theme:
         button.content_margin_left=12
         button.content_margin_right=12
         button.border_color=HOVER if entry[0]=="hover" else BORDER
+        button.border_width_bottom = 2 if entry[0] in ["normal","hover"] else 1
         theme.set_stylebox(entry[0],"Button",button)
     var focus := panel(Color.TRANSPARENT,0)
     focus.border_color=HOVER
@@ -71,6 +76,7 @@ static func build() -> Theme:
         primary.set_corner_radius_all(4)
         theme.set_stylebox(entry[0],"PrimaryButton",primary)
     theme.set_color("font_hover_color","PrimaryButton",BACKGROUND)
+    theme.set_color("font_pressed_color","PrimaryButton",TEXT)
     theme.set_font_size("font_size","PrimaryButton",19)
     theme.set_stylebox("panel","PanelContainer",panel())
     for kind in ["OptionButton","CheckButton","CheckBox"]:

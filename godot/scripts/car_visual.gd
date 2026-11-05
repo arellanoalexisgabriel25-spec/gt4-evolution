@@ -14,6 +14,7 @@ var wheel_radius := 0.30
 var triangle_counts: Array = []
 var night_lights
 var road_pitch := 0.0
+var suspension_pitch := 0.0
 
 func set_night_lighting() -> void:
     if is_instance_valid(night_lights): return
@@ -236,7 +237,7 @@ func update_motion(delta: float, speed: float, steering: float, load_shift: floa
         wheels[index].rotation.x -= linear_speed * delta / wheel_radius
     for pivot in front_pivots:
         pivot.rotation.y = -steering * 0.4
-    rotation.x = lerp_angle(rotation.x,road_pitch-load_shift * 0.045,1.0-exp(-8.0*delta))
+    rotation.x = lerp_angle(rotation.x,road_pitch-suspension_pitch,1.0-exp(-8.0*delta))
     rotation.z = lerp_angle(rotation.z,-steering * speed * 0.0015,1.0-exp(-8.0*delta))
     brake_material.emission_energy_multiplier = 2.0 if brake > 0.05 else 0.25
     if is_instance_valid(night_lights): night_lights.set_brake(brake)

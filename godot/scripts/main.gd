@@ -635,6 +635,22 @@ func _settings() -> void:
     volume_slider.value_changed.connect(_set_music_volume)
     content.add_child(volume_slider)
     content.add_child(_label("MANDO Y AYUDAS / ¼ DE MILLA",22))
+    var shifting := OptionButton.new()
+    shifting.name = "TransmissionAssist"
+    for title in ["MANUAL TOTAL · EMBRAGUE FÍSICO","EMBRAGUE AUTOMÁTICO · CAMBIO A CARGO DEL PILOTO","SEMIAUTOMÁTICA · LEVAS Y ACOPLE ASISTIDO"]:
+        shifting.add_item(title)
+    shifting.selected = ControlSettings.SHIFT_MODES.find(GameSession.controls.shift_mode)
+    shifting.item_selected.connect(func(index):
+        GameSession.controls.shift_mode = ControlSettings.SHIFT_MODES[index]
+        _save_controls())
+    content.add_child(shifting)
+    var matching := CheckButton.new()
+    matching.name = "AutoRevMatch"
+    matching.text = "REV-MATCHING ASISTIDO EN REDUCCIONES"
+    matching.button_pressed = GameSession.controls.auto_rev_match
+    matching.toggled.connect(func(value): GameSession.controls.auto_rev_match=value; _save_controls())
+    content.add_child(matching)
+    content.add_child(_label("Manual total es el modo por defecto. Permite acelerar, frenar y embragar simultáneamente; las ayudas no corrigen una reducción imposible. La CVT conserva su propio funcionamiento.",14))
     controller_label = _label(GameSession.controls.controller.description(),14)
     content.add_child(controller_label)
     var clutch := OptionButton.new()

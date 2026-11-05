@@ -1,8 +1,33 @@
-# GT4 Evolution · v0.23 / Gravedad, fuerzas y transmisión CVT
+# GT4 Evolution · v0.24 / Transmisión manual y chasis
 
 Prototipo independiente de automovilismo en Godot 4.6.3. El desarrollo se centra en un **¼ de milla de 402,336 m contra otro auto físico**, con largada, cambios manuales, marcas y desgaste en un entorno original inspirado en el ambiente del autódromo Gálvez. Conserva mercado, garaje, taller, tuning y los modos anteriores. La investigación de GT4 se consulta como referencia; no se incluyen su ejecutable, modelos, texturas ni circuitos comerciales.
 
-## Novedades v0.23
+## Novedades v0.24
+
+Caja manual separada del embrague: sincronización con tiempo y par finitos,
+reversa real, acople progresivo, pérdida por patinamiento, temperatura y desgaste
+persistente. El acelerador, freno y embrague son entradas independientes: se puede
+cambiar con W+C+E/Q y hacer punta-tacón. Mal acople, cambios rechazados y
+sobrerégimen tienen consecuencias; el limitador no protege una reducción forzada.
+
+Manual total por defecto. **AJUSTES** permite embrague automático, semiautomática
+y rev-matching opcionales. En N y detenido, **C+Q selecciona reversa; C+E primera**.
+En CVT, Q/E recorren R/N/D sin embrague y con el auto detenido. Al verde se liberan
+embrague y frenos para transmitir par; el HUD indica qué pedal impide largar.
+
+Se añaden cabeceo de suspensión por muelle/amortiguador y diferenciales
+abierto/LSD/bloqueado configurables, con agarre por rueda sobre superficies distintas.
+Son modelos reducidos: todavía hay dos inercias de eje y no cuatro ruedas dinámicas.
+La auditoría de las 26 fichas separa datos reportados de parámetros estimados,
+sin ajustar cronómetros para reproducir una cifra de catálogo.
+
+Showroom, iluminación nocturna, cámara e instrumental reciben ajustes visuales;
+los datos técnicos extensos siguen en pausa. Las marcas de la nueva física usan
+su propia revisión y las partidas previas se conservan.
+[Entrega y validación](RELEASE-0.24.md) · [Arquitectura y código](MANUAL-TRANSMISSION-0.24.md)
+· [Fichas y límites](CALIBRATION-0.24.md) · [Banco numérico](STOCK-BENCHMARK-0.24.md).
+
+## Estado histórico: novedades v0.23
 
 Gravedad común de 9,81 m/s², fuerzas tangenciales/normal según el suelo real,
 retroceso en pendientes, resistencia con viento relativo/densidad atmosférica
@@ -141,7 +166,7 @@ Comprá un auto y elegí **GARAJE → ¼ DE MILLA / MANUAL**. También hay acces
 4. Prepará RPM; esperá verde y soltá C para largar. Para cambiar, **C+E/Q**; podés mantener W. Pasar de RPM y cambiar mal tiene consecuencias.
 5. La meta entrega ticket y frenado asistido. **R** repite conservando uso, desgaste y temperatura. **P/Inicio/Select** pausa y muestra ayuda/telemetría completa; **Esc** vuelve al garaje. Presioná **GUARDAR** para conservar progreso.
 
-Cambiar temprano lleva el motor a una zona de menor entrega; quedarse en el corte interrumpe la potencia. Un cambio sin embrague se rechaza y desgasta la transmisión. Una reducción excesiva puede llevar el motor a sobrerégimen; soltar el embrague a bajas RPM contra el freno puede calarlo. R permite recuperar y arrancar de nuevo. El modelo usa masa, par, relaciones, inercia de motor y ruedas, capacidad de embrague, resistencia aerodinámica, agarre y transferencia longitudinal de carga. Los parámetros de cada auto son **aproximaciones de desarrollo**, sin validación contra mediciones reales.
+Cambiar temprano lleva el motor a una zona de menor entrega; quedarse en el corte interrumpe la potencia. Un cambio sin embrague se rechaza y desgasta la transmisión. Una reducción excesiva puede llevar el motor a sobrerégimen; soltar el embrague a bajas RPM contra el freno puede calarlo. R permite recuperar y arrancar de nuevo después de un calado; una avería mecánica o un embrague agotado requiere taller. Detenido en N, C+Q engrana reversa con movimiento real. El modelo usa masa, par, relaciones, inercia de motor y ruedas, capacidad de embrague, resistencia aerodinámica, agarre y transferencia longitudinal de carga. Los parámetros de cada auto son **aproximaciones de desarrollo**, sin validación contra mediciones reales.
 
 El HUD de pasada muestra velocidad, marcha, RPM, tiempos y rival. Al pausar se muestran torque, potencia, pérdidas de embrague, turbo, temperaturas, tracción y ayudas. El ticket incluye ET, reacción, total, 60 pies, 1/8 de milla y velocidad media en los últimos 20,1168 m. El reloj parte cuando el auto libera el haz de salida tras 0,20 m de rollout; los tiempos de paso se interpolan entre cuadros físicos. Salirse del carril, saltarse la salida o una discontinuidad de posición invalida el intento.
 
@@ -195,7 +220,7 @@ La recuperación conserva las vueltas ya completadas y la distancia realmente re
 - Transmisión configurable, RPM, curva de par normalizada y pérdida progresiva de empuje cerca de la velocidad máxima.
 - Transferencia de carga entre ejes, frenado limitado por neumáticos y giro limitado por agarre. Delantera, trasera e integral conservan respuestas diferentes.
 - Cuatro cámaras con retardo de orientación, distancia y campo visual que cambian con la velocidad, incluso al derrapar. El seguimiento conserva la distancia al trasladarse rápido y acorta su brazo ante paredes. Capó y paragolpes tienen planos de recorte cercanos; paragolpes oculta la carrocería propia.
-- Inicio con mapa original de servicios, paneles plateados y azules, tipografía Barlow Condensed con licencia OFL y presentación 3D giratoria del auto. Concesionario en tarjetas, navegación lateral y garaje conservan las transacciones existentes.
+- Inicio con mapa original de servicios, paneles oscuros y azul acero, tipografía Barlow/Roboto Mono con licencia OFL y presentación 3D giratoria del auto. Concesionario en tarjetas, navegación lateral y garaje conservan las transacciones existentes.
 - HUD compacto de velocidad, RPM, marcha, cronómetro, mejor vuelta, posiciones y cámara; minimapa del trazado real con jugador y rivales; ayuda extensa al detenerse o pausar. Autos procedurales con cristales, faros, ruedas animadas, dirección y movimiento de carrocería. Pista con cielo, sombras, materiales, tribuna y paisaje originales.
 - IA reproducible que anticipa curvas, regula acelerador/freno, intenta adelantar por un carril libre y frena ante tráfico próximo. Habilidad, agresividad y consistencia cambian el ritmo y las pequeñas desviaciones de trayectoria. Es una primera IA de conducción; no un sistema avanzado de competición.
 - Cuenta regresiva, posiciones en vivo, llegada real, resultados y abandonos. Los autos que llegan dejan de obstaculizar a quienes siguen compitiendo.
@@ -206,7 +231,7 @@ La recuperación conserva las vueltas ya completadas y la distancia realmente re
 
 ## Límites actuales
 
-La conducción del circuito sigue siendo arcade. El ¼ de milla usa un modelo longitudinal con embrague, cambios manuales y daños mecánicos, asistencia lateral y temperaturas simplificadas. Hay duelos físicos y práctica individual; no hay campeonato de picadas, premios, llaves, finales ni verificación técnica homologada. Los pisos transcritos del reglamento no validan las prestaciones estimadas de los autos. El Uno aportado tiene cinco puertas, el catálogo apunta a tres; los GLB contienen detalles y luces horneados. No hay deformación visual ni simulación completa de neumáticos, suspensión, embrague o diferencial izquierda/derecha. Las colisiones usan cuerpos de personaje, sin intercambio realista de impulsos. Faltan conducción humana, Windows, mando físico y mediciones de rendimiento en GPU real. La evidencia y el estado de comprobación de esta versión se registran en [RELEASE-0.23.md](RELEASE-0.23.md).
+La conducción del circuito sigue siendo arcade. El ¼ de milla usa un modelo longitudinal con embrague, cambios manuales y daños mecánicos, asistencia lateral y temperaturas simplificadas. Hay duelos físicos y práctica individual; no hay campeonato de picadas, premios, llaves, finales ni verificación técnica homologada. Los pisos transcritos del reglamento no validan las prestaciones estimadas de los autos. El Uno aportado tiene cinco puertas, el catálogo apunta a tres; los GLB contienen detalles y luces horneados. No hay deformación visual ni simulación completa de neumáticos, suspensión, embrague o diferencial izquierda/derecha. Las colisiones usan cuerpos de personaje, sin intercambio realista de impulsos. Faltan conducción humana, Windows, mando físico y mediciones de rendimiento en GPU real. La evidencia y el estado de comprobación de esta versión se registran en [RELEASE-0.24.md](RELEASE-0.24.md).
 
 ## Desarrollo y pruebas
 
