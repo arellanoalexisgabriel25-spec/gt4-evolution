@@ -1,7 +1,7 @@
-# GT4 Evolution 0.19 · Descargas
+# GT4 Evolution 0.20 · Descargas
 
-- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.19/GT4-Evolution-0.19-Windows.zip)
-- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.19/GT4-Evolution-0.19-Proyecto.zip)
+- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.20/GT4-Evolution-0.20-Windows.zip)
+- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.20/GT4-Evolution-0.20-Proyecto.zip)
 
 Extraé TODO el ZIP Windows y abrí **GT4Evolution.exe** o **JUGAR.cmd**.
 Es una exportación independiente; no requiere instalar Godot ni importar el proyecto.
@@ -13,25 +13,32 @@ La reacción cuenta para llegar primero. Un falso individual concede al rival
 la excepción del art. 12 aunque su ET caiga. Exhibición sin inscripción ni premios.
 Fábrica conserva salud del garaje y excluye preparaciones; «serie» oficial tiene
 otro alcance. La práctica individual y sus marcas anteriores siguen disponibles.
-Se incorporan 125, Duna, Cronos, Siena, Punto, Regatta y 500 Sport a los seis
+Se incluyen 125, Duna, Cronos, Siena, Punto, Regatta y 500 Sport a los seis
 modelos anteriores. El garaje permite elegir un modelo rival distinto.
 El 500 utiliza 100 CV y caja de seis marchas; su estética Abarth es provisional.
 El 133 tiene tracción trasera y los 128 delantera, con perfiles diferenciados.
 El contacto distingue superficies, apoyo y ruedas sin suelo; el agarre respeta
 la capacidad actual del piso y el frenado registra la energía disipada.
 147 Vivace y Uno Fire conservan derivados optimizados de los modelos aportados,
-con texturas conservadas y ruedas animadas. El Uno suministrado tiene cinco puertas,
+con texturas derivadas de 1024², mipmaps y ruedas animadas. El Uno suministrado tiene cinco puertas,
 referencia visual provisional de la variante de tres puertas del catálogo.
-El Gol conserva el modelo aportado original. Las fichas distinguen datos aportados
+Los trece modelos usan derivados optimizados; los originales quedan fuera del paquete. Las fichas distinguen datos aportados
 y parámetros estimados; la calibración de prestaciones sigue pendiente.
 Ver STOCK-SOURCES.md. En Inicio podés elegir los trece modelos; en garaje,
 VER MODELO cambia la vista.
 El taller ofrece calle, deportivos o slick. Los impactos dejan daño mecánico
-persistente; recuperar no repara. Ver RELEASE-0.19.md y REGULATIONS-REFERENCE.md.
+persistente; recuperar no repara. Ver RELEASE-0.20.md y REGULATIONS-REFERENCE.md.
 
-Comprá un auto y abrí **GARAJE → ¼ DE MILLA / MANUAL**. Mantené C, tocá E
-para primera, iniciá el árbol con Enter y esperá el verde. Regulá W para las RPM,
-soltá C para largar y usá C+E en cada cambio. Q baja. R prepara otra pasada.
+Comprá un auto y abrí **GARAJE → DUELO ¼ DE MILLA / FÁBRICA**.
+Hay 25 s de calentamiento delante de línea, luego azul y 30 s de preparación.
+Son tiempos de juego; el art.11 define las señales, no esas duraciones.
+C+E engrana primera; en FWD, ráfagas de W+H calientan con patinamiento real.
+El auto puede avanzar: C+Espacio frena. Zona 2,5–35 m delante de línea.
+El asistente alinea y sostiene al llamado, conservando calor/desgaste.
+Primera+C y ambos listos activan automáticamente el árbol; Enter no lo inicia.
+Esperá el verde y soltá C para largar. C+E/Q cambia sin obligar a soltar W.
+El HUD de pasada es compacto; la pausa muestra telemetría completa.
+R prepara otra pasada. Mando: L3 freno de mano, Inicio/Select pausa.
 La práctica no cobra ni da premios en pesos; sí registra uso y desgaste.
 Volvé al garaje y presioná GUARDAR para conservar marcas y progreso.
 AJUSTES permite reasignar las teclas. El circuito del club sigue disponible.
@@ -45,16 +52,28 @@ hashes de fuentes/exportación y DIAGNOSTICO.cmd para registrar fallos de arranq
 prueba en esos equipos; la validación automatizada se realiza en Linux.
 Las licencias se incluyen. No se distribuyen recursos comerciales de GT4.
 
-Código: [5b9858a](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/5b9858a905ca38247a8bc8a55a084aa5e153c566).
+Código: [4f86b35](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/4f86b3526add726cf15ab55bbd2144014c9d1318).
 Esta rama contiene únicamente distribución y no se integra en main.
 Los archivos .sha256 permiten verificar los ZIP.
 
-## Presentación 0.19
+## Presentación 0.20
 
 Capturas reales del juego en Linux con OpenGL por software. No son renders conceptuales.
 
 Tab / RB cambia entre seguimiento, cercana, capó y paragolpes; Shift / Y permite mirar atrás.
 AJUSTES conserva la cámara inicial y permite suavizar la dirección del teclado.
+
+### Calentamiento real
+
+![Calentamiento real](captura-44-burnout-preparation.png)
+
+### Luz azul y llamado del largador
+
+![Luz azul y llamado del largador](captura-45-starter-call.png)
+
+### Telemetría al pausar
+
+![Telemetría al pausar](captura-46-paused-telemetry.png)
 
 ### 125 / Modelo adaptado
 
