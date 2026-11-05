@@ -1,7 +1,7 @@
-# GT4 Evolution 0.22 · Descargas
+# GT4 Evolution 0.23 · Descargas
 
-- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.22/GT4-Evolution-0.22-Windows.zip)
-- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.22/GT4-Evolution-0.22-Proyecto.zip)
+- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.23/GT4-Evolution-0.23-Windows.zip)
+- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.23/GT4-Evolution-0.23-Proyecto.zip)
 
 Extraé TODO el ZIP Windows y abrí **GT4Evolution.exe** o **JUGAR.cmd**.
 Es una exportación independiente; no requiere instalar Godot ni importar el proyecto.
@@ -13,6 +13,13 @@ La reacción cuenta para llegar primero. Un falso individual concede al rival
 la excepción del art. 12 aunque su ET caiga. Exhibición sin inscripción ni premios.
 Fábrica conserva salud del garaje y excluye preparaciones; «serie» oficial tiene
 otro alcance. La práctica individual y sus marcas anteriores siguen disponibles.
+La versión 0.23 unifica gravedad 9,81 m/s², pendientes/contacto real, viento
+y densidad del aire, y frenos con calor y pérdida de eficacia.
+Se suman Yaris sedán, Ka 3p, 208, Polo Classic, Virtus, Onix y Corolla Cross.
+El Cross incorpora una CVT original aproximada: E selecciona D, Q N detenido;
+freno sostenido al alinear y soltarlo al verde. LT siempre frena en CVT.
+Las marcas anteriores se preservan como históricas frente a esta revisión.
+No se certifica hiperrealismo completo ni prestaciones de fábrica.
 El ¼ de milla transcurre de noche con alumbrado cálido e instrumentos analógicos.
 Corsa 5p, Amarok, Ranger cabina simple, EcoSport, Corolla y Palio 5p se suman
 con modelos optimizados y fichas mecánicas provisionales.
@@ -30,12 +37,12 @@ la capacidad actual del piso y el frenado registra la energía disipada.
 147 Vivace y Uno Fire conservan derivados optimizados de los modelos aportados,
 con texturas derivadas de 1024², mipmaps y ruedas animadas. El Uno suministrado tiene cinco puertas,
 referencia visual provisional de la variante de tres puertas del catálogo.
-Los diecinueve modelos aportados usan derivados optimizados; los originales quedan fuera del paquete. Las fichas distinguen datos aportados
+Los veintiséis modelos aportados usan derivados optimizados; los originales quedan fuera del paquete. Las fichas distinguen datos aportados
 y parámetros estimados; la calibración de prestaciones sigue pendiente.
 Ver STOCK-SOURCES.md. En Inicio podés elegir todos los modelos; en garaje,
 VER MODELO cambia la vista.
 El taller ofrece calle, deportivos o slick. Los impactos dejan daño mecánico
-persistente; recuperar no repara. Ver RELEASE-0.22.md y REGULATIONS-REFERENCE.md.
+persistente; recuperar no repara. Ver RELEASE-0.23.md y REGULATIONS-REFERENCE.md.
 
 Comprá un auto y abrí **GARAJE → DUELO ¼ DE MILLA / FÁBRICA**.
 Hay 25 s de calentamiento delante de línea, luego azul y 30 s de preparación.
@@ -61,16 +68,56 @@ hashes de fuentes/exportación y DIAGNOSTICO.cmd para registrar fallos de arranq
 prueba en esos equipos; la validación automatizada se realiza en Linux.
 Las licencias se incluyen. No se distribuyen recursos comerciales de GT4.
 
-Código: [d55c43c](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/d55c43cf5772557a18ed5b87ad6b969dcabb7727).
+Código: [4b79bf9](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/4b79bf9d50e35b457c9859f7363eb88757da4328).
 Esta rama contiene únicamente distribución y no se integra en main.
 Los archivos .sha256 permiten verificar los ZIP.
 
-## Presentación 0.22
+## Presentación 0.23
 
 Capturas reales del juego en Linux con OpenGL por software. No son renders conceptuales.
 
 Tab / RB cambia entre seguimiento, cercana, capó y paragolpes; Shift / R3 permite mirar atrás en picadas.
 AJUSTES conserva la cámara inicial y permite suavizar la dirección del teclado.
+
+### Corolla Cross CVT contra Virtus manual
+
+![Corolla Cross CVT contra Virtus manual](captura-69-cvt-driving.png)
+
+### Telemetría de fuerzas y temperatura
+
+![Telemetría de fuerzas y temperatura](captura-71-physics-telemetry.png)
+
+### Resultado medido CVT
+
+![Resultado medido CVT](captura-70-cvt-result.png)
+
+### Yaris sedán
+
+![Yaris sedán](captura-61-yaris-showroom.png)
+
+### Ka 3 puertas
+
+![Ka 3 puertas](captura-62-ka-showroom.png)
+
+### 208
+
+![208](captura-63-208-showroom.png)
+
+### Polo Classic
+
+![Polo Classic](captura-64-polo-showroom.png)
+
+### Virtus
+
+![Virtus](captura-65-virtus-showroom.png)
+
+### Onix
+
+![Onix](captura-66-onix-showroom.png)
+
+### Corolla Cross
+
+![Corolla Cross](captura-67-cross-showroom.png)
 
 ### Picada nocturna / Amarok contra Corsa
 
