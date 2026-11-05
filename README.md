@@ -1,7 +1,7 @@
-# GT4 Evolution 0.21 · Descargas
+# GT4 Evolution 0.22 · Descargas
 
-- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.21/GT4-Evolution-0.21-Windows.zip)
-- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.21/GT4-Evolution-0.21-Proyecto.zip)
+- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.22/GT4-Evolution-0.22-Windows.zip)
+- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.22/GT4-Evolution-0.22-Proyecto.zip)
 
 Extraé TODO el ZIP Windows y abrí **GT4Evolution.exe** o **JUGAR.cmd**.
 Es una exportación independiente; no requiere instalar Godot ni importar el proyecto.
@@ -13,6 +13,9 @@ La reacción cuenta para llegar primero. Un falso individual concede al rival
 la excepción del art. 12 aunque su ET caiga. Exhibición sin inscripción ni premios.
 Fábrica conserva salud del garaje y excluye preparaciones; «serie» oficial tiene
 otro alcance. La práctica individual y sus marcas anteriores siguen disponibles.
+El ¼ de milla transcurre de noche con alumbrado cálido e instrumentos analógicos.
+Corsa 5p, Amarok, Ranger cabina simple, EcoSport, Corolla y Palio 5p se suman
+con modelos optimizados y fichas mecánicas provisionales.
 La interfaz adopta fondos oscuros, azul acero y números monoespaciados según
 la guía GT4_UI_System aportada. El 147 Vivace usa la referencia 1.4 BIO 1997:
 63 CV, 10,4 kgfm, 807 kg más 75 kg de piloto; otros parámetros siguen estimados.
@@ -27,12 +30,12 @@ la capacidad actual del piso y el frenado registra la energía disipada.
 147 Vivace y Uno Fire conservan derivados optimizados de los modelos aportados,
 con texturas derivadas de 1024², mipmaps y ruedas animadas. El Uno suministrado tiene cinco puertas,
 referencia visual provisional de la variante de tres puertas del catálogo.
-Los trece modelos usan derivados optimizados; los originales quedan fuera del paquete. Las fichas distinguen datos aportados
+Los diecinueve modelos aportados usan derivados optimizados; los originales quedan fuera del paquete. Las fichas distinguen datos aportados
 y parámetros estimados; la calibración de prestaciones sigue pendiente.
-Ver STOCK-SOURCES.md. En Inicio podés elegir los trece modelos; en garaje,
+Ver STOCK-SOURCES.md. En Inicio podés elegir todos los modelos; en garaje,
 VER MODELO cambia la vista.
 El taller ofrece calle, deportivos o slick. Los impactos dejan daño mecánico
-persistente; recuperar no repara. Ver RELEASE-0.21.md y REGULATIONS-REFERENCE.md.
+persistente; recuperar no repara. Ver RELEASE-0.22.md y REGULATIONS-REFERENCE.md.
 
 Comprá un auto y abrí **GARAJE → DUELO ¼ DE MILLA / FÁBRICA**.
 Hay 25 s de calentamiento delante de línea, luego azul y 30 s de preparación.
@@ -48,7 +51,8 @@ La práctica no cobra ni da premios en pesos; sí registra uso y desgaste.
 Volvé al garaje y presioná GUARDAR para conservar marcas y progreso.
 AJUSTES permite reasignar las teclas. El circuito del club sigue disponible.
 Los importes están en pesos argentinos. Se incluye la música de menú aportada
-por el usuario y autorizada para redistribución; volumen en AJUSTES.
+por el usuario y autorizada para redistribución: 13 temas, selección, anterior/siguiente,
+aleatorio y volumen en AJUSTES.
 Mando: stick/cruceta navega, A confirma, B vuelve, LB/RB cambia pestaña.
 Select/Back abre la pausa en pista; embrague analógico LT/L2 opcional.
 
@@ -57,16 +61,52 @@ hashes de fuentes/exportación y DIAGNOSTICO.cmd para registrar fallos de arranq
 prueba en esos equipos; la validación automatizada se realiza en Linux.
 Las licencias se incluyen. No se distribuyen recursos comerciales de GT4.
 
-Código: [03e5ab8](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/03e5ab8761b28ca6122d995d39fe5d2b03348c5c).
+Código: [d55c43c](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/d55c43cf5772557a18ed5b87ad6b969dcabb7727).
 Esta rama contiene únicamente distribución y no se integra en main.
 Los archivos .sha256 permiten verificar los ZIP.
 
-## Presentación 0.21
+## Presentación 0.22
 
 Capturas reales del juego en Linux con OpenGL por software. No son renders conceptuales.
 
 Tab / RB cambia entre seguimiento, cercana, capó y paragolpes; Shift / R3 permite mirar atrás en picadas.
 AJUSTES conserva la cámara inicial y permite suavizar la dirección del teclado.
+
+### Picada nocturna / Amarok contra Corsa
+
+![Picada nocturna / Amarok contra Corsa](captura-59-night-pickup-driving.png)
+
+### Resultado físico nocturno
+
+![Resultado físico nocturno](captura-60-night-pickup-result.png)
+
+### Lista de trece canciones
+
+![Lista de trece canciones](captura-57-playlist-settings.png)
+
+### Corsa cinco puertas
+
+![Corsa cinco puertas](captura-51-corsa-showroom.png)
+
+### Amarok
+
+![Amarok](captura-52-amarok-showroom.png)
+
+### Ranger cabina simple
+
+![Ranger cabina simple](captura-53-ranger-showroom.png)
+
+### EcoSport
+
+![EcoSport](captura-54-ecosport-showroom.png)
+
+### Corolla
+
+![Corolla](captura-55-corolla-showroom.png)
+
+### Palio cinco puertas
+
+![Palio cinco puertas](captura-56-palio-showroom.png)
 
 ### Inicio / Línea visual aportada
 
