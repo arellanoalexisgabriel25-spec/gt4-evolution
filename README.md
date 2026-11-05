@@ -1,7 +1,7 @@
-# GT4 Evolution 0.18 · Descargas
+# GT4 Evolution 0.19 · Descargas
 
-- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.18/GT4-Evolution-0.18-Windows.zip)
-- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.18/GT4-Evolution-0.18-Proyecto.zip)
+- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.19/GT4-Evolution-0.19-Windows.zip)
+- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.19/GT4-Evolution-0.19-Proyecto.zip)
 
 Extraé TODO el ZIP Windows y abrí **GT4Evolution.exe** o **JUGAR.cmd**.
 Es una exportación independiente; no requiere instalar Godot ni importar el proyecto.
@@ -13,7 +13,9 @@ La reacción cuenta para llegar primero. Un falso individual concede al rival
 la excepción del art. 12 aunque su ET caiga. Exhibición sin inscripción ni premios.
 Fábrica conserva salud del garaje y excluye preparaciones; «serie» oficial tiene
 otro alcance. La práctica individual y sus marcas anteriores siguen disponibles.
-Se suman Fiat 128 Súper Europa, Fiat 133 y Fiat 128 con sus modelos aportados.
+Se incorporan 125, Duna, Cronos, Siena, Punto, Regatta y 500 Sport a los seis
+modelos anteriores. El garaje permite elegir un modelo rival distinto.
+El 500 utiliza 100 CV y caja de seis marchas; su estética Abarth es provisional.
 El 133 tiene tracción trasera y los 128 delantera, con perfiles diferenciados.
 El contacto distingue superficies, apoyo y ruedas sin suelo; el agarre respeta
 la capacidad actual del piso y el frenado registra la energía disipada.
@@ -22,10 +24,10 @@ con texturas conservadas y ruedas animadas. El Uno suministrado tiene cinco puer
 referencia visual provisional de la variante de tres puertas del catálogo.
 El Gol conserva el modelo aportado original. Las fichas distinguen datos aportados
 y parámetros estimados; la calibración de prestaciones sigue pendiente.
-Ver STOCK-SOURCES.md. En Inicio podés elegir los seis modelos; en garaje,
+Ver STOCK-SOURCES.md. En Inicio podés elegir los trece modelos; en garaje,
 VER MODELO cambia la vista.
 El taller ofrece calle, deportivos o slick. Los impactos dejan daño mecánico
-persistente; recuperar no repara. Ver RELEASE-0.18.md y REGULATIONS-REFERENCE.md.
+persistente; recuperar no repara. Ver RELEASE-0.19.md y REGULATIONS-REFERENCE.md.
 
 Comprá un auto y abrí **GARAJE → ¼ DE MILLA / MANUAL**. Mantené C, tocá E
 para primera, iniciá el árbol con Enter y esperá el verde. Regulá W para las RPM,
@@ -43,16 +45,52 @@ hashes de fuentes/exportación y DIAGNOSTICO.cmd para registrar fallos de arranq
 prueba en esos equipos; la validación automatizada se realiza en Linux.
 Las licencias se incluyen. No se distribuyen recursos comerciales de GT4.
 
-Código: [188b9d6](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/188b9d6be8e057c28b278bc0c31844f8af6cb3e8).
+Código: [5b9858a](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/5b9858a905ca38247a8bc8a55a084aa5e153c566).
 Esta rama contiene únicamente distribución y no se integra en main.
 Los archivos .sha256 permiten verificar los ZIP.
 
-## Presentación 0.18
+## Presentación 0.19
 
 Capturas reales del juego en Linux con OpenGL por software. No son renders conceptuales.
 
 Tab / RB cambia entre seguimiento, cercana, capó y paragolpes; Shift / Y permite mirar atrás.
 AJUSTES conserva la cámara inicial y permite suavizar la dirección del teclado.
+
+### 125 / Modelo adaptado
+
+![125 / Modelo adaptado](captura-34-125-showroom.png)
+
+### Duna / Modelo adaptado
+
+![Duna / Modelo adaptado](captura-35-duna-showroom.png)
+
+### Cronos / Modelo adaptado
+
+![Cronos / Modelo adaptado](captura-36-cronos-showroom.png)
+
+### Siena / Modelo adaptado
+
+![Siena / Modelo adaptado](captura-37-siena-showroom.png)
+
+### Punto / Modelo adaptado
+
+![Punto / Modelo adaptado](captura-38-punto-showroom.png)
+
+### Regatta / Modelo adaptado
+
+![Regatta / Modelo adaptado](captura-39-regatta-showroom.png)
+
+### 500 Sport / Carrocería Abarth provisional
+
+![500 Sport / Carrocería Abarth provisional](captura-40-500-showroom.png)
+
+### 500 Sport contra 133
+
+![500 Sport contra 133](captura-42-mixed-duel-driving.png)
+
+### Resultado entre modelos distintos
+
+![Resultado entre modelos distintos](captura-43-mixed-duel-result.png)
 
 ### Fiat 128 Súper Europa / Modelo aportado
 
