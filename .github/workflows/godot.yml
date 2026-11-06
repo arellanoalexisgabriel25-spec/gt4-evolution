@@ -3,10 +3,12 @@ on:
   push:
     paths:
       - 'godot/**'
+      - 'tools/capture_presentation.*'
       - '.github/workflows/godot.yml'
   pull_request:
     paths:
       - 'godot/**'
+      - 'tools/capture_presentation.*'
       - '.github/workflows/godot.yml'
 jobs:
   validation:

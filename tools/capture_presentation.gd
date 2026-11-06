@@ -3,15 +3,69 @@ extends SceneTree
 const DragDriver = preload("res://tests/drag_test_driver.gd")
 var output := "/workspace/artifacts/presentation-0.25"
 var capture_heat_done := false
+var capture_heat_started_at := 0.0
+var last_capture := "initialization"
+var active_capture := ""
+var capture_started_ms := 0
+var last_heartbeat_ms := -1000
+
+func capture_state() -> Dictionary:
+    var state := {"last_capture":last_capture,"active_capture":active_capture,"window_mode":root.mode,"max_physics_steps":Engine.max_physics_steps_per_frame,"wall_seconds":(Time.get_ticks_msec()-capture_started_ms)/1000.0,"fps":Engine.get_frames_per_second(),"window_focused":root.has_focus()}
+    var scene = current_scene
+    if is_instance_valid(scene):
+        state["scene"] = str(scene.name)
+        var timer = scene.get("run")
+        if timer!=null:
+            state["run_phase"] = timer.phase
+            state["run_clock"] = timer.clock
+            state["paused"] = scene.paused
+            state["enabled"] = scene.enabled
+            state["run_reason"] = timer.reason
+            state["message"] = scene.message
+            state["physics_processing"] = scene.is_physics_processing()
+            state["procedure_phase"] = scene.procedure.phase
+            state["procedure_elapsed"] = scene.procedure.elapsed
+            state["position_z"] = scene.car.position.z
+            state["speed_mps"] = scene.car.powertrain.speed_mps
+            state["gear"] = scene.car.powertrain.gear
+            state["engine_running"] = scene.car.powertrain.engine_running
+    return state
+
+func heartbeat(force: bool = false) -> void:
+    var now := Time.get_ticks_msec()
+    if not force and now-last_heartbeat_ms<1000: return
+    last_heartbeat_ms = now
+    var file := FileAccess.open(output.path_join("capture-progress.json"),FileAccess.WRITE)
+    if file!=null:
+        file.store_string(JSON.stringify(capture_state()))
+        file.close()
+
+func race_step(scene) -> bool:
+    # A focus pause must fail clearly rather than waiting forever for a frozen
+    # race clock. Intentional pause screenshots never use this running-race helper.
+    if scene.paused or not scene.is_physics_processing() or scene.run.phase=="invalid":
+        heartbeat(true)
+        push_error("Capture race stopped unexpectedly: "+JSON.stringify(capture_state()))
+        quit(1)
+        return false
+    await physics_frame
+    return true
 
 func _initialize() -> void:
     var args := OS.get_cmdline_user_args()
     if not args.is_empty():
         output = args[0]
     DirAccess.make_dir_recursive_absolute(output)
+    capture_started_ms = Time.get_ticks_msec()
+    process_frame.connect(heartbeat)
+    # Rendered CI can have only a few FPS. Preserve the fixed physics tick and
+    # all driver inputs while allowing it to catch up between expensive frames.
+    Engine.max_physics_steps_per_frame = 64
     call_deferred("run")
 
 func picture(name: String) -> void:
+    active_capture = name
+    heartbeat(true)
     for i in range(6):
         await process_frame
     await RenderingServer.frame_post_draw
@@ -21,6 +75,9 @@ func picture(name: String) -> void:
         push_error("Failed screenshot: " + name)
         quit(1)
     print("Captured ",name," ",image.get_size())
+    last_capture = name
+    active_capture = ""
+    heartbeat(true)
 
 func settle_drag(drag) -> void:
     var active: bool = drag.is_physics_processing()
@@ -43,7 +100,7 @@ func burnout_controls(drag) -> Dictionary:
         return {"throttle":0.0,"clutch":1.0,"brake":1.0,"handbrake":0.0,"steer":0.0}
     if model.gear == 0 and model.shift_timer <= 0.0:
         model.shift(1,1.0)
-    var preloading: bool = drag.procedure.phase_elapsed<1.5
+    var preloading: bool = drag.procedure.phase_elapsed-capture_heat_started_at<1.5
     return {"throttle":0.75 if preloading else 1.0,"clutch":1.0 if preloading else 0.0,"brake":0.0,"handbrake":1.0,"steer":0.0}
 
 func run() -> void:
@@ -51,6 +108,7 @@ func run() -> void:
         push_error("Presentation capture requires a rendered display, not --headless.")
         quit(1)
         return
+    DisplayServer.window_move_to_foreground(root.get_window_id())
     var session = root.get_node("GameSession")
     session.reset()
     change_scene_to_file("res://scenes/main.tscn")
@@ -125,13 +183,13 @@ func run() -> void:
     if not await arm_drag(drag): return
     Engine.time_scale = 3.0
     while drag.run.clock < 1.0:
-        await physics_frame
+        if not await race_step(drag): return
     drag.set_physics_process(false)
     drag._refresh_hud()
     await picture("12-drag-tree")
     drag.set_physics_process(true)
     while -drag.car.position.z < 140 and drag.run.phase not in ["finished","invalid"]:
-        await physics_frame
+        if not await race_step(drag): return
     drag.set_physics_process(false)
     drag.camera.snap()
     drag._refresh_hud()
@@ -141,7 +199,7 @@ func run() -> void:
     await picture("14-drag-close")
     drag.set_physics_process(true)
     while drag.run.phase not in ["finished","invalid"]:
-        await physics_frame
+        if not await race_step(drag): return
     if drag.run.phase != "finished":
         push_error("The rendered manual quarter-mile pass did not finish: "+drag.run.reason)
         quit(1)
@@ -158,7 +216,7 @@ func run() -> void:
     driver.reaction_delay = -1.0
     drag.set_physics_process(true)
     while drag.run.phase not in ["finished","invalid"]:
-        await physics_frame
+        if not await race_step(drag): return
     if drag.run.reason != "LARGADA EN FALSO":
         push_error("The rendered early launch did not trigger the false-start rule.")
         quit(1)
@@ -214,7 +272,7 @@ func run() -> void:
     drag.set_physics_process(true)
     Engine.time_scale = 3.0
     while -drag.car.position.z<140 and drag.run.phase not in ["finished","invalid"]:
-        await physics_frame
+        if not await race_step(drag): return
     if drag.run.phase!="running":
         push_error("The supplied Gol failed its rendered manual launch.")
         quit(1)
@@ -262,14 +320,14 @@ func run() -> void:
     if not await arm_drag(drag): return
     Engine.time_scale = 3.0
     while -drag.car.position.z<140 and not drag.duel.finished:
-        await physics_frame
+        if not await race_step(drag): return
     drag.set_physics_process(false)
     drag.camera.snap()
     drag._refresh_hud()
     await picture("26-duel-driving")
     drag.set_physics_process(true)
     while not drag.duel.finished:
-        await physics_frame
+        if not await race_step(drag): return
     drag.set_physics_process(false)
     if drag.run.phase!="finished" or drag.opponent_run.phase!="finished":
         push_error("The rendered two-car race did not produce two physical arrivals.")
@@ -298,14 +356,14 @@ func run() -> void:
     if not await arm_drag(drag): return
     Engine.time_scale = 3.0
     while -drag.car.position.z<100 and not drag.duel.finished:
-        await physics_frame
+        if not await race_step(drag): return
     drag.set_physics_process(false)
     drag.camera.snap()
     drag._refresh_hud()
     await picture("32-133-duel-driving")
     drag.set_physics_process(true)
     while not drag.duel.finished:
-        await physics_frame
+        if not await race_step(drag): return
     drag.set_physics_process(false)
     if drag.run.phase!="finished" or drag.opponent_run.phase!="finished" or drag.car.powertrain.config.drivetrain!="RWD":
         push_error("The supplied rear-drive 133 did not complete a two-car physical race.")
@@ -334,14 +392,14 @@ func run() -> void:
     if not await arm_drag(drag): return
     Engine.time_scale = 3.0
     while -drag.car.position.z<60 and not drag.duel.finished:
-        await physics_frame
+        if not await race_step(drag): return
     drag.set_physics_process(false)
     drag.camera.snap()
     drag._refresh_hud()
     await picture("42-mixed-duel-driving")
     drag.set_physics_process(true)
     while not drag.duel.finished:
-        await physics_frame
+        if not await race_step(drag): return
     drag.set_physics_process(false)
     if drag.run.phase!="finished" or drag.opponent_run.phase!="finished" or drag.opponent.model_name!="Fiat 133":
         push_error("The mixed-model exported demonstration did not produce two real arrivals.")
@@ -365,13 +423,16 @@ func run() -> void:
     await process_frame
     await process_frame
     drag = current_scene
+    # Give this actual pedal policy its complete preparation time even when
+    # scene creation/rendering consumed physics ticks before installing it.
+    capture_heat_started_at = drag.procedure.phase_elapsed
     drag.input_provider = func() -> Dictionary: return burnout_controls(drag)
     Engine.time_scale = 3.0
     var cold_front: float = drag.car.powertrain.axles.temperatures.x
     var heated := false
     for frame in range(500):
         await physics_frame
-        if drag.procedure.phase != "burnout" or drag.procedure.phase_elapsed>6.6: break
+        if drag.procedure.phase != "burnout" or drag.procedure.phase_elapsed-capture_heat_started_at>6.6: break
         if drag.car.powertrain.axles.temperatures.x>cold_front+15.0 and drag.car.powertrain.axles.slip_power>1000.0:
             heated = true
             break
