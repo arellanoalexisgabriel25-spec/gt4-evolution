@@ -85,6 +85,11 @@ faltan variante, ficha y transmisión para incorporarlo a carreras de fábrica.
 Godot 4.6.3 compila 72 scripts; la batería reúne 96 suites y 3.651 comprobaciones,
 incluida la recepción de pedales durante pausa. Se revisan 77 capturas 1280×720.
 El cierre de entrega verifica además ZIP extraído, PCK exportado y descarga pública.
+El paquete exportado pasó 124 comprobaciones, 41 capturas y las 10 pruebas de
+audio sobre su mismo PCK. El proyecto extraído pasó las 96 suites completas.
+La captura con MSAA por software tardó 311 s localmente; en GitHub alcanzó el
+límite anterior de 420 s. Se conserva la secuencia completa de 77 imágenes y
+se amplía su presupuesto a 600 s para los servidores sin GPU.
 Las pruebas nuevas
 cubren la preparación completa, reversa, vencimiento del llamado, teclado,
 mando/orden de eventos, foco, visor de pedales, señal de audio, calidad gráfica
