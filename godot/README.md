@@ -1,8 +1,26 @@
-# GT4 Evolution · v0.24 / Transmisión manual y chasis
+# GT4 Evolution · v0.25 / Pedales, largada y audio espacial
 
 Prototipo independiente de automovilismo en Godot 4.6.3. El desarrollo se centra en un **¼ de milla de 402,336 m contra otro auto físico**, con largada, cambios manuales, marcas y desgaste en un entorno original inspirado en el ambiente del autódromo Gálvez. Conserva mercado, garaje, taller, tuning y los modos anteriores. La investigación de GT4 se consulta como referencia; no se incluyen su ejecutable, modelos, texturas ni circuitos comerciales.
 
-## Novedades v0.24
+## Novedades v0.25
+
+En manual, la alineación deja de imponer embrague y freno después del calentamiento.
+La reversa permite volver físicamente al haz; el rival alinea de forma independiente.
+También se conserva control de pedales tras un llamado vencido, sin reabrir el intento.
+Se corrige la pérdida de botones de mando entre observadores y se limpia la entrada
+al perder foco. Las pruebas nuevas recorren la preparación completa de 25 segundos.
+
+**Ctrl + RePág/AvPág** ofrece otra combinación de embrague/cambios con W mantenida.
+C y E/Q siguen disponibles. **F3** muestra pedales recibidos y aplicados; la pausa
+lo ofrece también con mando. La pasada normal conserva el centro libre.
+
+Audio original por capas a 44,1 kHz, fuentes 3D por vehículo y perfiles de motor
+diferenciados. Es síntesis provisional, sin grabaciones verificadas por modelo.
+AJUSTES añade calidad 3D con MSAA apagado, 2× o 4×. El Taos aportado se suma como
+exhibición optimizada hasta identificar su variante y transmisión para carreras.
+[Correcciones y validación](RELEASE-0.25.md).
+
+## Estado histórico: novedades v0.24
 
 Caja manual separada del embrague: sincronización con tiempo y par finitos,
 reversa real, acople progresivo, pérdida por patinamiento, temperatura y desgaste
@@ -231,7 +249,7 @@ La recuperación conserva las vueltas ya completadas y la distancia realmente re
 
 ## Límites actuales
 
-La conducción del circuito sigue siendo arcade. El ¼ de milla usa un modelo longitudinal con embrague, cambios manuales y daños mecánicos, asistencia lateral y temperaturas simplificadas. Hay duelos físicos y práctica individual; no hay campeonato de picadas, premios, llaves, finales ni verificación técnica homologada. Los pisos transcritos del reglamento no validan las prestaciones estimadas de los autos. El Uno aportado tiene cinco puertas, el catálogo apunta a tres; los GLB contienen detalles y luces horneados. No hay deformación visual ni simulación completa de neumáticos, suspensión, embrague o diferencial izquierda/derecha. Las colisiones usan cuerpos de personaje, sin intercambio realista de impulsos. Faltan conducción humana, Windows, mando físico y mediciones de rendimiento en GPU real. La evidencia y el estado de comprobación de esta versión se registran en [RELEASE-0.24.md](RELEASE-0.24.md).
+La conducción del circuito sigue siendo arcade. El ¼ de milla usa un modelo longitudinal con embrague, cambios manuales y daños mecánicos, asistencia lateral y temperaturas simplificadas. Hay duelos físicos y práctica individual; no hay campeonato de picadas, premios, llaves, finales ni verificación técnica homologada. Los pisos transcritos del reglamento no validan las prestaciones estimadas de los autos. El Uno aportado tiene cinco puertas, el catálogo apunta a tres; los GLB contienen detalles y luces horneados. No hay deformación visual ni simulación completa de neumáticos, suspensión, embrague o diferencial izquierda/derecha. Las colisiones usan cuerpos de personaje, sin intercambio realista de impulsos. Faltan conducción humana, Windows, mando físico y mediciones de rendimiento en GPU real. La evidencia y el estado de comprobación de esta versión se registran en [RELEASE-0.25.md](RELEASE-0.25.md).
 
 ## Desarrollo y pruebas
 

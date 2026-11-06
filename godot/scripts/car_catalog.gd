@@ -10,6 +10,24 @@ const Regional = preload("res://scripts/regional_vehicle_data.gd")
 const REGIONALS = Regional.MODELS
 const Expanded = preload("res://scripts/expanded_vehicle_data.gd")
 const EXPANDED = Expanded.MODELS
+# Gallery-only scans have no inferred engine or gearbox and never create market
+# offers. Their dimensions/wheel envelopes are render scale estimates only.
+const SHOWROOM_ONLY := ["Volkswagen Taos"]
+const SHOWROOM_DATA := {
+    "Volkswagen Taos": {
+        "key":"vw_taos", "visual_only":true,
+        "size":Vector3(1.84,1.63,4.46), "wheelbase":2.68, "radius":0.33,
+        "paint":Color("a1a8b3"), "wheel_segmentation":"configured_clip",
+        "visual_wheels":[
+            {"center":Vector3(-0.684,-0.1530,-1.2980),"radii":Vector2(0.3462,0.3760)},
+            {"center":Vector3(-0.627,-0.1378,1.3470),"radii":Vector2(0.3616,0.3928)},
+            {"center":Vector3(0.684,-0.1567,-1.2998),"radii":Vector2(0.3422,0.3717)},
+            {"center":Vector3(0.616,-0.1275,1.3503),"radii":Vector2(0.3724,0.4045)},
+        ],
+        "asset":"res://assets/cars/vw_taos/vw_taos.glb",
+        "visual_status":"Escaneo aportado · escala y rig estimados; sin ficha mecánica",
+    },
+}
 const CLASSICS := ["Fiat 128 Súper Europa 1.5", "Fiat 133", "Fiat 128 estándar"]
 const DATA := {
     "Fiat 147 Vivace": {
@@ -81,7 +99,7 @@ const DATA := {
 }
 
 static func definition(model: String) -> Dictionary:
-    return DATA.get(model,{})
+    return DATA.get(model,SHOWROOM_DATA.get(model,{}))
 
 static func flagship(model: String) -> bool:
     return FLAGSHIPS.has(model)

@@ -42,6 +42,9 @@ var tree_phase := "preparation"
 var tree_clock := 0.0
 var staged := true
 var show_tree := false
+var diagnostics_enabled := false
+var input_panel: PanelContainer
+var input_label: Label
 
 func label(parent: Node, value: String, font_size: int) -> Label:
     var node := Label.new()
@@ -146,8 +149,8 @@ func _ready() -> void:
     help_label.add_theme_color_override("font_shadow_color",Color.BLACK)
     help_label.add_theme_constant_override("shadow_offset_x",1)
     help_label.add_theme_constant_override("shadow_offset_y",1)
-    preparation_panel = panel(Rect2(-310,-124,620,104),Vector2(0.5,1))
-    preparation_label = label(preparation_panel,"",17)
+    preparation_panel = panel(Rect2(-310,-146,620,126),Vector2(0.5,1))
+    preparation_label = label(preparation_panel,"",16)
     preparation_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     preparation_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     ticket_panel = panel(Rect2(18,-390,350,370),Vector2(0,1))
@@ -163,6 +166,19 @@ func _ready() -> void:
     ticket_panel.visible = false
     details_panel.visible = false
     help_label.visible = false
+    input_panel = panel(Rect2(-348,126,330,126),Vector2(1,0))
+    input_panel.z_index = 2
+    input_label = label(input_panel,"",12)
+    input_label.add_theme_font_override("font",Style.MONO)
+    input_panel.visible = false
+
+func _input(event: InputEvent) -> void:
+    if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode==KEY_F3:
+        diagnostics_enabled = not diagnostics_enabled
+        get_viewport().set_input_as_handled()
+
+static func pedal_line(controls: Dictionary) -> String:
+    return "A %3.0f  E %3.0f  F %3.0f  M %3.0f" % [maxf(0,float(controls.get("throttle",0.0)))*100,float(controls.get("clutch",0.0))*100,float(controls.get("brake",0.0))*100,float(controls.get("handbrake",0.0))*100]
 
 func refresh(data: Dictionary) -> void:
     var model = data["model"]
@@ -177,6 +193,13 @@ func refresh(data: Dictionary) -> void:
     var duel_result: Dictionary = data.get("duel_result",{})
     var automatic: bool = model.config.transmission_type=="cvt"
     var shift_mode := str(settings.get("shift_mode"))
+    var raw: Dictionary = data.get("raw_controls",settings.live_sample(true,automatic))
+    # Pause freezes mechanics, not the diagnostic of arriving hardware input.
+    # Never execute a scripted driving policy merely to refresh this display.
+    if paused: raw = settings.live_sample(true,automatic)
+    var applied: Dictionary = data.get("applied_controls",raw)
+    input_panel.visible = diagnostics_enabled or paused
+    input_label.text = "PEDALES %% · Aceler/Embrague/Freno/Mano\nENTRADA   %s\nAPLICADO  %s\nMOTOR %.0f RPM · ACOPLE %.0f%%\nEJE %+.0f Nm · CAMBIO %.2f s\nEMBRAGUE %s · F3 mostrar/ocultar" % [pedal_line(raw),pedal_line(applied),model.rpm,model.clutch_engagement*100,model.wheel_torque_nm,model.shift_timer,settings.binding_labels("clutch")]
     var event: Dictionary = feedback.observe(model)
     if not event.is_empty():
         instruments.show_shift(str(event.quality),float(event.duration)+0.12)
@@ -240,7 +263,7 @@ func refresh(data: Dictionary) -> void:
         var up_key: String = settings.key_label("shift_up")
         var handbrake_key: String = settings.key_label("handbrake")
         var stop_keys := clutch_key+" + "+str(settings.key_label("brake"))
-        var guide := "Asistencia de alineación y sostén · Primera con %s+%s.\nMantené %s hasta el verde; el acelerador es independiente." % [clutch_key,up_key,clutch_key]
+        var guide := "Alineación · Primera con %s+%s.\nMantené %s hasta el verde; el acelerador es independiente." % [clutch_key,up_key,clutch_key]
         if procedure_phase=="burnout":
             var technique := "Ráfagas %s + %s/L3 (FWD)" % [settings.key_label("accelerate"),handbrake_key] if model.config.drivetrain=="FWD" else "Ráfagas de acelerador con freno suave"
             guide = "%s+%s: primera · %s.\nPuede avanzar: zona 2,5–35 m · Para parar: %s." % [clutch_key,up_key,technique,stop_keys]
@@ -256,6 +279,7 @@ func refresh(data: Dictionary) -> void:
         # The starter's status belongs above; it must never replace the guide.
         preparation_label.text = guide
         preparation_label.text += "\nGOMAS DL %.0f°C · TR %.0f°C" % [model.axles.temperatures.x,model.axles.temperatures.y]
+        preparation_label.text += "\nENTRADA · "+pedal_line(raw)+" % · Ctrl: embrague"
         if bool(data.get("procedure_ready",false)):
             reaction_label.text = "ALINEADO · MANTENÉ EL FRENO" if automatic else ("ALINEADO · SOSTÉN ASISTIDO" if shift_mode!="manual" else "ALINEADO · MANTENÉ EL EMBRAGUE")
             reaction_label.visible = true

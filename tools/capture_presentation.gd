@@ -1,7 +1,7 @@
 extends SceneTree
 
 const DragDriver = preload("res://tests/drag_test_driver.gd")
-var output := "/workspace/artifacts/presentation-0.24"
+var output := "/workspace/artifacts/presentation-0.25"
 var capture_heat_done := false
 
 func _initialize() -> void:
@@ -188,7 +188,7 @@ func run() -> void:
     await process_frame
     await process_frame
     current_scene._change_tab("inicio")
-    for entry in [["Fiat 147 Vivace","18-147-showroom"],["Fiat Uno Fire 3 puertas","19-uno-showroom"],["Volkswagen Gol Power 3 puertas","20-gol-showroom"],["Fiat 128 Súper Europa 1.5","28-128-super-showroom"],["Fiat 133","29-133-showroom"],["Fiat 128 estándar","30-128-standard-showroom"],["Fiat 125","34-125-showroom"],["Fiat Duna","35-duna-showroom"],["Fiat Cronos","36-cronos-showroom"],["Fiat Siena","37-siena-showroom"],["Fiat Punto","38-punto-showroom"],["Fiat Regatta","39-regatta-showroom"],["Fiat 500 Sport","40-500-showroom"],["Chevrolet Corsa 5 puertas","51-corsa-showroom"],["Volkswagen Amarok","52-amarok-showroom"],["Ford Ranger cabina simple","53-ranger-showroom"],["Ford EcoSport","54-ecosport-showroom"],["Toyota Corolla","55-corolla-showroom"],["Fiat Palio 5 puertas","56-palio-showroom"],["Toyota Yaris Sedán","61-yaris-showroom"],["Ford Ka 3 puertas","62-ka-showroom"],["Peugeot 208","63-208-showroom"],["Volkswagen Polo Classic","64-polo-showroom"],["Volkswagen Virtus","65-virtus-showroom"],["Chevrolet Onix","66-onix-showroom"],["Toyota Corolla Cross","67-cross-showroom"]]:
+    for entry in [["Fiat 147 Vivace","18-147-showroom"],["Fiat Uno Fire 3 puertas","19-uno-showroom"],["Volkswagen Gol Power 3 puertas","20-gol-showroom"],["Fiat 128 Súper Europa 1.5","28-128-super-showroom"],["Fiat 133","29-133-showroom"],["Fiat 128 estándar","30-128-standard-showroom"],["Fiat 125","34-125-showroom"],["Fiat Duna","35-duna-showroom"],["Fiat Cronos","36-cronos-showroom"],["Fiat Siena","37-siena-showroom"],["Fiat Punto","38-punto-showroom"],["Fiat Regatta","39-regatta-showroom"],["Fiat 500 Sport","40-500-showroom"],["Chevrolet Corsa 5 puertas","51-corsa-showroom"],["Volkswagen Amarok","52-amarok-showroom"],["Ford Ranger cabina simple","53-ranger-showroom"],["Ford EcoSport","54-ecosport-showroom"],["Toyota Corolla","55-corolla-showroom"],["Fiat Palio 5 puertas","56-palio-showroom"],["Toyota Yaris Sedán","61-yaris-showroom"],["Ford Ka 3 puertas","62-ka-showroom"],["Peugeot 208","63-208-showroom"],["Volkswagen Polo Classic","64-polo-showroom"],["Volkswagen Virtus","65-virtus-showroom"],["Chevrolet Onix","66-onix-showroom"],["Toyota Corolla Cross","67-cross-showroom"],["Volkswagen Taos","75-taos-showroom"]]:
         current_scene._feature(entry[0])
         await picture(entry[1])
     current_scene._change_tab("taller")
@@ -444,6 +444,13 @@ func run() -> void:
     var transmission_choice: OptionButton = current_scene.content.get_node("TransmissionAssist")
     settings_scroll.scroll_vertical += maxi(0,int(transmission_choice.global_position.y-settings_scroll.global_position.y-55.0))
     await picture("72-transmission-settings")
+    var visual_quality = current_scene.content.find_child("VisualQuality",true,false)
+    if visual_quality==null:
+        push_error("Visual quality settings are missing")
+        quit(1)
+        return
+    settings_scroll.scroll_vertical = maxi(0,int(visual_quality.position.y)-35)
+    await picture("77-visual-quality")
     if not session.menu_music.player.playing or session.menu_music.track_id()!="butakera":
         push_error("The new Ogg playlist track did not play in the actual menu.")
         quit(1)
@@ -567,6 +574,17 @@ func run() -> void:
     drag.camera.snap()
     drag._refresh_hud()
     await picture("73-reverse-driving")
+    var diagnose := InputEventKey.new()
+    diagnose.physical_keycode = KEY_F3
+    diagnose.pressed = true
+    Input.parse_input_event(diagnose)
+    Input.flush_buffered_events()
+    drag._refresh_hud()
+    if not drag.hud.input_panel.visible:
+        push_error("F3 did not expose the actual received/applied pedals")
+        quit(1)
+        return
+    await picture("76-pedal-diagnostics")
     drag.input_provider = Callable()
     drag._back_to_garage()
     await process_frame

@@ -39,8 +39,29 @@ func await_automatic_start(scene) -> bool:
 
 func run() -> void:
     var session = root.get_node("GameSession")
-    check(session.VERSION=="0.24","The exported PCK carries the current game version")
+    check(session.VERSION=="0.25","The exported PCK carries the current game version")
     check(session.controls.shift_mode=="manual" and not session.controls.auto_rev_match,"The shipping defaults disclose manual control without rev-matching assistance")
+    check(session.controls.secondary_keycodes("clutch").has(KEY_CTRL) and session.controls.secondary_keycodes("shift_up").has(KEY_PAGEUP),"The shipping controls retain hardware-friendly alternative manual chords")
+    check(session.controls.msaa_level()==Viewport.MSAA_2X,"The packaged default applies the explicit balanced graphics preference")
+    check(Catalog.SHOWROOM_ONLY==["Volkswagen Taos"] and not Catalog.has_definition("Volkswagen Taos"),"The Taos exhibition cannot masquerade as an unimplemented factory transmission")
+    var exhibit=Visual.new()
+    exhibit.model_name="Volkswagen Taos"
+    root.add_child(exhibit)
+    await process_frame
+    check(exhibit.imported_model and exhibit.wheels.size()==4,"The shipping Taos resolves its optimized mesh, texture and four wheel rig")
+    exhibit.queue_free()
+    await process_frame
+    var sound_profile=load("res://scripts/engine_sound_profile.gd").from_vehicle(Config.new(),"Fiat 147 Vivace")
+    var sound=load("res://scripts/engine_sound_synth.gd").new()
+    sound.configure(sound_profile,44100.0)
+    sound.set_state(3500.0,0.9,true,false,0.0,0.0)
+    var waveform: PackedVector2Array=sound.render(2048)
+    var audio_energy:=0.0
+    var bounded:=true
+    for sample in waveform:
+        bounded=bounded and sample.is_finite() and absf(sample.x)<=1.0 and absf(sample.y)<=1.0
+        audio_energy+=sample.length_squared()
+    check(waveform.size()==2048 and bounded and audio_energy>0.01,"The packaged engine synthesizer produces finite audible samples without clipped peaks")
     var gearbox_car = Model.new()
     gearbox_car.rpm = 6000.0
     gearbox_car.throttle = 1.0

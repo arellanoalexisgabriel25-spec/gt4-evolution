@@ -18,6 +18,7 @@ const WARMUP_LIMIT := 35.0
 const RivalDriver = preload("res://scripts/drag_rival_driver.gd")
 var procedure = Procedure.new()
 var alignment_pending := false
+var _opponent_alignment_pending := false
 var strip
 var car
 var camera
@@ -47,6 +48,7 @@ var duel_result: Dictionary = {}
 var opponent_audio
 var opponent_name := "Nico Vega"
 var _sampled_controls: Dictionary = {}
+var _applied_controls: Dictionary = {}
 var _last_player_ready := false
 
 func _ready() -> void:
@@ -86,6 +88,8 @@ func _ready() -> void:
     hud.camera_requested.connect(_cycle_camera)
     engine_audio = Audio.new()
     engine_audio.model = car.powertrain
+    engine_audio.vehicle_model = car.model_name
+    engine_audio.source_actor = car
     add_child(engine_audio)
     if is_duel:
         _create_opponent(vehicle)
@@ -95,6 +99,7 @@ func _ready() -> void:
     pause_menu.mode = self
     canvas.add_child(pause_menu)
     Input.joy_connection_changed.connect(_controller_connection)
+    get_window().focus_exited.connect(_focus_lost)
     if not enabled:
         message = "Seleccioná un auto propio y apto desde el garaje."
     _refresh_hud()
@@ -121,6 +126,8 @@ func _create_opponent(vehicle: Dictionary) -> void:
     opponent_driver.controls(opponent.powertrain,0,1.0/60.0)
     opponent_audio = Audio.new()
     opponent_audio.model = opponent.powertrain
+    opponent_audio.vehicle_model = opponent.model_name
+    opponent_audio.source_actor = opponent
     add_child(opponent_audio)
     opponent_audio.volume_db = -24.0
 
@@ -128,7 +135,7 @@ func _advance_opponent(delta: float) -> void:
     var controls: Dictionary = opponent_driver.controls(opponent.powertrain,opponent_run.clock,delta)
     if opponent_run.phase in ["finished","invalid"] or duel.finished:
         controls = {"throttle":0.0,"clutch":1.0,"brake":0.8,"steer":0.0}
-    if alignment_pending or procedure.phase=="expired":
+    if _opponent_alignment_pending or procedure.phase=="expired":
         controls = {"throttle":0.0,"clutch":1.0,"brake":1.0,"steer":0.0}
     opponent.drive_manual(delta,controls,absf(opponent.position.x)<8.5)
 
@@ -186,6 +193,17 @@ func _controller_connection(device: int, connected: bool) -> void:
         message = "Mando desconectado · Reconectá o continuá con teclado"
         message_time = 5.0
 
+func _focus_lost() -> void:
+    # Alt-Tab may prevent a matching pedal/button release reaching the scene.
+    # Clear the cached input and pause explicitly; focus returning never resumes.
+    for action_name in GameSession.controls.all_keys():
+        Input.action_release(Controls.action(action_name))
+    GameSession.controls.controller.reset_cached()
+    if enabled and not leaving:
+        paused = true
+        message = "VENTANA INACTIVA · P/Inicio para continuar"
+        message_time = 5.0
+
 func _in_lane() -> bool:
     return absf(car.position.x-Strip.LANE_X) <= 2.7
 
@@ -213,19 +231,26 @@ func _advance_procedure(delta: float, controls: Dictionary = {}) -> void:
         return
     if procedure.phase=="burnout" and not _warmup_in_zone():
         procedure.cancel_start("FUERA DE ZONA DE CALENTAMIENTO · R PARA REPETIR")
-    if alignment_pending:
-        if absf(car.powertrain.speed_mps)<0.15 and (not is_duel or absf(opponent.powertrain.speed_mps)<0.15):
-            car.align_for_start(Vector3(Strip.LANE_X,0.75,0))
-            if is_duel:
-                opponent.align_for_start(Vector3(-Strip.LANE_X,0.75,0))
-            alignment_pending = false
-            camera.snap()
+    if alignment_pending and car.powertrain.gear<0:
+        # Selecting reverse is an explicit choice to return to the beam under
+        # the driver's own controls. Do not stop/teleport that return forever.
+        alignment_pending = false
+    if alignment_pending and absf(car.powertrain.speed_mps)<0.15:
+        car.align_for_start(Vector3(Strip.LANE_X,0.75,0))
+        alignment_pending = false
+        camera.snap()
+    # Each lane owns its preparation movement. A manual reverse return must
+    # never leave the AI waiting five metres in front of its timing beam.
+    if _opponent_alignment_pending and absf(opponent.powertrain.speed_mps)<0.15:
+        opponent.align_for_start(Vector3(-Strip.LANE_X,0.75,0))
+        _opponent_alignment_pending = false
     var previous_phase: String = procedure.phase
     if controls.is_empty(): controls=_controls()
     _last_player_ready = _ready_for_start(controls) and not alignment_pending
-    procedure.advance(delta,_last_player_ready,_opponent_ready() and not alignment_pending)
+    procedure.advance(delta,_last_player_ready,_opponent_ready() and not _opponent_alignment_pending)
     if previous_phase=="burnout" and procedure.phase=="staging":
         alignment_pending = true
+        _opponent_alignment_pending = is_duel
     if procedure.consume_start():
         _arm(controls)
 
@@ -281,9 +306,10 @@ func _physics_process(delta: float) -> void:
         controls["clutch"] = 1.0
         message = "MECÁNICA NO APTA · Volvé al taller para reparar"
         message_time = 2.0
-    if procedure.phase=="staging":
-        # The disclosed staging assist holds the car while the driver prepares
-        # first gear and physically holds the clutch. It ends at tree arming.
+    if procedure.phase=="staging" and car.powertrain.shift_mode!="manual" and car.powertrain.config.transmission_type!="cvt" and car.powertrain.gear>=0:
+        # Only an explicitly selected clutch assistance mode may retain the
+        # clutch while waiting. Full manual and reverse obey the actual pedals.
+        # The previous unconditional hold made R appear engaged but immobile.
         controls["clutch"] = 1.0
         controls["brake"] = 1.0
         controls["handbrake"] = 0.0
@@ -293,15 +319,18 @@ func _physics_process(delta: float) -> void:
         controls["clutch"] = 1.0
         controls["brake"] = 1.0
         controls["handbrake"] = 0.0
-    if alignment_pending or procedure.phase=="expired":
+    if alignment_pending:
         controls["throttle"] = 0.0
         controls["brake"] = 1.0
         controls["clutch"] = 1.0
         controls["handbrake"] = 0.0
+    # A missed call cancels the sporting attempt, not the driver's pedals.
+    # They may stop/return in reverse; the expired procedure cannot arm a race.
     if run.phase == "finished" or (is_duel and run.phase=="invalid") or (is_duel and duel.finished):
         controls["throttle"] = 0.0
         controls["brake"] = maxf(0.65,float(controls.get("brake",0.0)))
         controls["clutch"] = 1.0
+    _applied_controls = controls.duplicate()
     car.drive_manual(delta,controls,absf(car.position.x)<8.5)
     garage.measured_distance = car.distance_m
     if is_duel:
@@ -324,7 +353,7 @@ func _physics_process(delta: float) -> void:
 
 func _refresh_hud() -> void:
     var best: Dictionary = (GameSession.career.stock_drag_records if is_duel else GameSession.career.drag_records).best_for_profile(GameSession.selected_vehicle,garage.record_profile)
-    hud.refresh({"readiness_issue":_readiness_issue(_sampled_controls) if procedure.phase=="staging" else "","launch_hint":_launch_hint(_sampled_controls),"procedure_phase":procedure.phase,"procedure_remaining":procedure.remaining,"procedure_message":procedure.status(),"procedure_ready":procedure.player_ready and procedure.rival_ready,"model":car.powertrain,"run":run,"settings":GameSession.controls,"name":car.model_name,"position":-car.position.z,"best":best,"staged":_staged(),"can_arm":procedure.phase=="countdown" and _last_player_ready,"message":message,"paused":paused,"personal_best":personal_best,"wear_start":attempt_wear_start,"impacts":car.damage.impacts,"damage":car.damage.cumulative,"duel":is_duel,"opponent_name":opponent_name,"opponent_model":opponent.model_name if is_duel else "","opponent_run":opponent_run,"opponent_gap":opponent.position.z-car.position.z if is_duel else 0.0,"duel_result":duel_result,"zero_to_hundred":car.zero_to_hundred,"class_data":class_data,"ground":car.ground_state})
+    hud.refresh({"raw_controls":_sampled_controls,"applied_controls":_applied_controls,"readiness_issue":_readiness_issue(_sampled_controls) if procedure.phase=="staging" else "","launch_hint":_launch_hint(_sampled_controls),"procedure_phase":procedure.phase,"procedure_remaining":procedure.remaining,"procedure_message":procedure.status(),"procedure_ready":procedure.player_ready and procedure.rival_ready,"model":car.powertrain,"run":run,"settings":GameSession.controls,"name":car.model_name,"position":-car.position.z,"best":best,"staged":_staged(),"can_arm":procedure.phase=="countdown" and _last_player_ready,"message":message,"paused":paused,"personal_best":personal_best,"wear_start":attempt_wear_start,"impacts":car.damage.impacts,"damage":car.damage.cumulative,"duel":is_duel,"opponent_name":opponent_name,"opponent_model":opponent.model_name if is_duel else "","opponent_run":opponent_run,"opponent_gap":opponent.position.z-car.position.z if is_duel else 0.0,"duel_result":duel_result,"zero_to_hundred":car.zero_to_hundred,"class_data":class_data,"ground":car.ground_state})
 
 func _shift(direction: int) -> void:
     if enabled and not leaving and not paused and run.phase not in ["finished","invalid"]:
@@ -339,9 +368,11 @@ func _recover() -> void:
         return
     car.recover(Vector3(Strip.LANE_X,0.75,-WARMUP_POSITION))
     _sampled_controls.clear()
+    _applied_controls.clear()
     _last_player_ready = false
     procedure.reset()
     alignment_pending = false
+    _opponent_alignment_pending = false
     attempt_wear_start = car.powertrain.wear.duplicate(true)
     run = Run.new()
     if is_duel:

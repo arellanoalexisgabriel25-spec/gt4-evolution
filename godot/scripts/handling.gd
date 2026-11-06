@@ -9,6 +9,7 @@ static func configuration(vehicle: Dictionary):
     var model := str(vehicle.get("model", ""))
     var front := model.contains("Civic") or model.contains("Prelude") or model.contains("FTO") or Catalog.flagship(model)
     var local: Dictionary = Catalog.definition(model)
+    if bool(local.get("visual_only",false)): local = {}
     if not local.is_empty():
         front = str(local.get("drivetrain","FWD"))=="FWD"
     var config = (FWD if front else RWD).duplicate()

@@ -131,5 +131,16 @@ func run() -> void:
     for i in range(3): await physics_frame
     check(scene.procedure.phase=="expired" and scene.procedure.reason.contains("ZONA DE CALENTAMIENTO") and not scene.alignment_pending,"Leaving the 35-metre warming zone cancels authorization explicitly")
     check(scene.car.position.z<=-35.5 and scene.run.phase=="preparation" and scene.run.clock==0.0 and not scene.duel.started,"Out-of-zone cancellation never teleports the car to a ready beam or starts a race")
+    var cancelled_pedals := {"throttle":0.35,"clutch":1.0,"brake":1.0,"handbrake":0.0,"steer":0.0}
+    scene.input_provider=func() -> Dictionary: return cancelled_pedals
+    check(scene.car.powertrain.request_shift(-1,1.0),"A cancelled preparation still allows the driver to select reverse deliberately")
+    for i in range(30): await physics_frame
+    var cancelled_origin: float=scene.car.position.z
+    cancelled_pedals.clutch=0.55
+    cancelled_pedals.brake=0.0
+    for i in range(90): await physics_frame
+    check(scene.car.powertrain.speed_mps< -0.2 and scene.car.position.z>cancelled_origin+0.2,"Expiry cannot create a hidden clutch/brake lock that makes reverse immobile")
+    check(scene.procedure.phase=="expired" and not scene.duel.started and scene.run.clock==0.0 and scene.duel_result.is_empty(),"Returning after a cancelled call cannot reopen the race or create a result")
+    check(session.game.balance==balance and session.career.reputation==reputation,"Free physical control after expiry creates no credits or sporting progress")
     if not failed: print("PASS: %d automatic drag start integration assertions" % checks)
     quit(1 if failed else 0)

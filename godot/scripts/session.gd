@@ -2,7 +2,7 @@ extends Node
 
 const Economy = preload("res://scripts/economy.gd")
 const Career = preload("res://scripts/career.gd")
-const VERSION := "0.24"
+const VERSION := "0.25"
 const ControlSettings = preload("res://scripts/control_settings.gd")
 const Catalog = preload("res://scripts/car_catalog.gd")
 const DragClasses = preload("res://scripts/drag_class_rules.gd")
@@ -29,6 +29,7 @@ func _ready() -> void:
     if not controls.load_file():
         controls.restore_defaults()
         last_notice = "No se pudo leer la configuración de controles. Se usan los valores por defecto."
+    apply_visual_quality()
     menu_music = Music.new()
     add_child(menu_music)
     menu_music.set_volume(controls.music_volume)
@@ -42,6 +43,9 @@ func _controller_connection(device: int, connected: bool) -> void:
 
 func _input(event: InputEvent) -> void:
     controls.controller.feed(event)
+
+func apply_visual_quality() -> void:
+    get_viewport().msaa_3d = controls.msaa_level()
 
 func reset() -> void:
     game = Economy.new()
@@ -133,7 +137,7 @@ func choose_vehicle(car_id: int) -> bool:
     if not entry_ticket.is_empty() and int(entry_ticket["vehicle_id"]) != car_id:
         return false
     var car: Dictionary = game.find_car(car_id)
-    if car.is_empty() or car.get("owner", "") != "player" or not game.eligible(car):
+    if car.is_empty() or Catalog.SHOWROOM_ONLY.has(str(car.get("model",""))) or car.get("owner", "") != "player" or not game.eligible(car):
         return false
     selected_vehicle = car_id
     return true

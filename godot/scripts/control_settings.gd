@@ -2,12 +2,17 @@ extends RefCounted
 
 const DEFAULT_KEYS := {"accelerate":KEY_W, "reverse":KEY_S, "left":KEY_A, "right":KEY_D, "brake":KEY_SPACE, "recover":KEY_R, "pause":KEY_P}
 const DRAG_KEYS := {"shift_up":KEY_E,"shift_down":KEY_Q,"clutch":KEY_C,"handbrake":KEY_H}
+# Modifier keys are normally wired outside a low-cost keyboard's letter matrix.
+# These second bindings give the driver another physical chord when W+C+E is
+# blocked by the keyboard hardware. They do not operate the clutch automatically.
+const DRAG_ALIASES := {"clutch":[KEY_CTRL],"shift_up":[KEY_PAGEUP],"shift_down":[KEY_PAGEDOWN]}
 const ARROWS := {"accelerate":KEY_UP, "reverse":KEY_DOWN, "left":KEY_LEFT, "right":KEY_RIGHT}
 const TITLES := {"accelerate":"Acelerar", "reverse":"Frenar / reversa", "left":"Girar a la izquierda", "right":"Girar a la derecha", "brake":"Freno", "recover":"Recuperar vehículo", "pause":"Pausar","shift_up":"Subir marcha (¼ milla)","shift_down":"Bajar marcha (¼ milla)","clutch":"Embrague (¼ milla)","handbrake":"Freno de mano (¼ milla)"}
 const FILE_PATH := "user://controls_v1.json"
 const Controller = preload("res://scripts/controller_state.gd")
 const Playlist = preload("res://scripts/menu_playlist.gd")
 const SHIFT_MODES := ["manual","auto_clutch","semi_auto"]
+const VISUAL_QUALITIES := ["performance","balanced","high"]
 var controller = Controller.new()
 var keys: Dictionary = DEFAULT_KEYS.duplicate()
 var drag_keys: Dictionary = DRAG_KEYS.duplicate()
@@ -23,16 +28,17 @@ var music_track_id := "perra"
 var music_shuffle := false
 var shift_mode := "manual"
 var auto_rev_match := false
+var visual_quality := "balanced"
 
 static func action(name: String) -> String:
     return "evo_" + name
 
 static func valid_key(code: int) -> bool:
-    return (code >= KEY_A and code <= KEY_Z) or (code >= KEY_0 and code <= KEY_9) or code == KEY_SPACE
+    return (code >= KEY_A and code <= KEY_Z) or (code >= KEY_0 and code <= KEY_9) or code in [KEY_SPACE,KEY_CTRL,KEY_PAGEUP,KEY_PAGEDOWN]
 
 func bind(name: String, code: int) -> String:
     if (not keys.has(name) and not drag_keys.has(name)) or not valid_key(code):
-        return "Elegí una letra, un número o Espacio. Esc cancela."
+        return "Elegí una letra, un número, Espacio, Ctrl, RePág o AvPág. Esc cancela."
     var bindings := all_keys()
     for other in bindings:
         if other != name and int(bindings[other]) == code:
@@ -59,7 +65,11 @@ func restore_defaults() -> void:
     music_shuffle = false
     shift_mode = "manual"
     auto_rev_match = false
+    visual_quality = "balanced"
     apply()
+
+func msaa_level() -> int:
+    return {"performance":Viewport.MSAA_DISABLED,"balanced":Viewport.MSAA_2X,"high":Viewport.MSAA_4X}.get(visual_quality,Viewport.MSAA_2X)
 
 func apply() -> void:
     var bindings := all_keys()
@@ -76,6 +86,10 @@ func apply() -> void:
             var arrow := InputEventKey.new()
             arrow.physical_keycode = ARROWS[name]
             InputMap.action_add_event(mapped, arrow)
+        for code in secondary_keycodes(name):
+            var alternate := InputEventKey.new()
+            alternate.physical_keycode = code
+            InputMap.action_add_event(mapped,alternate)
 
 static func axis(value: float, zone: float) -> float:
     var safe_zone := clampf(zone, 0.0, 0.95)
@@ -116,12 +130,23 @@ func key_strength(name: String) -> float:
     var code: int = all_keys().get(name,0)
     if code>0 and Input.is_physical_key_pressed(code): value=1.0
     if ARROWS.has(name) and Input.is_physical_key_pressed(int(ARROWS[name])): value=1.0
+    for alternate in secondary_keycodes(name):
+        if Input.is_physical_key_pressed(alternate): value=1.0
     return value
 
 func key_event_pressed(event: InputEvent, name: String) -> bool:
     if not event is InputEventKey or not event.pressed or event.echo: return false
     var code: int = event.physical_keycode if event.physical_keycode>0 else event.keycode
-    return code==int(all_keys().get(name,0))
+    return code==int(all_keys().get(name,0)) or secondary_keycodes(name).has(code)
+
+func secondary_keycodes(name: String) -> Array[int]:
+    var result: Array[int] = []
+    var bindings := all_keys()
+    for code in DRAG_ALIASES.get(name,[]):
+        # A user's primary assignment always wins over a convenience alias.
+        # This also prevents two actions when loading a customized old file.
+        if not bindings.values().has(code): result.append(int(code))
+    return result
 
 func all_keys() -> Dictionary:
     var bindings := keys.duplicate()
@@ -130,7 +155,15 @@ func all_keys() -> Dictionary:
 
 func key_label(name: String) -> String:
     var code: int = all_keys().get(name,0)
-    return "Espacio" if code == KEY_SPACE else OS.get_keycode_string(code)
+    return _key_title(code)
+
+static func _key_title(code: int) -> String:
+    return {KEY_SPACE:"Espacio",KEY_CTRL:"Ctrl",KEY_PAGEUP:"RePág",KEY_PAGEDOWN:"AvPág"}.get(code,OS.get_keycode_string(code))
+
+func binding_labels(name: String) -> String:
+    var labels: PackedStringArray = [key_label(name)]
+    for code in secondary_keycodes(name): labels.append(_key_title(code))
+    return "/".join(labels)
 
 func clutch_input() -> float:
     var value := key_strength("clutch")
@@ -139,6 +172,27 @@ func clutch_input() -> float:
     if controller.pressed(JOY_BUTTON_LEFT_SHOULDER):
         value = 1.0
     return value
+
+# Raw driver samples for a diagnostic HUD. This exposes no assisted pedal and
+# never infers an unreported key: missing hardware events remain visible.
+func live_sample(manual_mode: bool = true, automatic: bool = false) -> Dictionary:
+    var sample := read_controls(manual_mode,automatic)
+    sample["clutch"] = clutch_input()
+    var keyboard_throttle := key_strength("accelerate")
+    var keyboard_brake := key_strength("brake")
+    if manual_mode:
+        keyboard_brake = maxf(keyboard_brake,key_strength("reverse"))
+    else:
+        keyboard_throttle -= key_strength("reverse")
+    sample["keyboard"] = {"throttle":keyboard_throttle,"clutch":key_strength("clutch"),"brake":keyboard_brake,"handbrake":key_strength("handbrake") if manual_mode else 0.0}
+    var selected := controller.selected()
+    var pad_throttle := maxf(0.0,axis(controller.axis_value(JOY_AXIS_TRIGGER_RIGHT),trigger_deadzone))
+    var pad_clutch := maxf(0.0,axis(controller.axis_value(JOY_AXIS_TRIGGER_LEFT),trigger_deadzone)) if analog_clutch else 0.0
+    if controller.pressed(JOY_BUTTON_LEFT_SHOULDER): pad_clutch=1.0
+    var pad_brake := maxf(0.0,axis(controller.axis_value(JOY_AXIS_TRIGGER_LEFT),trigger_deadzone)) if not analog_clutch or not manual_mode or automatic else 0.0
+    if manual_mode and controller.pressed(JOY_BUTTON_B): pad_brake=1.0
+    sample["controller"] = {"device":selected,"throttle":pad_throttle,"clutch":pad_clutch,"brake":pad_brake,"handbrake":1.0 if manual_mode and controller.pressed(JOY_BUTTON_LEFT_STICK) else 0.0}
+    return sample
 
 func camera_look() -> Dictionary:
     var look := Vector2.ZERO
@@ -152,11 +206,14 @@ func help_text() -> String:
     return "%s/↑ acelerar · %s/↓ reversa · %s/%s girar\n%s freno · %s recuperar · %s pausa · Esc garaje\nMando: RT/LT acelerar/frenar · B reversa\nStick/cruceta girar · X recuperar · Inicio pausa" % [key_label("accelerate"),key_label("reverse"),key_label("left"),key_label("right"),key_label("brake"),key_label("recover"),key_label("pause")]
 
 func to_dict() -> Dictionary:
-    return {"version":1, "keys":keys.duplicate(), "drag_keys":drag_keys.duplicate(),"deadzone":deadzone,"camera_mode":camera_mode,"keyboard_steering":keyboard_steering,"trigger_deadzone":trigger_deadzone,"analog_clutch":analog_clutch,"traction_control":traction_control,"abs_assist":abs_assist,"music_volume":music_volume,"music_track_id":music_track_id,"music_shuffle":music_shuffle,"shift_mode":shift_mode,"auto_rev_match":auto_rev_match}
+    return {"version":1, "keys":keys.duplicate(), "drag_keys":drag_keys.duplicate(),"deadzone":deadzone,"camera_mode":camera_mode,"keyboard_steering":keyboard_steering,"trigger_deadzone":trigger_deadzone,"analog_clutch":analog_clutch,"traction_control":traction_control,"abs_assist":abs_assist,"music_volume":music_volume,"music_track_id":music_track_id,"music_shuffle":music_shuffle,"shift_mode":shift_mode,"auto_rev_match":auto_rev_match,"visual_quality":visual_quality}
 
 func from_dict(data: Dictionary) -> bool:
     var mode = data.get("shift_mode","manual")
     var matching = data.get("auto_rev_match",false)
+    var quality = data.get("visual_quality","balanced")
+    if typeof(quality)!=TYPE_STRING or not VISUAL_QUALITIES.has(quality):
+        return false
     if typeof(mode)!=TYPE_STRING or not SHIFT_MODES.has(mode) or typeof(matching)!=TYPE_BOOL:
         return false
     var song = data.get("music_track_id","perra")
@@ -233,6 +290,7 @@ func from_dict(data: Dictionary) -> bool:
     music_shuffle = shuffled
     shift_mode = mode
     auto_rev_match = matching
+    visual_quality = quality
     analog_clutch = data.get("analog_clutch",false)
     traction_control = data.get("traction_control",false)
     abs_assist = data.get("abs_assist",true)

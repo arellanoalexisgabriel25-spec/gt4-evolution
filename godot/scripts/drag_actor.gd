@@ -133,8 +133,8 @@ func reset_metrics() -> void:
     zero_to_hundred = -1.0
     acceleration_clock = 0.0
 
-# The manual drag gearbox has no reverse gear yet. The starter's pre-race
-# alignment assist moves the collider only before either timing beam is armed.
+# The optional starter alignment moves the collider only before either timing
+# beam is armed. Selecting reverse lets the driver return physically instead.
 # This is disclosed to the player; it never repairs, cools or resets session use.
 func align_for_start(location: Vector3) -> void:
     global_position = location

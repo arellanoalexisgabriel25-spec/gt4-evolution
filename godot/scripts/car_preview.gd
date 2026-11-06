@@ -14,7 +14,9 @@ func _ready() -> void:
     viewport = SubViewport.new()
     viewport.size = Vector2i(520,300)
     viewport.own_world_3d = true
-    viewport.msaa_3d = Viewport.MSAA_2X
+    # SceneTree test/tools may preload this script before autoload registration.
+    var session = get_tree().root.get_node_or_null("GameSession")
+    viewport.msaa_3d = session.controls.msaa_level() if session!=null else Viewport.MSAA_2X
     viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
     add_child(viewport)
     var environment := WorldEnvironment.new()

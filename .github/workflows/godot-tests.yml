@@ -7,7 +7,7 @@ permissions:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - name: Install validation and software rendering tools
@@ -33,6 +33,8 @@ jobs:
         run: bash tools/test_game.sh
       - name: Render menu and camera captures with software OpenGL
         run: xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 bash tools/capture_presentation.sh "$RUNNER_TEMP/presentation"
+      - name: Validate spatial audio and producer timing
+        run: xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 bash tools/test_engine_audio.sh
       - name: Upload presentation captures
         uses: actions/upload-artifact@v4
         with:

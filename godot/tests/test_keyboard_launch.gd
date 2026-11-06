@@ -51,7 +51,7 @@ func leave_strip(scene) -> void:
 
 func await_green(scene) -> bool:
     var countdown := false
-    for i in range(900):
+    for i in range(3000):
         await physics_frame
         if scene.run.phase=="countdown": countdown=true
         if scene.run.phase=="running":
@@ -85,7 +85,7 @@ func run() -> void:
     await ticks(30)
     check(scene.car.powertrain.gear==1 and scene.car.powertrain.missed_shifts==0,"W held with E then C in the same frame selects first without a spurious rejection")
     check(scene._controls().throttle==1.0 and scene._controls().clutch==1.0,"Actual accelerator and clutch remain simultaneously held during selection")
-    check(scene.procedure.configure(0.05,10.0,0.05),"The deterministic fixture shortens only starter pacing, not vehicle position or timing state")
+    check(scene.procedure._warmup_seconds==25.0 and scene.procedure._staging_seconds==30.0,"Native keyboard launch retains the full shipped warming and presentation periods")
     var green: bool = await await_green(scene)
     if green:
         check(scene.car.powertrain.gear==1 and scene.car.powertrain.engine_running,"First gear and a running engine survive physical staging and the countdown")
@@ -112,14 +112,16 @@ func run() -> void:
         check(scene.car.powertrain.gear==1 and scene.car.powertrain.missed_shifts==misses,"W + C + Q also downshifts through the production lever path")
     await leave_strip(scene)
     scene = await open_strip("auto_clutch")
-    check(scene.procedure.configure(0.05,10.0,0.05),"Assisted launch fixture retains the real starter state machine")
+    check(scene.procedure._warmup_seconds==25.0,"Assisted native keyboard launch also retains the full 25-second warming period")
     key(KEY_E,true)
     key(KEY_E,false)
     key(KEY_W,true)
+    key(KEY_S,true)
     green = await await_green(scene)
     if green:
         check(scene.car.powertrain.shift_mode=="auto_clutch" and scene._controls().clutch==0.0,"The optional auto-clutch mode reaches green without a physical clutch pedal")
         var start_z: float = scene.car.position.z
+        key(KEY_S,false)
         await ticks(120)
         check(scene.run.phase=="running" and scene.car.position.z<start_z-1.0 and scene.car.powertrain.speed_mps>1.0,"The disclosed auto-clutch staging hold releases after the actual green and launches the car")
     await leave_strip(scene)

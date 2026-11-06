@@ -72,3 +72,6 @@
 72-transmission-settings
 73-reverse-driving
 74-manual-chassis-telemetry
+75-taos-showroom
+76-pedal-diagnostics
+77-visual-quality

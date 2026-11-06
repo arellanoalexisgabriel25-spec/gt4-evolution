@@ -5,8 +5,8 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.24"
-README = """GT4 EVOLUTION — PROTOTIPO 0.24 / TRANSMISIÓN MANUAL Y CHASIS
+VERSION = "0.25"
+README = """GT4 EVOLUTION — PROTOTIPO 0.25 / PEDALES, LARGADA Y AUDIO ESPACIAL
 
 WINDOWS: extraé TODO el ZIP y abrí GT4Evolution.exe o JUGAR.cmd.
 Es un juego exportado independiente: no necesita Godot instalado ni importar el
@@ -63,8 +63,8 @@ y conserva la salud de tu unidad. La categoría oficial Serie tiene otro alcance
 PREPARACIÓN: hay 25 s de calentamiento autorizado delante de la línea y luego
 30 s para prepararse. Son duraciones del juego, no tiempos oficiales publicados.
 Rojo intermitente/amarillas fondo: calentar; azul: fin y llamado a alinear (art.11).
-El asistente frena, alinea y sostiene sólo antes de cronometrar. La reversa es
-manual; el regreso a línea sigue asistido. Se conservan calor, desgaste y uso. Primera+embrague
+El asistente alinea antes de cronometrar si no seleccionás R. La reversa permite
+volver físicamente; en manual se respetan tus pedales durante la alineación. Se conservan calor, desgaste y uso. Primera+embrague
 sostenidos y ambos autos alineados activan el árbol automáticamente. Enter no inicia.
 
 CONTROLES: C embrague, E sube marcha, Q baja, W acelera, S/Espacio frena.
@@ -78,6 +78,16 @@ REVERSA: detenido, C+Q desde N. Desde primera: bajar a N, esperar el selector,
 bajar otra vez a R. Al verde liberá C/freno de mano; mantener C impide transmitir par.
 Esperá la sincronización y controlá el acople: reducciones excesivas dañan el motor.
 La palanca selecciona al instante; la transmisión entrega par al terminar el acople.
+Alternativa de teclado: Ctrl embrague, RePág sube y AvPág baja; funcionan con W
+mantenida y respetan las teclas reasignadas. F3 muestra pedales recibidos/aplicados.
+En manual, después del calentamiento los pedales siguen bajo tu control. Podés
+seleccionar R para volver físicamente al haz; el rival alinea independientemente.
+Al perder foco, el juego pausa; P/Inicio continúa deliberadamente.
+Audio de motor original por capas, 44,1 kHz, con fuente espacial por vehículo.
+Perfiles de síntesis diferenciados; no son grabaciones certificadas de cada modelo.
+AJUSTES incluye antialiasing apagado/2x/4x. Equilibrada usa 2x por defecto.
+Volkswagen Taos se incorpora sólo a la galería: no tiene una caja manual ficticia
+ni un perfil de carreras hasta identificar su versión y transmisión automática.
 R repite conservando uso/calor; P pausa, Esc garaje, Tab cámara. La telemetría
 completa y la ayuda aparecen al pausar; durante la pasada queda instrumental compacto.
 Mando: RT acelera, LT/B frena, LB embrague, A sube, Y baja, L3 freno de mano,
@@ -100,7 +110,7 @@ Música: trece temas aportados con autorización expresa de redistribución.
 AJUSTES permite elegir tema, anterior/siguiente, aleatorio y volumen.
 La música se desvanece en pista y retoma en los menús. No está cubierta por MIT.
 
-Ver juego/RELEASE-0.24.md en el ZIP Proyecto y documentacion/ en Windows para el
+Ver juego/RELEASE-0.25.md en el ZIP Proyecto y documentacion/ en Windows para el
 alcance exacto y resultados de validación. El entorno valida Linux y el mismo PCK;
 Windows y mando físico requieren prueba en esos equipos. Si no inicia, ejecutá
 DIAGNOSTICO.cmd y compartí juego.log. Licencias incluidas. No se distribuyen

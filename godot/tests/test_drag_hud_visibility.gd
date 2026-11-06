@@ -62,7 +62,7 @@ func run() -> void:
     data.procedure_ready = true
     hud.refresh(data)
     check(hud.status_label.text.contains("LLAMADO") and hud.clock_label.text=="19 s","The starter call and remaining presentation time are visible, rounded upward")
-    check(hud.preparation_label.text.contains("Asistencia de alineación") and hud.reaction_label.text.contains("EMBRAGUE"),"The guide discloses staging assistance and the clutch requirement")
+    check(hud.preparation_label.text.contains("Alineación") and hud.preparation_label.text.contains("Mantené C") and hud.reaction_label.text.contains("EMBRAGUE"),"The manual alignment guide states the driver's actual clutch requirement")
     timer.phase = "countdown"
     timer.clock = 1.2
     hud.refresh(data)

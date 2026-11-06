@@ -239,6 +239,9 @@ func _home() -> void:
     for vehicle in game.cars:
         if vehicle["model"]==home_featured:
             featured = vehicle
+    var showroom_only: bool = Catalog.SHOWROOM_ONLY.has(home_featured)
+    if showroom_only:
+        featured = {"model":home_featured,"owner":"exhibition","id":-1}
     var preview = Preview.new()
     preview.model_name = featured["model"]
     preview.custom_minimum_size = Vector2(380,185)
@@ -248,10 +251,12 @@ func _home() -> void:
     intro.custom_minimum_size.x = 220
     intro.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     hero.add_child(intro)
-    intro.add_child(_label("402,336 M / CAJA MANUAL",23))
+    intro.add_child(_label("GALERÍA / MODELOS 3D" if showroom_only else "402,336 M / CAJA MANUAL",23))
     intro.add_child(_label("De fábrica a la pista. Una pasión por el ¼ de milla.",14))
     intro.add_child(_label(featured["model"],22))
-    if featured["owner"]!="player":
+    if showroom_only:
+        intro.add_child(_label("EN EXHIBICIÓN · FICHA MECÁNICA PENDIENTE",14))
+    elif featured["owner"]!="player":
         intro.add_child(_button("VISITAR EL CONCESIONARIO",_change_tab.bind("mercado")))
     else:
         intro.add_child(_button("DUELO ¼ DE MILLA / FÁBRICA",_drag_duel.bind(int(featured["id"]))))
@@ -262,6 +267,7 @@ func _home() -> void:
     for entry in Catalog.market_order(game.cars):
         var name := str(entry["model"])
         if not models.has(name): models.append(name)
+    models.append_array(Catalog.SHOWROOM_ONLY)
     for index in range(models.size()):
         selector.add_item(models[index])
         if str(models[index])==str(featured["model"]): selector.select(index)
@@ -635,6 +641,7 @@ func _settings() -> void:
     volume_slider.value_changed.connect(_set_music_volume)
     content.add_child(volume_slider)
     content.add_child(_label("MANDO Y AYUDAS / ¼ DE MILLA",22))
+    content.add_child(_label("Teclado: acelerador y embrague son independientes. Alternativa para pulsaciones simultáneas: W + Ctrl + RePág/AvPág. F3 en pista muestra la entrada de pedales y la orden aplicada.",14))
     var shifting := OptionButton.new()
     shifting.name = "TransmissionAssist"
     for title in ["MANUAL TOTAL · EMBRAGUE FÍSICO","EMBRAGUE AUTOMÁTICO · CAMBIO A CARGO DEL PILOTO","SEMIAUTOMÁTICA · LEVAS Y ACOPLE ASISTIDO"]:
@@ -669,6 +676,16 @@ func _settings() -> void:
         content.add_child(toggle)
     content.add_child(_label("Stick/cruceta navega; A confirma; B vuelve; LB/RB cambia pestaña. Izquierda/derecha ajusta opciones y volumen.",14))
     content.add_child(_label("CÁMARA Y DIRECCIÓN",22))
+    var quality := OptionButton.new()
+    quality.name = "VisualQuality"
+    for title in ["CALIDAD 3D: RENDIMIENTO · SIN MSAA","CALIDAD 3D: EQUILIBRADA · MSAA 2×","CALIDAD 3D: ALTA · MSAA 4×"]:
+        quality.add_item(title)
+    quality.selected = ControlSettings.VISUAL_QUALITIES.find(GameSession.controls.visual_quality)
+    quality.item_selected.connect(func(index):
+        GameSession.controls.visual_quality = ControlSettings.VISUAL_QUALITIES[index]
+        GameSession.apply_visual_quality()
+        _save_controls())
+    content.add_child(quality)
     var camera_choice := OptionButton.new()
     camera_choice.add_theme_font_override("font",Style.FONT)
     camera_choice.add_theme_font_size_override("font_size",20)
@@ -688,7 +705,7 @@ func _settings() -> void:
     steering_slider.value_changed.connect(_set_keyboard_steering)
     content.add_child(steering_slider)
     content.add_child(_label("CONTROLES",22))
-    content.add_child(_label("Elegí una acción y presioná una letra, número o Espacio. Esc cancela. Las flechas siempre funcionan.",14))
+    content.add_child(_label("Elegí una acción: letra, número, Espacio, Ctrl, RePág o AvPág. Esc cancela. Las flechas siempre funcionan; una asignación propia tiene prioridad sobre las alternativas.",14))
     var bindings := GridContainer.new()
     bindings.columns = 2
     bindings.add_theme_constant_override("h_separation",30)
@@ -727,7 +744,7 @@ func _input(event: InputEvent) -> void:
         pending_binding = ""
         notice.text = "Cambio de tecla cancelado."
         return
-    if event.ctrl_pressed or event.alt_pressed or event.meta_pressed or event.shift_pressed:
+    if (event.ctrl_pressed and event.physical_keycode!=KEY_CTRL) or event.alt_pressed or event.meta_pressed or event.shift_pressed:
         notice.text = "Usá una tecla sola, sin modificadores. Esc cancela."
         return
     var issue := GameSession.controls.bind(pending_binding, event.physical_keycode)
@@ -750,6 +767,7 @@ func _set_deadzone(value: float) -> void:
 func _restore_controls() -> void:
     pending_binding = ""
     GameSession.controls.restore_defaults()
+    GameSession.apply_visual_quality()
     GameSession.menu_music.set_volume(GameSession.controls.music_volume)
     GameSession.menu_music.select_track(GameSession.controls.music_track_id)
     GameSession.menu_music.set_shuffle(GameSession.controls.music_shuffle)

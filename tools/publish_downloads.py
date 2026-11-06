@@ -87,7 +87,10 @@ La reacción cuenta para llegar primero. Un falso individual concede al rival
 la excepción del art. 12 aunque su ET caiga. Exhibición sin inscripción ni premios.
 Fábrica conserva salud del garaje y excluye preparaciones; «serie» oficial tiene
 otro alcance. La práctica individual y sus marcas anteriores siguen disponibles.
-La versión 0.24 incorpora sincronización finita, embrague con calor/desgaste,
+La versión 0.25 corrige la retención de embrague/freno durante el llamado.
+Reversa permite regresar físicamente al haz; el rival alinea independientemente.
+Ctrl + RePág/AvPág son alternativas de embrague/cambios con W sostenida.
+F3 muestra los pedales recibidos y aplicados. Se conserva la sincronización finita, embrague con calor/desgaste,
 reversa real y rechazo de cambios. W+C+E/Q funciona sin levantar el acelerador.
 En manual detenido: C+Q desde N selecciona R; C+E primera. Al verde liberá
 embrague y frenos. El HUD indica qué control retiene el auto.
@@ -122,14 +125,17 @@ y parámetros estimados; la calibración de prestaciones sigue pendiente.
 Ver STOCK-SOURCES.md. En Inicio podés elegir todos los modelos; en garaje,
 VER MODELO cambia la vista.
 El taller ofrece calle, deportivos o slick. Los impactos dejan daño mecánico
-persistente; recuperar no repara. Ver RELEASE-0.24.md, MANUAL-TRANSMISSION-0.24.md y REGULATIONS-REFERENCE.md.
+persistente; recuperar no repara. Ver RELEASE-0.25.md, MANUAL-TRANSMISSION-0.24.md y REGULATIONS-REFERENCE.md.
 
 Comprá un auto y abrí **GARAJE → DUELO ¼ DE MILLA / FÁBRICA**.
 Hay 25 s de calentamiento delante de línea, luego azul y 30 s de preparación.
 Son tiempos de juego; el art.11 define las señales, no esas duraciones.
 C+E engrana primera; en FWD, ráfagas de W+H calientan con patinamiento real.
 El auto puede avanzar: C+Espacio frena. Zona 2,5–35 m delante de línea.
-El asistente alinea y sostiene al llamado, conservando calor/desgaste.
+El asistente alinea al llamado salvo si elegís R; manual conserva tus pedales.
+Audio de motor por capas a 44,1 kHz con fuentes espaciales y perfiles diferenciados.
+AJUSTES ofrece MSAA apagado/2x/4x. Taos está en galería sin ficha de carreras.
+Al perder foco pausa; no se reanuda sin una orden nueva.
 Primera+C y ambos listos activan automáticamente el árbol; Enter no lo inicia.
 Esperá el verde y soltá C para largar. C+E/Q cambia sin obligar a soltar W.
 El HUD de pasada es compacto; la pausa muestra telemetría completa.
