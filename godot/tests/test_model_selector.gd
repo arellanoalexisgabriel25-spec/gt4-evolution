@@ -35,7 +35,7 @@ func run() -> void:
     for i in range(3): await process_frame
     selectors=menu.content.find_children("*","OptionButton",true,false)
     check(selectors[0].get_item_text(selectors[0].selected)=="Volkswagen Taos","The exhibition model updates both selector and actual preview")
-    var previews=menu.content.find_children("*","SubViewportContainer",true,false)
+    var previews=menu.content.find_children("*","Control",true,false).filter(func(node): return node.get_script()==preload("res://scripts/car_preview.gd"))
     check(previews.size()==1 and previews[0].model_name=="Volkswagen Taos","The gallery instantiates the supplied Taos instead of silently showing the last drivable car")
     var race_action:=false
     for button in menu.content.find_children("*","Button",true,false):

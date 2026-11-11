@@ -78,6 +78,10 @@ def main():
 - [Descargar proyecto para Godot]({base}/{names[1]})
 
 Extraé TODO el ZIP Windows y abrí **GT4Evolution.exe** o **JUGAR.cmd**.
+La ventana inicia en **1920×1080** y se puede redimensionar. La interfaz se dibuja
+con fuentes vectoriales y los modelos usan filtrado anisotrópico; las texturas
+conservan la resolución de sus archivos de origen. Si el auto sale de la zona
+de calentamiento, el largador llama a alinear: frená y preparate para el verde.
 Es una exportación independiente; no requiere instalar Godot ni importar el proyecto.
 Conservá **GT4Evolution.pck** junto al ejecutable. El ZIP Proyecto conserva las fuentes.
 **GARAJE → DUELO ¼ DE MILLA / FÁBRICA** corre contra otro auto físico.

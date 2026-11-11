@@ -141,20 +141,24 @@ static func _clip_visual_wheel(triangle: Array, contour: Dictionary, width: floa
     return {"inside":inside,"outside":outside}
 
 static func _render_material(source: Material) -> Material:
-    if not source is BaseMaterial3D or source.albedo_texture!=null or not source.emission_enabled or source.emission_texture==null:
+    if not source is BaseMaterial3D:
         return source
-    # The supplied shaded scans store their baked appearance in emission over a
-    # black base. Reuse that unchanged texture as lit albedo in a material copy:
-    # the car then reacts to scene light/shadows instead of illuminating itself.
-    # Never mutate the imported resource; the Gol's actual PBR material is kept.
+    var baked: bool = source.albedo_texture==null and source.emission_enabled and source.emission_texture!=null
+    var textured: bool = source.albedo_texture!=null or source.normal_texture!=null or baked
+    if not textured:
+        return source
+    # Work on a copy: scene-specific filtering and baked scan conversion must
+    # never modify a shared imported GLB material or its original textures.
     var material: BaseMaterial3D = source.duplicate()
-    material.albedo_color = Color.WHITE
-    material.albedo_texture = source.emission_texture
-    material.emission_enabled = false
-    material.emission_texture = null
-    material.emission = Color.BLACK
-    material.metallic = 0.0
-    material.roughness = 0.8
+    material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+    if baked:
+        material.albedo_color = Color.WHITE
+        material.albedo_texture = source.emission_texture
+        material.emission_enabled = false
+        material.emission_texture = null
+        material.emission = Color.BLACK
+        material.metallic = 0.0
+        material.roughness = 0.8
     return material
 
 static func build(profile: Dictionary) -> Dictionary:
@@ -246,6 +250,7 @@ static func build(profile: Dictionary) -> Dictionary:
     var groups: Array = [[],[],[],[],[]]
     var clipped: Array = [[],[],[],[],[]]
     var source_material: Material = mesh_node.mesh.surface_get_material(0)
+    var baked_source: bool = source_material is BaseMaterial3D and source_material.albedo_texture==null and source_material.emission_enabled and source_material.emission_texture!=null
     var material: Material = _render_material(source_material)
     var diffuse: Image
     if configured.is_empty() and material is BaseMaterial3D and material.albedo_texture!=null:
@@ -351,6 +356,6 @@ static func build(profile: Dictionary) -> Dictionary:
         meshes.append(surface.commit())
         counts.append(int((groups[group].size()+clipped[group].size())/3))
     source.free()
-    var result := {"meshes":meshes,"centers":centers,"triangle_counts":counts,"source_triangles":int(indices.size()/3),"render_triangles":counts.reduce(func(total,value): return total+value,0),"size":size,"material_mode":"baked_lit" if material!=source_material else "source","wheel_segmentation":segmentation,"contours":contours}
+    var result := {"meshes":meshes,"centers":centers,"triangle_counts":counts,"source_triangles":int(indices.size()/3),"render_triangles":counts.reduce(func(total,value): return total+value,0),"size":size,"material_mode":"baked_lit" if baked_source else "source","wheel_segmentation":segmentation,"contours":contours}
     cache[cache_key] = result
     return result

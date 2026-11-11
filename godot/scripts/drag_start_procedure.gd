@@ -122,6 +122,19 @@ func consume_start() -> bool:
     _pending_start = false
     return true
 
+# The starter can end the warm-up early if a driver leaves its marked zone.
+# This calls both cars to staging without fabricating a timed race or result.
+func finish_warmup_early() -> bool:
+    if phase != "burnout":
+        return false
+    phase = "staging"
+    phase_elapsed = 0.0
+    ready_elapsed = 0.0
+    player_ready = false
+    rival_ready = false
+    _pending_start = false
+    return true
+
 func cancel_start(message: String) -> void:
     phase = "expired"
     _pending_start = false

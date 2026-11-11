@@ -26,8 +26,9 @@ func run()->void:
         check(session.controls.visual_quality==session.controls.VISUAL_QUALITIES[i] and root.msaa_3d==session.controls.msaa_level(),"A selection applies the current preference to the real game viewport")
         menu._change_tab("inicio")
         await process_frame
-        var previews=menu.content.find_children("*","SubViewportContainer",true,false)
+        var previews=menu.content.find_children("*","Control",true,false).filter(func(node): return node.get_script()==preload("res://scripts/car_preview.gd"))
         check(previews.size()==1 and previews[0].viewport.msaa_3d==root.msaa_3d,"The new showroom inherits the selected antialiasing level")
+        check(previews.size()==1 and previews[0].viewport.size==[Vector2i(520,300),Vector2i(780,450),Vector2i(1040,600)][i],"The showroom resolution scales with the selected quality")
         menu._change_tab("ajustes")
         await process_frame
         option=menu.content.find_child("VisualQuality",true,false)

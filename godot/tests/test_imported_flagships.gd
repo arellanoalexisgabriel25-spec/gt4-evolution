@@ -51,6 +51,9 @@ func run() -> void:
             source.free()
         else:
             check(built.material_mode=="source","The Gol retains its original PBR material")
+        var filtered: BaseMaterial3D = built.meshes[0].surface_get_material(0)
+        if filtered.albedo_texture!=null:
+            check(filtered.texture_filter==BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC,"Textured imported cars use anisotropic mipmaps without changing original assets")
         visual.queue_free()
         await process_frame
     check(Imported.build({"asset":"res://missing.glb"}).is_empty(),"Missing/malformed profiles cannot produce partial render meshes")

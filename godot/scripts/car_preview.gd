@@ -1,4 +1,4 @@
-extends SubViewportContainer
+extends Control
 
 const Style = preload("res://scripts/racing_theme.gd")
 const Visual = preload("res://scripts/car_visual.gd")
@@ -9,16 +9,27 @@ var car
 var viewport: SubViewport
 
 func _ready() -> void:
-    stretch = true
     mouse_filter = Control.MOUSE_FILTER_IGNORE
     viewport = SubViewport.new()
-    viewport.size = Vector2i(520,300)
     viewport.own_world_3d = true
-    # SceneTree test/tools may preload this script before autoload registration.
+    # Match the 1080p window scale without making the low-cost setting heavier.
+    # The imported 3D preview otherwise gets enlarged from just 520x300.
     var session = get_tree().root.get_node_or_null("GameSession")
+    var quality: String = session.controls.visual_quality if session!=null else "balanced"
+    viewport.size = {"performance":Vector2i(520,300),"balanced":Vector2i(780,450),"high":Vector2i(1040,600)}.get(quality,Vector2i(780,450))
     viewport.msaa_3d = session.controls.msaa_level() if session!=null else Viewport.MSAA_2X
     viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
     add_child(viewport)
+    # Draw the high-resolution render into the logical UI rectangle. Using a
+    # SubViewportContainer with stretch=true silently resizes its viewport to
+    # the low-resolution UI size, discarding any supersampling request.
+    var display := TextureRect.new()
+    display.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    display.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+    display.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+    display.texture = viewport.get_texture()
+    display.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    add_child(display)
     var environment := WorldEnvironment.new()
     environment.environment = Environment.new()
     environment.environment.background_mode = Environment.BG_COLOR

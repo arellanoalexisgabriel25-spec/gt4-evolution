@@ -232,7 +232,13 @@ func _advance_procedure(delta: float, controls: Dictionary = {}) -> void:
     if run.phase!="preparation":
         return
     if procedure.phase=="burnout" and not _warmup_in_zone():
-        procedure.cancel_start("FUERA DE ZONA DE CALENTAMIENTO · R PARA REPETIR")
+        # End warming immediately, but let the driver stop and line up.
+        # Moving beyond the painted area must not silently cancel the race.
+        if procedure.finish_warmup_early():
+            alignment_pending = true
+            _opponent_alignment_pending = is_duel
+            message = "CALENTAMIENTO FINALIZADO · FRENÁ Y ALINEÁ"
+            message_time = 4.0
     if alignment_pending and car.powertrain.gear<0:
         # Selecting reverse is an explicit choice to return to the beam under
         # the driver's own controls. Do not stop/teleport that return forever.

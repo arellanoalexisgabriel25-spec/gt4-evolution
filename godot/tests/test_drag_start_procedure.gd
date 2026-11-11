@@ -89,6 +89,13 @@ func _initialize() -> void:
     check(paused.phase=="expired" and not paused.consume_start() and paused.reason=="FALLO DE ALINEACIÓN FÍSICA","An arming failure cancels a pending request explicitly")
     paused.reset()
     check(paused.phase=="burnout" and paused.reason.is_empty(),"A valid next attempt clears an old cancellation")
+    var early = Procedure.new(25.0,30.0,1.5)
+    early.advance(3.0,false,false)
+    check(early.finish_warmup_early() and early.phase=="staging" and close(early.elapsed,3.0),"The starter can call staging early without inventing elapsed warmup time")
+    check(not early.warmup_allowed and early.snapshot().blue_on and not early.consume_start(),"An early call disables warmup and does not arm a race")
+    check(not early.finish_warmup_early(),"Repeated early calls cannot reset the presentation window")
+    early.advance(1.5,true,true)
+    check(early.phase=="countdown" and early.consume_start(),"The normal physical readiness hold still gates an early call")
     if not failed:
         print("PASS: %d automatic drag start procedure assertions" % checks)
     quit(1 if failed else 0)
