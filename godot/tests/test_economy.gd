@@ -1,6 +1,7 @@
 extends SceneTree
 
 const Economy = preload("res://scripts/economy.gd")
+const Deal = preload("res://scripts/market_deal.gd")
 var checks := 0
 
 func _initialize() -> void:
@@ -9,7 +10,7 @@ func _initialize() -> void:
     _check(game.cars.size() == Economy.MODELS.size(), "ten legacy offers, three flagships and three classic Fiats")
     _check(game.balance == 12000, "starting capital")
     var car := game.find_car(1)
-    var price := int(car["price"])
+    var price := int(Deal.quote_purchase(game, 1)["total"])
     _check(game.buy(1).begins_with("Compraste"), "purchase succeeds")
     _check(game.balance == 12000 - price, "purchase accounting")
     var after := game.balance
@@ -32,9 +33,9 @@ func _initialize() -> void:
     _check(not restored.from_dict(invalid), "invalid saves rejected")
     var old_balance := restored.balance
     var proceeds := restored.resale_quote(1)
-    _check(restored.sell(1).begins_with("Vendiste"), "sale")
+    _check(restored.sell(1).begins_with("La agencia compró"), "sale")
     _check(restored.balance == old_balance + proceeds, "sale accounting")
-    _check(not restored.sell(1).begins_with("Vendiste"), "no double sale")
+    _check(not restored.sell(1).begins_with("La agencia compró"), "no double sale")
     print("PASS: %d assertions" % checks)
     quit(0)
 

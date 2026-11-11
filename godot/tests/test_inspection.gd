@@ -1,6 +1,7 @@
 extends SceneTree
 
 const Economy = preload("res://scripts/economy.gd")
+const Deal = preload("res://scripts/market_deal.gd")
 var checks := 0
 
 func _initialize() -> void:
@@ -10,13 +11,14 @@ func _initialize() -> void:
     _check(not bool(car.get("inspected", false)), "new offer not inspected")
     var original_balance := game.balance
     var original_condition := game.condition(car)
+    var cost := Deal.inspection_price(game, 1)
     var result := game.inspect(1)
     _check(result.begins_with("Inspección completada"), "inspection succeeds")
-    _check(game.balance == original_balance - 200, "inspection costs 200 credits")
+    _check(game.balance == original_balance - cost, "inspection charges the quoted amount")
     _check(bool(car["inspected"]), "inspection revealed")
     _check(game.condition(car) == original_condition, "inspection does not repair car")
     _check(not game.inspect(1).begins_with("Inspección completada"), "reinspection blocked")
-    _check(game.balance == original_balance - 200, "no double charge")
+    _check(game.balance == original_balance - cost, "no double charge")
     var restored: EvolutionEconomy = Economy.new()
     _check(restored.from_dict(game.to_dict()), "save containing inspection loads")
     _check(bool(restored.find_car(1).get("inspected", false)), "inspection state preserved")

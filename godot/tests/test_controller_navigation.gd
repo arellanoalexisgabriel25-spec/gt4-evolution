@@ -64,12 +64,13 @@ func run() -> void:
             inspection = node
             break
     var before: int = session.game.balance
+    var inspection_price: int = preload("res://scripts/market_deal.gd").inspection_price(session.game, 1)
     inspection.grab_focus()
     button(JOY_BUTTON_A,true)
     await frames()
     button(JOY_BUTTON_A,true)
     await frames()
-    check(session.game.balance==before-200 and session.game.find_car(1).inspected,"A confirms the inspection once; duplicate held events cannot double-debit")
+    check(session.game.balance==before-inspection_price and session.game.find_car(1).inspected,"A confirms the inspection once; duplicate held events cannot double-debit")
     button(JOY_BUTTON_A,false)
     await frames()
     var buy: Button
