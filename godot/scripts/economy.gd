@@ -5,6 +5,10 @@ const Tuning = preload("res://scripts/tuning.gd")
 const Money = preload("res://scripts/money.gd")
 const Catalog = preload("res://scripts/car_catalog.gd")
 const Tire = preload("res://scripts/tire_model.gd")
+const Deal = preload("res://scripts/market_deal.gd")
+const MarketState = preload("res://scripts/market_state.gd")
+const Profiles = preload("res://scripts/market_profiles.gd")
+const Pricing = preload("res://scripts/market_pricing.gd")
 
 const SCHEMA_VERSION := 1
 const START_BALANCE := 12000
@@ -16,11 +20,13 @@ const WEAR := {"motor": 0.0010, "transmision": 0.0008, "suspension": 0.0012, "fr
 var balance: int = START_BALANCE
 var cars: Array[Dictionary] = []
 var ledger: Array[Dictionary] = []
+var market: Dictionary = {"day": 0, "index": 1.0, "seed": 42026}
 
 func seed_demo() -> void:
     balance = START_BALANCE
     cars.clear()
     ledger.clear()
+    market = MarketState.default_state()
     var rng := RandomNumberGenerator.new()
     rng.seed = 42026
     for i in range(MODELS.size()):
@@ -59,6 +65,11 @@ func ensure_flagship_offers() -> void:
             if not find_car(int(added["id"])).is_empty():
                 added["id"] = next_id
             cars.append(added)
+
+# Fill the used-car market to its target size. New listings take fresh IDs, so
+# existing cars, balances and records never change. Safe to call repeatedly.
+func ensure_market_listings() -> int:
+    return MarketState.ensure_listings(self)
 
 func tire_quote(id: int, kind: String) -> int:
     var car := find_car(id)
@@ -137,37 +148,26 @@ func _record(car: Dictionary, event: String, amount: int) -> void:
     car["history"].append(item.duplicate(true))
 
 func inspect(id: int) -> String:
-    var car := find_car(id)
-    if car.is_empty() or car["owner"] != "seller" or not car["listed"]:
-        return "Oferta no disponible."
-    if bool(car.get("inspected", false)):
-        return "Este vehículo ya fue inspeccionado."
-    const INSPECTION_COST := 200
-    if balance < INSPECTION_COST:
-        return "Saldo insuficiente para la inspección."
-    balance -= INSPECTION_COST
-    car["inspected"] = true
-    _record(car, "inspeccion", -INSPECTION_COST)
-    return "Inspección completada: condición %.1f/100. %s" % [condition(car), inspection_summary(car)]
+    return Deal.inspect(self, id)
 
-func buy(id: int) -> String:
-    var car := find_car(id)
-    if car.is_empty() or car["owner"] != "seller" or not car["listed"]:
-        return "La oferta ya no está disponible."
-    var price: int = int(car["price"])
-    if price < 0 or balance < price:
-        return "Saldo insuficiente."
-    balance -= price
-    car["owner"] = "player"
-    car["listed"] = false
-    _record(car, "compra", -price)
-    return "Compraste %s por %s" % [car["model"], Money.format(price)]
+# price = -1 pays the asking price; a lower price comes from a negotiation. Fees and
+# paperwork are added by the market layer.
+func buy(id: int, price: int = -1, financing_months: int = 0) -> String:
+    var result: Dictionary = Deal.purchase(self, id, price, -1, financing_months)
+    return str(result["message"]) if bool(result.get("ok", false)) else Deal.describe(result)
 
 func repair_quote(id: int, component: String) -> int:
     var car := find_car(id)
     if car.is_empty() or not WEIGHTS.has(component):
         return -1
     var amount := minf(25.0, 100.0 - float(car["health"][component]))
+    var profile: Dictionary = Profiles.entry_for(str(car.get("model", "")))
+    if not profile.is_empty():
+        # Parts and labour scale with the car, like in the real market.
+        var faulty := bool(car.get("faults", {}).get(component, false))
+        if amount <= 0.0 and not faulty:
+            return 0
+        return maxi(20, Pricing.repair_cost_credits(profile, component, amount, faulty))
     var rate := {"motor": 65.0, "transmision": 55.0, "suspension": 38.0, "frenos": 32.0, "neumaticos": 28.0, "chasis": 60.0, "electrico": 25.0}
     var defects: Dictionary = car.get("faults", {})
     var surcharge := 900 if bool(defects.get(component, false)) else 0
@@ -208,15 +208,9 @@ func drive(id: int, km: int, severity: float = 2.0) -> String:
     car["history"].append({"event": "prueba", "km": km})
     return "Prueba de %d km completada." % km
 
+# What a dealership pays right now (73-87 % of the true value).
 func resale_quote(id: int) -> int:
-    var car := find_car(id)
-    if car.is_empty():
-        return 0
-    var quality := clampf(condition(car) / 100.0, 0.15, 1.0)
-    var faults: Dictionary = car.get("faults", {})
-    var defects_factor := 0.78 if not faults.is_empty() else 1.0
-    var mileage_factor := clampf(1.0 - maxf(0.0, float(car["km"]) - 120000.0) / 600000.0, 0.65, 1.0)
-    return maxi(0, floori(float(car["price"]) * 0.85 * (0.5 + quality * 0.5) * defects_factor * mileage_factor))
+    return Deal.dealer_quote(self, id)
 
 # Settle measured 3D distance once per visit, including abandoned races. Optional
 # fractional metres keep old saves compatible and prevent free sub-km driving.
@@ -238,17 +232,11 @@ func record_distance(id: int, meters: float, severity: float = 1.0) -> bool:
     return true
 
 func sell(id: int) -> String:
-    var car := find_car(id)
-    if car.is_empty() or car["owner"] != "player":
-        return "Solo podés vender vehículos propios."
-    var quote := resale_quote(id)
-    balance += quote
-    car["owner"] = "sold"
-    _record(car, "venta", quote)
-    return "Vendiste %s por %s" % [car["model"], Money.format(quote)]
+    var result: Dictionary = Deal.sell_dealer(self, id)
+    return str(result["message"]) if bool(result.get("ok", false)) else Deal.describe(result)
 
 func to_dict() -> Dictionary:
-    return {"schema_version": SCHEMA_VERSION,"currency_code":Money.CODE,"money_unit_ars":Money.UNIT_ARS, "balance": balance, "cars": cars.duplicate(true), "ledger": ledger.duplicate(true)}
+    return {"schema_version": SCHEMA_VERSION,"currency_code":Money.CODE,"money_unit_ars":Money.UNIT_ARS, "balance": balance, "cars": cars.duplicate(true), "ledger": ledger.duplicate(true), "market": market.duplicate(true)}
 
 func from_dict(data: Dictionary) -> bool:
     if not Money.valid_metadata(data):
@@ -298,7 +286,10 @@ func from_dict(data: Dictionary) -> bool:
     for entry in data["ledger"]:
         if typeof(entry) != TYPE_DICTIONARY:
             return false
+    if data.has("market") and not MarketState.valid_state(data["market"]):
+        return false
     balance = int(data["balance"])
+    market = (data["market"] as Dictionary).duplicate(true) if data.has("market") else MarketState.default_state()
     cars.clear()
     for car in data["cars"]:
         cars.append(car.duplicate(true))

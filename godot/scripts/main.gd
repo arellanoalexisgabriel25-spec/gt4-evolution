@@ -16,6 +16,13 @@ const Tuning = preload("res://scripts/tuning.gd")
 const Rivals = preload("res://scripts/rivals.gd")
 const SaveStore = preload("res://scripts/save_store.gd")
 const ControlSettings = preload("res://scripts/control_settings.gd")
+const Deal = preload("res://scripts/market_deal.gd")
+const MarketState = preload("res://scripts/market_state.gd")
+const MarketFees = preload("res://scripts/market_fees.gd")
+const MarketUpkeep = preload("res://scripts/market_upkeep.gd")
+const MarketLoans = preload("res://scripts/market_loans.gd")
+const MarketPricing = preload("res://scripts/market_pricing.gd")
+const MarketProfiles = preload("res://scripts/market_profiles.gd")
 const SAVE_PATH := "user://evolution_save_v1.json"
 var game: EvolutionEconomy
 var career: EvolutionCareer
@@ -39,10 +46,13 @@ var garage_featured := 0
 var duel_profile := "technical"
 var duel_class := "1"
 var duel_opponent_model := ""
+var talks := {} # open negotiations by listing id
+var agreed := {} # agreed prices by listing id
 
 func _ready() -> void:
     game = GameSession.game
     game.ensure_flagship_offers()
+    game.ensure_market_listings()
     career = GameSession.career
     if GameSession.drag_format=="duel":
         duel_profile = GameSession.drag_rival_profile
@@ -282,18 +292,21 @@ func _feature(model: String) -> void:
     _render()
 
 func _market() -> void:
-    content.add_child(_label("GARAGE NACIONAL / AUTOS INSIGNIA",24))
-    content.add_child(_label("Inspeccioná antes de comprar. La condición oculta puede convertir una oferta en una restauración costosa.",13))
+    content.add_child(_label("GARAGE NACIONAL / AUTOS USADOS",24))
+    content.add_child(_label("Día %d del mercado · índice de precios %.2f · calificación crediticia %d. Inspeccioná, pedí el informe de dominio y negociá antes de comprar: la condición oculta y los papeles pueden convertir una oferta en una restauración costosa." % [MarketState.day(game),MarketState.index(game),MarketLoans.score(game)],13))
+    content.add_child(_button("ESPERAR UN DÍA (rotan las ofertas y los precios)",_wait_day))
     var grid := GridContainer.new()
     grid.columns = 2 if size.x >= 1100 else 1
     grid.add_theme_constant_override("h_separation",12)
     grid.add_theme_constant_override("v_separation",12)
     content.add_child(grid)
+    var seller_names := {"particular": "PARTICULAR", "agencia": "AGENCIA", "urgente": "VENDEDOR APURADO"}
     for car in Catalog.market_order(game.cars):
         if car["owner"] != "seller":
             continue
+        var id := int(car["id"])
         var panel := PanelContainer.new()
-        panel.set_meta("vehicle_id",int(car["id"]))
+        panel.set_meta("vehicle_id",id)
         panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         panel.custom_minimum_size.x = 390 if grid.columns == 2 else 0
         grid.add_child(panel)
@@ -302,22 +315,75 @@ func _market() -> void:
         column.add_child(_label(car["model"],24))
         if Catalog.flagship(str(car["model"])):
             column.add_child(_label("INSIGNIA · 3 PUERTAS · TRACCIÓN DELANTERA",12))
+        var year_text := str(int(car["year"])) if car.has("year") else "—"
+        column.add_child(_label("%s · AÑO %s · PUBLICADO HACE %d DÍAS" % [seller_names.get(str(car.get("seller","particular")),"PARTICULAR"),year_text,maxi(MarketState.day(game) - int(car.get("listed_day",0)),0)],12))
+        var liquidity := str(MarketProfiles.entry_for(str(car["model"])).get("liquidity","media")).to_upper()
+        column.add_child(_label("LIQUIDEZ %s%s" % [liquidity," · GNC" if bool(car.get("gnc",false)) else ""],12))
         var status := "CONDICIÓN %.1f / 100" % game.condition(car) if bool(car.get("inspected",false)) else "CONDICIÓN SIN VERIFICAR"
         column.add_child(_label("%s KM   /   %s" % [car["km"],status],12))
         var price := _label(Money.format(int(car["price"])),30)
         price.add_theme_color_override("font_color",Style.RED)
         column.add_child(price)
+        var guide := Deal.guide_text(car)
+        if guide != "":
+            column.add_child(_label(guide,12))
         if bool(car.get("inspected",false)):
             column.add_child(_label(game.inspection_summary(car),13))
+            if Deal.service_overdue(car):
+                column.add_child(_label("SERVICE VENCIDO (cada %d km)" % Deal.SERVICE_INTERVAL,12))
+            if bool(car.get("odometer_fraud",false)):
+                column.add_child(_label("ODÓMETRO ADULTERADO: marcaba %d km" % int(car.get("km_claimed",0)),13))
+        if int(car.get("warranty_days",0)) > 0:
+            column.add_child(_label("GARANTÍA DE AGENCIA %d DÍAS" % int(car["warranty_days"]),12))
+        if bool(car.get("doc_checked",false)):
+            column.add_child(_label(Deal.documents_report(car),13))
+        var agreed_price := int(agreed.get(id,0))
+        var talk = talks.get(id)
+        var has_counter: bool = talk != null and talk.last_counter > 0 and not talk.closed and agreed_price <= 0
+        if agreed_price > 0:
+            column.add_child(_label("PRECIO ACORDADO " + Money.format(agreed_price),14))
+        elif has_counter:
+            column.add_child(_label("CONTRAOFERTA %s · rondas restantes: %d" % [Money.format(talk.last_counter),talk.rounds_left],14))
+        var quote: Dictionary = Deal.quote_purchase(game,id,agreed_price if agreed_price > 0 else -1)
+        if bool(quote.get("ok",false)):
+            var extra := ""
+            if bool(quote["documents_known"]) and int(quote["documents"]) > 0:
+                extra = " + trámites " + Money.format(int(quote["documents"]))
+            column.add_child(_label("TOTAL ESTIMADO %s (gastos %s%s)" % [Money.format(int(quote["total"])),Money.format(int(quote["fees"]["total"])),extra],12))
         var actions := HFlowContainer.new()
         actions.add_theme_constant_override("h_separation",8)
         column.add_child(actions)
-        var inspect_button := _button("INSPECCIÓN " + Money.format(200),_inspect.bind(int(car["id"])))
-        inspect_button.disabled = bool(car.get("inspected",false)) or game.balance < 200
+        var inspect_cost := Deal.inspection_price(game,id)
+        var inspect_button := _button("INSPECCIÓN " + Money.format(inspect_cost),_inspect.bind(id))
+        inspect_button.disabled = bool(car.get("inspected",false)) or game.balance < inspect_cost
         actions.add_child(inspect_button)
-        var buy := _button("COMPRAR",_buy.bind(int(car["id"])))
-        buy.disabled = game.balance < int(car["price"])
+        var domain_button := _button("INFORME DE DOMINIO " + Money.format(MarketFees.DOMAIN_REPORT),_domain.bind(id))
+        domain_button.disabled = bool(car.get("doc_checked",false)) or game.balance < MarketFees.DOMAIN_REPORT
+        actions.add_child(domain_button)
+        var picker := OptionButton.new()
+        for percent in [95,90,85,80,75]:
+            picker.add_item("OFERTAR %d %%" % percent)
+            picker.set_item_metadata(picker.item_count - 1,percent)
+        picker.selected = 1
+        actions.add_child(picker)
+        var send := _button("ENVIAR OFERTA",func() -> void: _offer(id,int(picker.get_item_metadata(picker.selected))))
+        send.disabled = agreed_price > 0
+        actions.add_child(send)
+        if has_counter:
+            actions.add_child(_button("ACEPTAR " + Money.format(talk.last_counter),_accept_counter.bind(id)))
+        var buy := _button("COMPRAR",_buy.bind(id))
+        buy.disabled = game.balance < (agreed_price if agreed_price > 0 else int(car["price"]))
         actions.add_child(buy)
+        var base_price := agreed_price if agreed_price > 0 else int(car["price"])
+        column.add_child(_label(MarketLoans.summary(game,base_price),12))
+        if bool(MarketLoans.offer(game,base_price,24).get("ok",false)):
+            var terms_picker := OptionButton.new()
+            for months in [12,24,36]:
+                terms_picker.add_item("%d MESES" % months)
+                terms_picker.set_item_metadata(terms_picker.item_count - 1,months)
+            terms_picker.selected = 1
+            actions.add_child(terms_picker)
+            actions.add_child(_button("COMPRAR FINANCIADO",func() -> void: _buy_financed(id,int(terms_picker.get_item_metadata(terms_picker.selected)))))
 
 func _garage() -> void:
     content.add_child(_label("MI GARAJE", 22))
@@ -420,7 +486,28 @@ func _garage() -> void:
         var race_3d := _button("CARRERA LIBRE 3D", _race_3d.bind(int(car["id"])))
         race_3d.disabled = not game.eligible(car)
         actions.add_child(race_3d)
-        actions.add_child(_button("VENDER " + Money.format(game.resale_quote(int(car["id"]))), _sell.bind(int(car["id"]))))
+        var car_id := int(car["id"])
+        layout.add_child(_label(MarketUpkeep.describe(game,car),12))
+        if MarketLoans.has_loan(car):
+            layout.add_child(_label(MarketLoans.describe(car),12))
+        layout.add_child(_label("SERVICE: %s · último a los %d km" % ["VENCIDO" if Deal.service_overdue(car) else "al día",int(car.get("service_km",car["km"]))],12))
+        actions.add_child(_button("VENDER A AGENCIA " + Money.format(game.resale_quote(car_id)), _sell.bind(car_id)))
+        if MarketLoans.has_loan(car):
+            actions.add_child(_button("CANCELAR PRÉSTAMO " + Money.format(MarketLoans.payoff_amount(car)),_payoff.bind(car_id)))
+        var service_button := _button("HACER SERVICE " + Money.format(Deal.service_cost(game,car_id)),_service.bind(car_id))
+        actions.add_child(service_button)
+        if Deal.warranty_days_left(game,car) > 0:
+            actions.add_child(_button("RECLAMAR GARANTÍA (%d DÍAS)" % Deal.warranty_days_left(game,car),_warranty.bind(car_id)))
+        var fair := Deal.fair_credits(game,car_id)
+        if int(car.get("sale_ask",0)) > 0:
+            layout.add_child(_label("PUBLICADO POR %s · ofertas de hoy: %d" % [Money.format(int(car["sale_ask"])),car.get("offers",[]).size()],13))
+            for amount in car.get("offers",[]):
+                actions.add_child(_button("ACEPTAR " + Money.format(int(amount)),_accept_offer.bind(car_id,int(amount))))
+            actions.add_child(_button("RETIRAR PUBLICACIÓN",_withdraw.bind(car_id)))
+        else:
+            for markup in [1.0,1.1,1.2]:
+                var ask := roundi(float(fair) * markup)
+                actions.add_child(_button("PUBLICAR " + Money.format(ask),_publish.bind(car_id,ask)))
     if not found:
         content.add_child(_label("No tenés vehículos. Visitá el concesionario."))
 
@@ -538,11 +625,97 @@ func _inspect(id: int) -> void:
     _render()
 
 func _buy(id: int) -> void:
-    notice.text = game.buy(id)
+    notice.text = game.buy(id,int(agreed.get(id,-1)))
+    var car := game.find_car(id)
+    if car.is_empty() or car["owner"] != "seller":
+        talks.erase(id)
+        agreed.erase(id)
+    _render()
+
+func _buy_financed(id: int, months: int) -> void:
+    notice.text = game.buy(id,int(agreed.get(id,-1)),months)
+    var car := game.find_car(id)
+    if car.is_empty() or car["owner"] != "seller":
+        talks.erase(id)
+        agreed.erase(id)
+    _render()
+
+func _payoff(id: int) -> void:
+    notice.text = MarketLoans.payoff(game,id)
+    _render()
+
+func _domain(id: int) -> void:
+    notice.text = Deal.check_domain(game,id)
+    _render()
+
+func _wait_day() -> void:
+    notice.text = MarketState.describe(MarketState.advance_day(game))
+    talks.clear()
+    agreed.clear()
+    _render()
+
+func _offer(id: int, percent: int) -> void:
+    var car := game.find_car(id)
+    if car.is_empty() or car["owner"] != "seller":
+        return
+    var talk = talks.get(id)
+    if talk == null:
+        talk = Deal.start_negotiation(game,id)
+        if talk == null:
+            notice.text = "El vendedor no quiere negociar por ahora."
+            return
+        talks[id] = talk
+    var amount := roundi(float(car["price"]) * float(percent) / 100.0)
+    var answer: Dictionary = talk.offer(amount)
+    match str(answer["status"]):
+        "accepted":
+            agreed[id] = int(answer["price"])
+            notice.text = "El vendedor acepta %s. Podés comprar al precio acordado." % Money.format(int(answer["price"]))
+        "counter":
+            notice.text = "El vendedor contraoferta %s." % Money.format(int(answer["price"]))
+        "rejected":
+            notice.text = "Esa oferta es un insulto; el vendedor no la considera."
+        "walked":
+            Deal.lock_seller(game,id)
+            talks.erase(id)
+            notice.text = "El vendedor se cansó de regatear y no vuelve a tratar por una semana."
+        _:
+            notice.text = "No hay una negociación abierta."
+    _render()
+
+func _accept_counter(id: int) -> void:
+    var talk = talks.get(id)
+    if talk == null:
+        return
+    var answer: Dictionary = talk.accept_counter()
+    if str(answer["status"]) == "accepted":
+        agreed[id] = int(answer["price"])
+        notice.text = "Cerraste el precio en %s." % Money.format(int(answer["price"]))
     _render()
 
 func _sell(id: int) -> void:
     notice.text = game.sell(id)
+    _render()
+
+func _publish(id: int, ask: int) -> void:
+    notice.text = Deal.describe(Deal.publish(game,id,ask))
+    _render()
+
+func _service(id: int) -> void:
+    notice.text = Deal.do_service(game,id)
+    _render()
+
+func _warranty(id: int) -> void:
+    notice.text = Deal.claim_warranty(game,id)
+    _render()
+
+func _withdraw(id: int) -> void:
+    Deal.withdraw(game,id)
+    notice.text = "Retiraste la publicación."
+    _render()
+
+func _accept_offer(id: int, amount: int) -> void:
+    notice.text = Deal.describe(Deal.accept_offer(game,id,amount))
     _render()
 
 func _repair(id: int, component: String) -> void:
@@ -591,6 +764,7 @@ func _load() -> void:
         return
     game = loaded["game"]
     game.ensure_flagship_offers()
+    game.ensure_market_listings()
     career = loaded["career"]
     GameSession.game = game
     GameSession.career = career
