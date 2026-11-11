@@ -39,7 +39,7 @@ func await_automatic_start(scene) -> bool:
 
 func run() -> void:
     var session = root.get_node("GameSession")
-    check(session.VERSION=="0.25","The exported PCK carries the current game version")
+    check(session.VERSION=="0.26","The exported PCK carries the current game version")
     check(session.controls.shift_mode=="manual" and not session.controls.auto_rev_match,"The shipping defaults disclose manual control without rev-matching assistance")
     check(session.controls.secondary_keycodes("clutch").has(KEY_CTRL) and session.controls.secondary_keycodes("shift_up").has(KEY_PAGEUP),"The shipping controls retain hardware-friendly alternative manual chords")
     check(session.controls.msaa_level()==Viewport.MSAA_2X,"The packaged default applies the explicit balanced graphics preference")
@@ -94,6 +94,7 @@ func run() -> void:
     check(Style.build().get_stylebox("panel","PanelContainer").bg_color==Color("1a2129"),"The exported UI carries the supplied dark visual palette")
     check(is_equal_approx(Style.MONO.get_string_size("1111").x,Style.MONO.get_string_size("8888").x),"The exported numeric font is loaded with tabular widths")
     session.reset()
+    session.game.balance = 100000
     var car_id := 0
     for car in session.game.cars:
         if car.model=="Fiat 133": car_id=int(car.id)
@@ -156,6 +157,7 @@ func run() -> void:
     await process_frame
     await process_frame
     session.reset()
+    session.game.balance = 100000
     session.game.buy(25)
     for part in session.game.find_car(25).health: session.game.find_car(25).health[part]=100.0
     check(session.start_drag(25,"duel","technical","","Chevrolet Corsa 5 puertas"),"The exported pickup enters a mixed free night duel")
@@ -179,6 +181,7 @@ func run() -> void:
     await process_frame
     await process_frame
     session.reset()
+    session.game.balance = 100000
     session.game.buy(36)
     for part in session.game.find_car(36).health: session.game.find_car(36).health[part]=100.0
     check(session.start_drag(36,"duel","technical","","Volkswagen Virtus"),"The packaged CVT Cross can race a different manual car")
