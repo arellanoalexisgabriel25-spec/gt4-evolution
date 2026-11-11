@@ -1,6 +1,7 @@
 extends SceneTree
 
 const Economy = preload("res://scripts/economy.gd")
+const Deal = preload("res://scripts/market_deal.gd")
 var checks := 0
 var failed := false
 
@@ -12,12 +13,14 @@ func _initialize() -> void:
     _check(not game.eligible(car), "fault makes car unsafe")
     _check(game.inspection_summary(car) == "Estado mecánico no verificado.", "defect not advertised")
     var balance_before := game.balance
+    var inspection_cost := Deal.inspection_price(game, 3)
     _check(game.inspect(3).begins_with("Inspección completada"), "mechanic inspection succeeds")
-    _check(game.balance == balance_before - 200, "inspection debit correct")
+    _check(game.balance == balance_before - inspection_cost, "inspection debit correct")
     _check(game.inspection_summary(car).contains("motor"), "inspection identifies defect")
     var price := int(car["price"])
+    var total := int(Deal.quote_purchase(game, 3)["total"])
     _check(game.buy(3).begins_with("Compraste"), "defective car can be purchased")
-    _check(game.balance == balance_before - 200 - price, "purchase debit correct")
+    _check(game.balance == balance_before - inspection_cost - total, "purchase debit correct")
     var defect_quote := game.repair_quote(3, "motor")
     _check(defect_quote >= 900, "fault repair surcharge")
     var before_failed := game.balance

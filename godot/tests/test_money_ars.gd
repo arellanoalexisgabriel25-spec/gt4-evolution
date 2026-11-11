@@ -27,7 +27,8 @@ func _initialize() -> void:
     var old_price: int = original.cars[0].price
     check(game.from_dict(original) and game.balance==old_balance,"A legacy save migrates currency metadata without multiplying its ledger")
     check(game.to_dict().currency_code=="ARS" and game.to_dict().money_unit_ars==1000,"New saves explicitly declare Argentine pesos and integer denomination")
-    check(game.buy(1).contains("ARS") and game.balance==old_balance-old_price,"A purchase displays pesos and debits exactly once")
+    var total: int = preload("res://scripts/market_deal.gd").quote_purchase(game, 1).total
+    check(game.buy(1).contains("ARS") and game.balance==old_balance-total,"A purchase displays pesos and debits exactly once")
     var before: int = game.balance
     var quote: int = game.resale_quote(1)
     check(game.sell(1).contains(Money.format(quote)) and game.balance==before+quote,"Resale credits the same denomination used by purchase")

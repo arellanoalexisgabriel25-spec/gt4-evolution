@@ -92,8 +92,9 @@ func _initialize() -> void:
         check(prepared.peak_torque>stock.peak_torque and altered.upgrades.size()==3 and altered.tire_compound=="slick","The same stored equipment remains usable in prepared practice without being deleted")
         var buyer = Economy.new()
         buyer.seed_demo()
+        buyer.balance = 100000
         var balance: int = buyer.balance
-        var price: int = buyer.find_car(id).price
+        var price: int = preload("res://scripts/market_deal.gd").quote_purchase(buyer,id).total
         var message: String = buyer.buy(id)
         check(message.begins_with("Compraste") and buyer.balance==balance-price and buyer.find_car(id).owner=="player","Each added offer can be purchased with exactly one quoted debit")
         balance=buyer.balance
