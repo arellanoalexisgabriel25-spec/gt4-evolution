@@ -308,7 +308,10 @@ func _integrate(dt: float, accelerator: float, clutch: float, brake: float, on_r
         clutch = 1.0 if gear==0 or (brake>0.5 and absf(speed_mps)<1.0) else 0.0
     elif shift_mode in ["auto_clutch","semi_auto"]:
         assisted_shift_hold = maxf(0.0,assisted_shift_hold-dt)
-        var launch_open: bool = absf(speed_mps)<0.15 and (accelerator<0.1 or brake>0.5)
+        # The assisted clutch must disengage before a braking car reaches
+        # idle speed, including in reverse. Waiting until 0.15 m/s lets the
+        # coupled wheels drag the engine below its stall threshold first.
+        var launch_open: bool = (absf(speed_mps)<0.15 and accelerator<0.1) or (brake>0.5 and absf(speed_mps)<3.0)
         clutch = maxf(clutch,1.0 if shift_timer>0.0 or assisted_shift_hold>0.0 or gear==0 or launch_open else 0.0)
     effective_clutch_pedal = clutch
     var pressure: float = Clutch.pressure(clutch,config)

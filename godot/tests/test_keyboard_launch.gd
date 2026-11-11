@@ -123,7 +123,7 @@ func run() -> void:
         var start_z: float = scene.car.position.z
         key(KEY_S,false)
         await ticks(120)
-        check(scene.run.phase=="running" and scene.car.position.z<start_z-1.0 and scene.car.powertrain.speed_mps>1.0,"The disclosed auto-clutch staging hold releases after the actual green and launches the car")
+        check(scene.run.phase=="running" and scene.car.position.z<start_z-1.0 and scene.car.powertrain.speed_mps>1.0,"Releasing the driver-held brake after green launches the assisted car")
     await leave_strip(scene)
     root.get_node("GameSession").menu_music.set_menu_active(false)
     await ticks(8)

@@ -5,8 +5,8 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.26"
-README = """GT4 EVOLUTION — PROTOTIPO 0.26 / MERCADO Y PISTA NOCTURNA
+VERSION = "0.27"
+README = """GT4 EVOLUTION — PROTOTIPO 0.27 / LARGADA Y REVERSA
 
 WINDOWS: extraé TODO el ZIP y abrí GT4Evolution.exe o JUGAR.cmd.
 Es un juego exportado independiente: no necesita Godot instalado ni importar el
@@ -110,7 +110,7 @@ Música: trece temas aportados con autorización expresa de redistribución.
 AJUSTES permite elegir tema, anterior/siguiente, aleatorio y volumen.
 La música se desvanece en pista y retoma en los menús. No está cubierta por MIT.
 
-Ver juego/RELEASE-0.26.md en el ZIP Proyecto y documentacion/ en Windows para el
+Ver juego/RELEASE-0.27.md en el ZIP Proyecto y documentacion/ en Windows para el
 alcance exacto y resultados de validación. El entorno valida Linux y el mismo PCK;
 Windows y mando físico requieren prueba en esos equipos. Si no inicia, ejecutá
 DIAGNOSTICO.cmd y compartí juego.log. Licencias incluidas. No se distribuyen

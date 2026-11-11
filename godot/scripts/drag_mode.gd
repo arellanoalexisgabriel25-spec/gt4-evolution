@@ -167,6 +167,8 @@ func _readiness_issue(controls: Dictionary) -> String:
         if maxf(float(controls.get("brake",0.0)),-float(controls.get("throttle",0.0)))<0.7: return "MANTENÉ EL FRENO PARA ALINEAR"
     elif model.shift_mode=="manual" and float(controls.get("clutch",0.0))<model.config.clutch_release_pedal:
         return "MANTENÉ EL EMBRAGUE PARA ALINEAR"
+    elif model.shift_mode!="manual" and float(controls.get("brake",0.0))<0.7:
+        return "MANTENÉ EL FRENO PARA ALINEAR"
     elif model.shift_mode!="manual" and model.effective_clutch_pedal<model.config.clutch_release_pedal:
         return "ACOPLE ASISTIDO · ESPERÁ EL DESEMBRAGUE"
     return ""
@@ -306,30 +308,13 @@ func _physics_process(delta: float) -> void:
         controls["clutch"] = 1.0
         message = "MECÁNICA NO APTA · Volvé al taller para reparar"
         message_time = 2.0
-    if procedure.phase=="staging" and car.powertrain.shift_mode!="manual" and car.powertrain.config.transmission_type!="cvt" and car.powertrain.gear>=0:
-        # Only an explicitly selected clutch assistance mode may retain the
-        # clutch while waiting. Full manual and reverse obey the actual pedals.
-        # The previous unconditional hold made R appear engaged but immobile.
-        controls["clutch"] = 1.0
-        controls["brake"] = 1.0
-        controls["handbrake"] = 0.0
-    if car.powertrain.shift_mode!="manual" and car.powertrain.config.transmission_type!="cvt" and run.phase=="countdown":
-        # Assisted clutch still needs a preparation hold. It ends at the actual
-        # green; manual drivers retain full responsibility for an early release.
-        controls["clutch"] = 1.0
-        controls["brake"] = 1.0
-        controls["handbrake"] = 0.0
     if alignment_pending:
         controls["throttle"] = 0.0
         controls["brake"] = 1.0
         controls["clutch"] = 1.0
         controls["handbrake"] = 0.0
-    # A missed call cancels the sporting attempt, not the driver's pedals.
-    # They may stop/return in reverse; the expired procedure cannot arm a race.
-    if run.phase == "finished" or (is_duel and run.phase=="invalid") or (is_duel and duel.finished):
-        controls["throttle"] = 0.0
-        controls["brake"] = maxf(0.65,float(controls.get("brake",0.0)))
-        controls["clutch"] = 1.0
+    # Sporting decisions affect the clock and result, not control of the car.
+    # Keep the driver's pedals active after a false start or finish as well.
     _applied_controls = controls.duplicate()
     car.drive_manual(delta,controls,absf(car.position.x)<8.5)
     garage.measured_distance = car.distance_m

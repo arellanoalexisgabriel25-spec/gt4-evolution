@@ -105,16 +105,23 @@ func _grandstand() -> void:
     box(Vector3(12.8,0.18,109),Vector3(-20,7,-32),Color("c2c6bc"))
     for z in range(18,-90,-18):
         box(Vector3(0.16,7,0.16),Vector3(-15.0,3.5,z),Color("8d9899"))
+    # Irregular overlapping crowns replace the repeated single-sphere trees.
+    # Shared meshes and materials keep distant vegetation inexpensive.
+    var crown := SphereMesh.new()
+    crown.radius = 2.6
+    crown.height = 4.6
+    var foliage := [Visual.material(Color("263c31"),0,1),Visual.material(Color("304a39"),0,1),Visual.material(Color("385342"),0,1)]
+    var clusters := [Vector3(-1.6,6.3,0),Vector3(1.3,6.8,0.8),Vector3(0.0,8.0,-0.9),Vector3(-0.2,5.7,1.7)]
     for z in range(-110,-600,-50):
-        box(Vector3(0.6,5,0.6),Vector3(-22,2.5,z),Color("5b5143"))
-        var tree := MeshInstance3D.new()
-        var crown := SphereMesh.new()
-        crown.radius = 4.2
-        crown.height = 6.0
-        tree.mesh = crown
-        tree.material_override = Visual.material(Color("3b5941"),0,1)
-        tree.position = Vector3(-22,7,z)
-        add_child(tree)
+        box(Vector3(0.6,5,0.6),Vector3(-22,2.5,z),Color("514c40"))
+        for index in range(clusters.size()):
+            var leaf := MeshInstance3D.new()
+            leaf.mesh = crown
+            leaf.material_override = foliage[index%foliage.size()]
+            leaf.position = Vector3(-22,0,z)+clusters[index]
+            leaf.scale = Vector3(1.0+0.08*(index%2),0.82+0.1*(index%3),1.0)
+            leaf.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+            add_child(leaf)
 
 func _paddock() -> void:
     box(Vector3(12,6.0,17),Vector3(21,3,6),Color("bdbaab"))
