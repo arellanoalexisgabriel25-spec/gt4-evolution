@@ -109,6 +109,17 @@ func _ready() -> void:
         for side in [-1.0,1.0]:
             panels.append(Vector3(side*9.51,0.40,z))
     _batch_boxes(Vector3(0.015,0.32,3.8),panels,Color("29485e"))
+    # Painted pit-wall reflectors provide depth cues along both lanes at night.
+    # One MultiMesh per color keeps the long row inexpensive in Compatibility.
+    var wall_markers: Array[Vector3] = []
+    var pit_windows: Array[Vector3] = []
+    for z in range(-96,-402,-12):
+        for side in [-1.0,1.0]:
+            wall_markers.append(Vector3(side*9.51,0.54,z))
+    for z in range(-12,-85,-8):
+        pit_windows.append(Vector3(19.1,3.35,z))
+    _batch_boxes(Vector3(0.02,0.10,1.1),wall_markers,Color("b9cbd2"))
+    _batch_boxes(Vector3(0.03,0.55,2.5),pit_windows,Color("6b9db2"),true)
     # A distant original track-side gantry silhouette frames the finish.
     for side in [-1.0,1.0]:
         _mesh(Vector3(0.35,7,0.35),Vector3(side*11.4,3.5,-402.5),Color("304252"))

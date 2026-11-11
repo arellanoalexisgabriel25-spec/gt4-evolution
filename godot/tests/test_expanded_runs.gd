@@ -19,6 +19,7 @@ func run() -> void:
     for id in [30,31,32,33,34,35,36]:
         session.reset()
         session.controls.restore_defaults()
+        session.game.balance = 100000
         session.game.buy(id)
         var vehicle: Dictionary = session.game.find_car(id)
         for component in vehicle.health: vehicle.health[component]=100.0

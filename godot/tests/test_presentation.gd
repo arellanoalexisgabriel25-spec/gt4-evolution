@@ -45,20 +45,21 @@ func run() -> void:
     for child in menu.content.get_children():
         if child is GridContainer:
             grid = child
-    check(grid is GridContainer and grid.get_child_count() == 36,"The dealership retains the sixteen prior offers and includes the thirteen additional cars")
+    check(grid is GridContainer and grid.get_child_count() == session.game.cars.filter(func(car): return car.owner == "seller").size(),"The dealership retains the sixteen prior offers and includes the thirteen additional cars")
     var balance: int = session.game.balance
+    var inspection_price: int = preload("res://scripts/market_deal.gd").inspection_price(session.game,1)
     var button_found := false
     if grid is GridContainer:
         for card in grid.get_children():
             if card.get_meta("vehicle_id",0)!=1:
                 continue
             for button in card.find_children("*","Button",true,false):
-                if button.text == "INSPECCIÓN " + preload("res://scripts/money.gd").format(200):
+                if button.text == "INSPECCIÓN " + preload("res://scripts/money.gd").format(inspection_price):
                     button.pressed.emit()
                     button_found = true
                     break
     await settle()
-    check(button_found and session.game.balance == balance-200 and bool(session.game.find_car(1)["inspected"]),"Inspecting from a redesigned card still applies the real economic transaction")
+    check(button_found and session.game.balance == balance-inspection_price and bool(session.game.find_car(1)["inspected"]),"Inspecting from a redesigned card still applies the real economic transaction")
     session.game.buy(1)
     menu.nav_buttons["garaje"].pressed.emit()
     await settle()
