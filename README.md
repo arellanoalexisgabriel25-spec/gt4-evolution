@@ -1,7 +1,7 @@
-# GT4 Evolution 0.26 · Descargas
+# GT4 Evolution 0.27 · Descargas
 
-- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.26/GT4-Evolution-0.26-Windows.zip)
-- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.26/GT4-Evolution-0.26-Proyecto.zip)
+- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.27/GT4-Evolution-0.27-Windows.zip)
+- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.27/GT4-Evolution-0.27-Proyecto.zip)
 
 Extraé TODO el ZIP Windows y abrí **GT4Evolution.exe** o **JUGAR.cmd**.
 Es una exportación independiente; no requiere instalar Godot ni importar el proyecto.
@@ -80,11 +80,11 @@ hashes de fuentes/exportación y DIAGNOSTICO.cmd para registrar fallos de arranq
 prueba en esos equipos; la validación automatizada se realiza en Linux.
 Las licencias se incluyen. No se distribuyen recursos comerciales de GT4.
 
-Código: [a78759f](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/a78759f11603edd3eded638c48869d784f054130).
+Código: [eea2cf0](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/eea2cf0d02d88689a3bf9377d7a14195f2a29f24).
 Esta rama contiene únicamente distribución y no se integra en main.
 Los archivos .sha256 permiten verificar los ZIP.
 
-## Presentación 0.26
+## Presentación 0.27
 
 Capturas reales del juego en Linux con OpenGL por software. No son renders conceptuales.
 
