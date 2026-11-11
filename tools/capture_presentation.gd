@@ -111,6 +111,7 @@ func run() -> void:
     DisplayServer.window_move_to_foreground(root.get_window_id())
     var session = root.get_node("GameSession")
     session.reset()
+    session.game.balance = 100000
     change_scene_to_file("res://scenes/main.tscn")
     await process_frame
     await process_frame
@@ -304,6 +305,7 @@ func run() -> void:
     await process_frame
     await process_frame
     session.reset()
+    session.game.balance = 100000
     session.game.buy(13)
     for component in session.game.find_car(13)["health"]:
         session.game.find_car(13)["health"][component] = 100.0
@@ -341,6 +343,7 @@ func run() -> void:
     await process_frame
     await process_frame
     session.reset()
+    session.game.balance = 100000
     session.game.buy(15)
     for component in session.game.find_car(15)["health"]:
         session.game.find_car(15)["health"][component] = 100.0
@@ -377,6 +380,7 @@ func run() -> void:
     await process_frame
     await process_frame
     session.reset()
+    session.game.balance = 100000
     session.game.buy(23)
     for component in session.game.find_car(23)["health"]:
         session.game.find_car(23)["health"][component] = 100.0
@@ -415,6 +419,7 @@ func run() -> void:
     # Capture actual preparation contact heat and the marshal's subsequent
     # blue-light call. No tire-temperature helper or fake timing ticket is used.
     session.reset()
+    session.game.balance = 100000
     session.game.buy(23)
     for component in session.game.find_car(23)["health"]:
         session.game.find_car(23)["health"][component] = 100.0
@@ -477,6 +482,7 @@ func run() -> void:
     await process_frame
     await process_frame
     session.reset()
+    session.game.balance = 100000
     session.game.buy(11)
     session.menu_tab = "garaje"
     change_scene_to_file("res://scenes/main.tscn")
@@ -517,6 +523,7 @@ func run() -> void:
         quit(1)
         return
     session.reset()
+    session.game.balance = 100000
     session.game.buy(25)
     for component in session.game.find_car(25).health:
         session.game.find_car(25).health[component]=100.0
@@ -560,6 +567,7 @@ func run() -> void:
     await process_frame
     await process_frame
     session.reset()
+    session.game.balance = 100000
     session.game.buy(36)
     for part in session.game.find_car(36).health: session.game.find_car(36).health[part]=100.0
     session.start_drag(36,"duel","technical","","Volkswagen Virtus")
@@ -607,6 +615,7 @@ func run() -> void:
     # Reverse is demonstrated by powered backwards CharacterBody movement in
     # the actual strip scene. No speed, wheel RPM or actor position is assigned.
     session.reset()
+    session.game.balance = 100000
     session.game.buy(11)
     for part in session.game.find_car(11).health: session.game.find_car(11).health[part]=100.0
     session.start_drag(11)
