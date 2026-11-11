@@ -308,13 +308,14 @@ func _physics_process(delta: float) -> void:
         controls["clutch"] = 1.0
         message = "MECÁNICA NO APTA · Volvé al taller para reparar"
         message_time = 2.0
-    if alignment_pending:
+    # Alignment assistance waits for the player to stop; it never presses
+    # pedals on their behalf. Reverse immediately cancels the placement.
+    # A false start or an opponent finishing does not disable the driver's
+    # controls. A completed run still brakes automatically in the runoff.
+    if run.phase == "finished":
         controls["throttle"] = 0.0
-        controls["brake"] = 1.0
+        controls["brake"] = maxf(0.65,float(controls.get("brake",0.0)))
         controls["clutch"] = 1.0
-        controls["handbrake"] = 0.0
-    # Sporting decisions affect the clock and result, not control of the car.
-    # Keep the driver's pedals active after a false start or finish as well.
     _applied_controls = controls.duplicate()
     car.drive_manual(delta,controls,absf(car.position.x)<8.5)
     garage.measured_distance = car.distance_m

@@ -31,6 +31,16 @@ func run() -> void:
     var pedals := {"throttle":0.0,"clutch":0.0,"brake":1.0,"handbrake":0.0,"steer":0.0}
     scene.input_provider = func() -> Dictionary: return pedals
     scene.procedure.configure(0.2,30.0,1.5)
+    for frame in range(40):
+        await physics_frame
+        if scene.alignment_pending: break
+    check(scene.alignment_pending and scene.procedure.phase=="staging","Blue call requests placement after warmup")
+    pedals.brake = 0.0
+    pedals.throttle = 0.35
+    await ticks(1)
+    check(is_equal_approx(scene._applied_controls.throttle,0.35) and scene._applied_controls.brake==0.0,"Automatic placement never replaces the accelerator or brake")
+    pedals.throttle = 0.0
+    pedals.brake = 1.0
     await ticks(80)
     check(scene.procedure.phase=="staging" and not scene.alignment_pending,"Blue call completes alignment")
     check(model.request_shift(-1,0.0),"Assisted mode accepts reverse selection")
