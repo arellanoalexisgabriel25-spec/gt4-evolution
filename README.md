@@ -1,9 +1,13 @@
-# GT4 Evolution 0.27 · Descargas
+# GT4 Evolution 0.28 · Descargas
 
-- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.27/GT4-Evolution-0.27-Windows.zip)
-- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.27/GT4-Evolution-0.27-Proyecto.zip)
+- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.28/GT4-Evolution-0.28-Windows.zip)
+- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.28/GT4-Evolution-0.28-Proyecto.zip)
 
 Extraé TODO el ZIP Windows y abrí **GT4Evolution.exe** o **JUGAR.cmd**.
+La ventana inicia en **1920×1080** y se puede redimensionar. La interfaz se dibuja
+con fuentes vectoriales y los modelos usan filtrado anisotrópico; las texturas
+conservan la resolución de sus archivos de origen. Si el auto sale de la zona
+de calentamiento, el largador llama a alinear: frená y preparate para el verde.
 Es una exportación independiente; no requiere instalar Godot ni importar el proyecto.
 Conservá **GT4Evolution.pck** junto al ejecutable. El ZIP Proyecto conserva las fuentes.
 **GARAJE → DUELO ¼ DE MILLA / FÁBRICA** corre contra otro auto físico.
@@ -80,11 +84,11 @@ hashes de fuentes/exportación y DIAGNOSTICO.cmd para registrar fallos de arranq
 prueba en esos equipos; la validación automatizada se realiza en Linux.
 Las licencias se incluyen. No se distribuyen recursos comerciales de GT4.
 
-Código: [eea2cf0](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/eea2cf0d02d88689a3bf9377d7a14195f2a29f24).
+Código: [dd96571](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/dd965713e32a8e1320088488b57df7d1162fbeb4).
 Esta rama contiene únicamente distribución y no se integra en main.
 Los archivos .sha256 permiten verificar los ZIP.
 
-## Presentación 0.27
+## Presentación 0.28
 
 Capturas reales del juego en Linux con OpenGL por software. No son renders conceptuales.
 
