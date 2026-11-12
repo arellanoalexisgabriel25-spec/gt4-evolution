@@ -1,7 +1,11 @@
-# GT4 Evolution 0.28 · Descargas
+# GT4 Evolution 0.29 · Descargas
 
-- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.28/GT4-Evolution-0.28-Windows.zip)
-- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.28/GT4-Evolution-0.28-Proyecto.zip)
+- [Descargar juego para Windows](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.29/GT4-Evolution-0.29-Windows.zip)
+- [Descargar proyecto para Godot](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/raw/refs/heads/downloads/v0.29/GT4-Evolution-0.29-Proyecto.zip)
+
+Las ruedas conservan sus formas al girar; la pista tiene asfalto y barreras detalladas.
+El concesionario ofrece filtros y vista 3D; TUNING permite instalar turbo de calle.
+Elegí **DUELO ¼ / PREPARADO** para correr con mejoras y escuchar el turbo sintetizado.
 
 Extraé TODO el ZIP Windows y abrí **GT4Evolution.exe** o **JUGAR.cmd**.
 La ventana inicia en **1920×1080** y se puede redimensionar. La interfaz se dibuja
@@ -84,11 +88,11 @@ hashes de fuentes/exportación y DIAGNOSTICO.cmd para registrar fallos de arranq
 prueba en esos equipos; la validación automatizada se realiza en Linux.
 Las licencias se incluyen. No se distribuyen recursos comerciales de GT4.
 
-Código: [dd96571](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/dd965713e32a8e1320088488b57df7d1162fbeb4).
+Código: [d5e6eb4](https://github.com/arellanoalexisgabriel25-spec/gt4-evolution/commit/d5e6eb4b83e3ebe8c7fdfeaf80bc7c716a823d9b).
 Esta rama contiene únicamente distribución y no se integra en main.
 Los archivos .sha256 permiten verificar los ZIP.
 
-## Presentación 0.28
+## Presentación 0.29
 
 Capturas reales del juego en Linux con OpenGL por software. No son renders conceptuales.
 
