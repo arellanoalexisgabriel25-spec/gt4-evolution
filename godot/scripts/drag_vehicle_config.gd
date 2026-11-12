@@ -183,11 +183,18 @@ static func from_vehicle(vehicle: Dictionary, factory: bool = false):
     result.tire_compound = "street" if factory else Tire.for_vehicle(vehicle)
     var upgrades: Array = [] if factory else vehicle.get("upgrades",[])
     result.peak_torque *= (1.10 if upgrades.has("ecu") else 1.0)*(1.05 if upgrades.has("escape") else 1.0)
+    # Development estimate for a mild aftermarket kit. The base curve is
+    # normalized at full boost, preserving the naturally aspirated off-boost
+    # torque while giving a gradual pressure-dependent peak gain.
+    if upgrades.has("turbo") and result.turbo_fraction<=0.0:
+        result.turbo_fraction = 0.38
+        result.peak_torque *= 1.38
+
     result.grip *= 1.04 if upgrades.has("suspension") else 1.0
     result.brake_capacity *= 1.2 if upgrades.has("brakes") else 1.0
     if upgrades.has("suspension"):
         result.cg_height = 0.43
-    result.engine_wear_factor = 1.0+(0.22 if upgrades.has("ecu") else 0.0)+(0.08 if upgrades.has("escape") else 0.0)
+    result.engine_wear_factor = 1.0+(0.22 if upgrades.has("ecu") else 0.0)+(0.08 if upgrades.has("escape") else 0.0)+(0.20 if upgrades.has("turbo") else 0.0)
     var handicaps: Dictionary = Damage.handicaps(vehicle.get("health",{}))
     result.drivetrain_efficiency *= float(handicaps["acceleration"])
     result.grip *= float(handicaps["grip"])

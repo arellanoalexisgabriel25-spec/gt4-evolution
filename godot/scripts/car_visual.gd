@@ -195,12 +195,24 @@ func _import_model(profile: Dictionary) -> bool:
         add_child(pivot)
         if i%2==0:
             front_pivots.append(pivot)
+        # Imported bodies can be stretched differently in height and length.
+        # Rotate the wheel in its original unstretched space, then restore that
+        # scale: D * R * D^-1. A plain rotation makes the elliptical outer rim
+        # turn with the texture and visibly wobble on every revolution.
+        var yz: Vector2 = rig.get("wheel_scale_yz",Vector2.ONE)
+        var ratio := yz.x/maxf(yz.y,0.000001)
+        var restore := Node3D.new()
+        restore.scale = Vector3(1.0,ratio,1.0)
+        pivot.add_child(restore)
         var spin := Node3D.new()
-        pivot.add_child(spin)
+        restore.add_child(spin)
         wheels.append(spin)
+        var unscale := Node3D.new()
+        unscale.scale = Vector3(1.0,1.0/ratio,1.0)
+        spin.add_child(unscale)
         var mesh := MeshInstance3D.new()
         mesh.mesh = rig["meshes"][i+1]
-        spin.add_child(mesh)
+        unscale.add_child(mesh)
     return true
 
 # Distinct original placeholders until the two larger supplied archives become

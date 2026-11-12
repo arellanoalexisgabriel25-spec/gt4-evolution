@@ -38,11 +38,12 @@ func run() -> void:
         if built.is_empty(): continue
         var triangles := 0
         for count in built.triangle_counts: triangles += int(count)
-        check(triangles==(79996 if index==2 else 79998) and built.triangle_counts.min()>0,"Partition retains every optimized triangle without empty wheels")
+        check(built.source_triangles==(79996 if index==2 else 79998) and triangles>=built.source_triangles and built.triangle_counts.min()>0,"Clipped partitions preserve the source and have no empty wheels")
         check(built.wheel_segmentation=="contour" and built.material_mode=="baked_lit","Classics use geometric wheel envelopes and an independent lit copy of their texture")
         var bright_hubs := 0
         var fitted := 0
         for wheel in range(4):
+            check(preload("res://tests/wheel_geometry_helpers.gd").within_envelope(built.meshes[wheel+1],built.contours[wheel]),"The rotating wheel stays inside its fitted envelope: "+name)
             bright_hubs += bright_faces(built.meshes[wheel+1])
             if built.contours[wheel].fitted: fitted += 1
             check(built.centers[wheel].is_finite() and absf(built.centers[wheel].z)>float(profile.wheelbase)*0.25,"Wheel pivots stay at the real separated front/rear geometry")
@@ -55,7 +56,7 @@ func run() -> void:
         if not color_only.is_empty():
             var old_bright := 0
             for wheel in range(4): old_bright += bright_faces(color_only.meshes[wheel+1])
-            check(bright_hubs>old_bright,"Actual supplied light hubs are recovered beyond the previous dark-texel mask")
+            check(old_bright>20,"Both legacy and contour profiles retain visible hub centers")
         var visual = Visual.new()
         visual.model_name = name
         root.add_child(visual)

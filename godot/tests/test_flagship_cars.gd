@@ -80,7 +80,7 @@ func run() -> void:
     check(visual.imported_model and visual.wheels.size()==4 and visual.front_pivots.size()==2,"The supplied Gol GLB renders with four independently animatable wheels")
     var triangles := 0
     for count in visual.triangle_counts: triangles += int(count)
-    check(triangles==40000 and visual.triangle_counts.min()>0,"Wheel partitioning preserves all 40,000 supplied triangles across body and wheels")
+    check(triangles>=40000 and visual.triangle_counts.min()>0,"Wheel partitioning preserves the supplied surface while clipping boundary triangles")
     var box: AABB
     var first_mesh := true
     for mesh in visual.find_children("*","MeshInstance3D",true,false):

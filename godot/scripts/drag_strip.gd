@@ -51,18 +51,77 @@ func _ready() -> void:
     var ground := box(Vector3(200,1,920),Vector3(0,-0.56,-320),Color("263327"),true)
     ground.get_child(0).position.y = 0.10
     var shader := Shader.new()
-    shader.code = "shader_type spatial; varying vec3 p; void vertex(){p=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;} void fragment(){float grain=fract(sin(dot(floor(p.xz*18.0),vec2(12.9898,78.233)))*43758.5453); float rubber=1.0-smoothstep(0.3,0.8,abs(abs(p.x)-3.75)); float dz=mod(p.z+16.0,32.0)-16.0; float pool=exp(-dz*dz/105.0)*0.075; ALBEDO=vec3(0.16,0.17,0.19)*mix(0.90,1.06,grain)*(1.0-rubber*0.30); EMISSION=vec3(1.0,0.60,0.26)*pool*(1.0-rubber*0.25); ROUGHNESS=0.88;}"
+    shader.code = """
+shader_type spatial;
+uniform sampler2D asphalt_color : source_color, repeat_enable, filter_linear_mipmap_anisotropic;
+uniform sampler2D asphalt_normal : hint_normal, repeat_enable, filter_linear_mipmap_anisotropic;
+varying vec3 world_pos;
+void vertex() { world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
+void fragment() {
+    vec2 uv = world_pos.xz * 0.16;
+    vec3 aggregate = texture(asphalt_color, uv).rgb;
+    float lane = abs(abs(world_pos.x) - 3.75);
+    float tracks = 1.0-smoothstep(0.11,0.38,abs(lane-0.64));
+    float variation = 0.80 + 0.20 * texture(asphalt_color,uv * 0.13).r;
+    float dz = mod(world_pos.z+16.0,32.0)-16.0;
+    float pool = exp(-dz*dz/105.0)*0.075;
+    ALBEDO = aggregate * 1.45 * variation * (1.0-tracks*0.22);
+    NORMAL_MAP = texture(asphalt_normal, uv).rgb;
+    NORMAL_MAP_DEPTH = 0.25;
+    EMISSION = vec3(1.0,0.60,0.26) * pool * (1.0-tracks*0.25);
+    ROUGHNESS = 0.88;
+}
+"""
     var asphalt := ShaderMaterial.new()
     asphalt.shader = shader
+    asphalt.set_shader_parameter("asphalt_color",load("res://assets/track/asphalt_albedo.png"))
+    asphalt.set_shader_parameter("asphalt_normal",load("res://assets/track/asphalt_normal.png"))
     # Surface borders and tire queries share these exact dimensions.
     box(Vector3(Surfaces.GRAVEL_HALF_WIDTH*2.0,0.04,Surfaces.LENGTH),Vector3(0,-0.025,Surfaces.CENTER_Z),Color("b5ae94"))
     box(Vector3(Surfaces.APRON_HALF_WIDTH*2.0,0.04,Surfaces.LENGTH),Vector3(0,0.005,Surfaces.CENTER_Z),Color("686b69"))
     box(Vector3(Surfaces.ROAD_HALF_WIDTH*2.0,0.06,Surfaces.LENGTH),Vector3(0,0.01,Surfaces.CENTER_Z),Color("343b43"),false,asphalt)
+    var barrier_shader := Shader.new()
+    barrier_shader.code = """
+shader_type spatial;
+varying vec3 world_pos;
+void vertex() { world_pos = (MODEL_MATRIX * vec4(VERTEX,1.0)).xyz; }
+void fragment() {
+    float seam = 1.0-smoothstep(0.015,0.055,abs(mod(world_pos.z+3.0,6.0)-3.0));
+    float grain = fract(sin(dot(floor(world_pos.yz*75.0),vec2(12.9898,78.233)))*43758.5453);
+    float grime = 1.0-smoothstep(0.12,0.5,world_pos.y);
+    ALBEDO = vec3(0.55,0.57,0.56) * (0.94+0.06*grain) * (1.0-0.20*seam-0.16*grime);
+    ROUGHNESS = 0.9;
+}
+"""
+    var barrier := ShaderMaterial.new()
+    barrier.shader = barrier_shader
     for side in [-1,1]:
-        box(Vector3(0.35,0.92,780),Vector3(side*9.7,0.46,-325),Color("c7c8be"),true)
+        box(Vector3(0.35,0.92,780),Vector3(side*9.7,0.46,-325),Color("c7c8be"),true,barrier)
         box(Vector3(0.12,0.012,775),Vector3(side*8.5,0.047,-325),Color("d5d5ca"))
         for z in range(30,-690,-12):
             box(Vector3(0.055,2.3,0.055),Vector3(side*10.15,1.3,z),Color("7b878b"))
+    # Cutout wire mesh provides depth behind the concrete without adding
+    # hundreds of collision bodies or affecting the real track surface.
+    var wire_shader := Shader.new()
+    wire_shader.code = """
+shader_type spatial;
+render_mode cull_disabled;
+varying vec3 world_pos;
+void vertex() { world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
+void fragment() {
+    float a = abs(fract(world_pos.z*1.4+world_pos.y*1.4)-0.5);
+    float b = abs(fract(world_pos.z*1.4-world_pos.y*1.4)-0.5);
+    float wire = 1.0-step(0.025,min(a,b));
+    ALBEDO = vec3(0.30,0.34,0.36);
+    ROUGHNESS = 0.75;
+    ALPHA = wire;
+    ALPHA_SCISSOR_THRESHOLD = 0.5;
+}
+"""
+    var fence := ShaderMaterial.new()
+    fence.shader = wire_shader
+    for side in [-1,1]:
+        box(Vector3(0.018,1.45,715),Vector3(side*10.15,1.74,-327),Color.WHITE,false,fence)
     for z in range(10,-690,-10):
         box(Vector3(0.12,0.01,4),Vector3(0,0.05,z),Color("e2dfcd"))
     for x in [-3.75,3.75]:

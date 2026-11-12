@@ -77,6 +77,10 @@ def main():
 - [Descargar juego para Windows]({base}/{names[0]})
 - [Descargar proyecto para Godot]({base}/{names[1]})
 
+Las ruedas conservan sus formas al girar; la pista tiene asfalto y barreras detalladas.
+El concesionario ofrece filtros y vista 3D; TUNING permite instalar turbo de calle.
+Elegí **DUELO ¼ / PREPARADO** para correr con mejoras y escuchar el turbo sintetizado.
+
 Extraé TODO el ZIP Windows y abrí **GT4Evolution.exe** o **JUGAR.cmd**.
 La ventana inicia en **1920×1080** y se puede redimensionar. La interfaz se dibuja
 con fuentes vectoriales y los modelos usan filtrado anisotrópico; las texturas

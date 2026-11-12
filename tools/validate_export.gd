@@ -39,7 +39,7 @@ func await_automatic_start(scene) -> bool:
 
 func run() -> void:
     var session = root.get_node("GameSession")
-    check(session.VERSION=="0.28","The exported PCK carries the current game version")
+    check(session.VERSION=="0.29","The exported PCK carries the current game version")
     check(session.controls.shift_mode=="manual" and not session.controls.auto_rev_match,"The shipping defaults disclose manual control without rev-matching assistance")
     check(session.controls.secondary_keycodes("clutch").has(KEY_CTRL) and session.controls.secondary_keycodes("shift_up").has(KEY_PAGEUP),"The shipping controls retain hardware-friendly alternative manual chords")
     check(session.controls.msaa_level()==Viewport.MSAA_2X,"The packaged default applies the explicit balanced graphics preference")

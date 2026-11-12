@@ -28,7 +28,7 @@ func run() -> void:
         check(visual.imported_model and visual.wheels.size()==4 and visual.front_pivots.size()==2,"Every supplied model provides four separate wheel animations")
         var total := 0
         for count in visual.triangle_counts: total += int(count)
-        check(total==expected[index] and visual.triangle_counts.min()>0,"Render partition preserves every runtime triangle without empty wheels")
+        check(total>=expected[index] and visual.triangle_counts.min()>0,"Clipped partitions preserve source triangles without empty wheels")
         var bounds: AABB
         var first := true
         for node in visual.find_children("*","MeshInstance3D",true,false):
@@ -40,6 +40,8 @@ func run() -> void:
         check(absf(visual.wheels[0].rotation.x)>absf(visual.wheels[1].rotation.x)*2.9 and absf(visual.front_pivots[0].rotation.y)>0,"Front and rear wheel motion shows actual axle speed and steering")
         var built: Dictionary = Imported.build(profile)
         check(built.source_triangles==expected[index],"Cached render meshes retain their source triangle accounting")
+        for wheel in range(4):
+            check(preload("res://tests/wheel_geometry_helpers.gd").within_envelope(built.meshes[wheel+1],built.contours[wheel]),"Rotating flagship geometry stays inside its wheel envelope")
         if index<2:
             check(built.material_mode=="baked_lit","Shaded model texture responds to lighting instead of illuminating the body")
             var source: Node = load(profile.asset).instantiate()

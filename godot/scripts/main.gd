@@ -43,6 +43,9 @@ var music_label: Label
 var music_choice: OptionButton
 var home_featured := ""
 var garage_featured := 0
+var market_brand := ""
+var market_preview_id := 0
+var tuning_vehicle_id := 0
 var duel_profile := "technical"
 var duel_class := "1"
 var duel_opponent_model := ""
@@ -186,10 +189,16 @@ VERSION " + GameSession.VERSION,11)
         button.add_theme_font_size_override("font_size",16)
         footer_row.add_child(button)
 
+func _scroll_to_top() -> void:
+    var scroll = content.get_parent() if is_instance_valid(content) else null
+    if scroll is ScrollContainer:
+        scroll.set_deferred("scroll_vertical",0)
+
 func _change_tab(next: String) -> void:
     pending_binding = ""
     current_tab = next
     _render()
+    _scroll_to_top()
     if navigation!=null:
         navigation.initial_focus = nav_buttons[current_tab]
         if GameSession.controls.controller.selected()>=0:
@@ -295,6 +304,40 @@ func _market() -> void:
     content.add_child(_label("GARAGE NACIONAL / AUTOS USADOS",24))
     content.add_child(_label("Día %d del mercado · índice de precios %.2f · calificación crediticia %d. Inspeccioná, pedí el informe de dominio y negociá antes de comprar: la condición oculta y los papeles pueden convertir una oferta en una restauración costosa." % [MarketState.day(game),MarketState.index(game),MarketLoans.score(game)],13))
     content.add_child(_button("ESPERAR UN DÍA (rotan las ofertas y los precios)",_wait_day))
+    var brands: Array[String] = []
+    for offer in game.cars:
+        if offer["owner"]=="seller":
+            var brand := str(offer["model"]).get_slice(" ",0)
+            if not brands.has(brand): brands.append(brand)
+    brands.sort()
+    if not market_brand.is_empty() and not brands.has(market_brand): market_brand = ""
+    var filter := OptionButton.new()
+    filter.name = "MarketBrandFilter"
+    filter.add_item("TODAS LAS MARCAS")
+    for brand in brands: filter.add_item(brand.to_upper())
+    filter.selected = maxi(0,brands.find(market_brand)+1)
+    filter.item_selected.connect(func(index):
+        market_brand = "" if index==0 else brands[index-1]
+        market_preview_id = 0
+        _render()
+        _scroll_to_top())
+    content.add_child(filter)
+    var viewed: Dictionary = game.find_car(market_preview_id)
+    if not viewed.is_empty() and viewed.get("owner")=="seller":
+        var preview_header := HBoxContainer.new()
+        content.add_child(preview_header)
+        var preview_title := _label("VISTA 3D · "+str(viewed["model"]),18)
+        preview_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        preview_header.add_child(preview_title)
+        preview_header.add_child(_button("CERRAR VISTA",func():
+            market_preview_id=0
+            _render()
+            _scroll_to_top()))
+        var preview = Preview.new()
+        preview.name = "MarketPreview"
+        preview.model_name = str(viewed["model"])
+        preview.custom_minimum_size = Vector2(0,155)
+        content.add_child(preview)
     var grid := GridContainer.new()
     grid.columns = 2 if size.x >= 1100 else 1
     grid.add_theme_constant_override("h_separation",12)
@@ -302,7 +345,7 @@ func _market() -> void:
     content.add_child(grid)
     var seller_names := {"particular": "PARTICULAR", "agencia": "AGENCIA", "urgente": "VENDEDOR APURADO"}
     for car in Catalog.market_order(game.cars):
-        if car["owner"] != "seller":
+        if car["owner"] != "seller" or (not market_brand.is_empty() and str(car["model"]).get_slice(" ",0)!=market_brand):
             continue
         var id := int(car["id"])
         var panel := PanelContainer.new()
@@ -353,6 +396,10 @@ func _market() -> void:
         var actions := HFlowContainer.new()
         actions.add_theme_constant_override("h_separation",8)
         column.add_child(actions)
+        actions.add_child(_button("VER EN 3D",func():
+            market_preview_id=id
+            _render()
+            _scroll_to_top()))
         var inspect_cost := Deal.inspection_price(game,id)
         var inspect_button := _button("INSPECCIÓN " + Money.format(inspect_cost),_inspect.bind(id))
         inspect_button.disabled = bool(car.get("inspected",false)) or game.balance < inspect_cost
@@ -474,6 +521,9 @@ func _garage() -> void:
         var duel_button := _button("DUELO ¼ DE MILLA / FÁBRICA",_drag_duel.bind(int(car["id"])))
         duel_button.disabled = not game.eligible(car)
         actions.add_child(duel_button)
+        var prepared := _button("DUELO ¼ / PREPARADO",_drag_prepared_duel.bind(int(car["id"])))
+        prepared.disabled = not game.eligible(car)
+        actions.add_child(prepared)
         var drag := _button("¼ DE MILLA / CVT" if metrics.transmission_type=="cvt" else "¼ DE MILLA / MANUAL",_drag_3d.bind(int(car["id"])))
         drag.disabled = not game.eligible(car)
         actions.add_child(drag)
@@ -550,23 +600,52 @@ func _history() -> void:
 
 func _tuning() -> void:
     content.add_child(_label("TUNING Y PREPARACIÓN", 22))
-    content.add_child(_label("Las mejoras influyen en el manejo 3D y en las simulaciones. Más potencia aumenta el desgaste.", 14))
+    content.add_child(_label("Elegí un auto y revisá los efectos estimados. El duelo preparado usa las piezas instaladas; el duelo de fábrica conserva la configuración original.", 14))
     var shop = Tuning.new()
-    for car in game.cars:
-        if car["owner"] != "player":
-            continue
-        content.add_child(_label("%s · bonificación +%.1f" % [car["model"], shop.performance_bonus(car)], 18))
-        for part in Tuning.PARTS:
-            var row := HBoxContainer.new()
-            content.add_child(row)
-            var description := _label("%s · +%.1f · %s" % [part["name"], part["gain"], Money.format(int(part["price"]))], 15)
-            description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-            row.add_child(description)
-            var part_id: String = part["id"]
-            var issue := shop.can_install(game, int(car["id"]), part_id)
-            var button := _button("INSTALADA" if shop.has_part(car, part_id) else "COMPRAR", _install_part.bind(int(car["id"]), part_id))
-            button.disabled = not issue.is_empty()
-            row.add_child(button)
+    var owned: Array = []
+    for vehicle in game.cars:
+        if vehicle["owner"]=="player": owned.append(vehicle)
+    if owned.is_empty():
+        content.add_child(_label("Comprá un auto para preparar.",16))
+        return
+    var selected := 0
+    var picker := OptionButton.new()
+    picker.name = "TuningVehicle"
+    for i in range(owned.size()):
+        picker.add_item(str(owned[i]["model"]))
+        picker.set_item_metadata(i,int(owned[i]["id"]))
+        if int(owned[i]["id"])==tuning_vehicle_id: selected=i
+    picker.selected=selected
+    var car: Dictionary=owned[selected]
+    tuning_vehicle_id=int(car["id"])
+    picker.item_selected.connect(func(index):
+        tuning_vehicle_id=int(picker.get_item_metadata(index))
+        _render()
+        _scroll_to_top())
+    content.add_child(picker)
+    var preview = Preview.new()
+    preview.name = "TuningPreview"
+    preview.model_name = str(car["model"])
+    preview.custom_minimum_size = Vector2(0,150)
+    content.add_child(preview)
+    var config = DragConfig.from_vehicle(car,false)
+    var metrics: Dictionary = config.metrics()
+    content.add_child(_label("PREPARACIÓN ACTUAL · %.1f CV estimados · índice +%.1f" % [metrics["calculated_peak_power_cv"],shop.performance_bonus(car)],18))
+    var descriptions := {"turbo":"Presión progresiva y +38 % de torque máximo estimado; aumenta el desgaste.","ecu":"+10 % de torque estimado; aumenta el desgaste del motor.","escape":"+5 % de torque estimado; aumenta el desgaste del motor.","suspension":"Agarre +4 % y centro de gravedad más bajo.","brakes":"Capacidad de frenado +20 %.","tires":"Compuesto deportivo y neumáticos nuevos."}
+    for part in Tuning.PARTS:
+        var card := PanelContainer.new()
+        content.add_child(card)
+        var column := VBoxContainer.new()
+        card.add_child(column)
+        var part_id: String = part["id"]
+        column.add_child(_label("%s · %s" % [part["name"],Money.format(int(part["price"]))],17))
+        column.add_child(_label(str(descriptions.get(part_id,"Mejora de rendimiento estimada.")),13))
+        var issue := shop.can_install(game,int(car["id"]),part_id)
+        var button := _button("INSTALADA" if shop.has_part(car,part_id) else "INSTALAR",_install_part.bind(int(car["id"]),part_id))
+        button.disabled=not issue.is_empty()
+        button.tooltip_text=issue
+        column.add_child(button)
+        if not issue.is_empty() and not shop.has_part(car,part_id): column.add_child(_label(issue,12))
 
 func _install_part(car_id: int, part_id: String) -> void:
     notice.text = Tuning.new().install(game, car_id, part_id)
@@ -730,6 +809,12 @@ func _drive_3d(id: int) -> void:
 
 func _drag_3d(id: int) -> void:
     if not GameSession.start_drag(id):
+        notice.text = "El auto no está disponible o tenés una inscripción pendiente."
+        return
+    get_tree().change_scene_to_file("res://scenes/drag.tscn")
+
+func _drag_prepared_duel(id: int) -> void:
+    if not GameSession.start_drag(id,"prepared_duel",duel_profile,"",duel_opponent_model):
         notice.text = "El auto no está disponible o tenés una inscripción pendiente."
         return
     get_tree().change_scene_to_file("res://scenes/drag.tscn")

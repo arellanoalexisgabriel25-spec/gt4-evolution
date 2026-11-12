@@ -225,7 +225,24 @@ static func build(profile: Dictionary) -> Dictionary:
             centers.append(Vector3(x*size.x*0.42,radius-0.5,z*wheelbase*0.5))
     var contours: Array = []
     for wheel in range(4):
-        contours.append(_wheel_contour(transformed,centers[wheel],radius,size.x,scale) if segmentation=="contour" else {"center":centers[wheel],"radius":radius,"radii":Vector2(radius,radius),"fitted":false})
+        # Fit the tire arc even for legacy color-segmented scans. An approximate
+        # catalog wheelbase alone is not a reliable rotation center.
+        var contour: Dictionary = _wheel_contour(transformed,centers[wheel],radius,size.x,scale) if configured.is_empty() else {"center":centers[wheel],"radius":radius,"radii":Vector2(radius,radius),"fitted":false}
+        if configured.is_empty():
+            # The lower scan arc can undershoot the tread by a few percent.
+            # Keep the complete rubber edge in the rotating mesh while still
+            # clipping long body triangles at a bounded elliptical envelope.
+            if contour.fitted:
+                contour.radii *= 1.06
+                contour.radius = contour.radii.x
+            centers[wheel]=contour.center
+            var planes: Array[Plane] = [Plane(Vector3(signf(contour.center.x),0,0),size.x*0.31)]
+            for segment in range(32):
+                var angle := TAU*float(segment)/32.0
+                var normal := Vector3(0,-cos(angle)/contour.radii.x,-sin(angle)/contour.radii.y)
+                planes.append(Plane(normal,normal.dot(contour.center)-1.0))
+            contour["planes"]=planes
+        contours.append(contour)
     if not configured.is_empty():
         for wheel in range(4):
             var setting = configured[wheel]
@@ -282,55 +299,43 @@ static func build(profile: Dictionary) -> Dictionary:
                     break
             if not assigned: groups[0].append_array([indices[triangle],indices[triangle+1],indices[triangle+2]])
             continue
-        var midpoint := (transformed[indices[triangle]]+transformed[indices[triangle+1]]+transformed[indices[triangle+2]])/3.0
-        var group := 0
+        var a: Vector3 = transformed[indices[triangle]]
+        var b: Vector3 = transformed[indices[triangle+1]]
+        var c: Vector3 = transformed[indices[triangle+2]]
+        var midpoint := (a+b+c)/3.0
         var wheel_surface := true
         if diffuse!=null and uv.size()==vertices.size():
             var texcoord := (uv[indices[triangle]]+uv[indices[triangle+1]]+uv[indices[triangle+2]])/3.0
             var color := diffuse.get_pixel(clampi(int(texcoord.x*diffuse.get_width()),0,diffuse.get_width()-1),clampi(int(texcoord.y*diffuse.get_height()),0,diffuse.get_height()-1))
-            # A spatial wheel region also contains painted fender triangles.
-            # Keep those in the body; dark, nearly neutral rubber/rim texels
-            # identify the supplied model's actual wheel surfaces.
             wheel_surface = color.get_luminance()<0.40 and maxf(color.r,maxf(color.g,color.b))-minf(color.r,minf(color.g,color.b))<0.22
-        for wheel in range(4):
-            var delta: Vector3 = midpoint-centers[wheel]
-            var candidate := wheel_surface and Vector2(delta.y,delta.z).length()<radius*1.15
-            if segmentation=="contour":
-                var contour: Dictionary = contours[wheel]
-                var offset: Vector3 = midpoint-contour.center
-                var radial := Vector2(offset.y/contour.radii.x,offset.z/contour.radii.y).length()
-                # Bright wheel centers belong to the wheel too. Color alone
-                # cannot distinguish a white hubcap from white paint, or black
-                # rubber from a black fender. The fitted circular envelope keeps
-                # the upper fender fixed while retaining the hubcap interior.
-                # The lower scan contains tread thickness and small contour
-                # irregularities. Above the hub the tighter envelope protects
-                # the fender lip, particularly on the supplied black car.
-                var outer_limit := 1.10 if offset.y<float(contour.radius)*0.10 else 1.01
-                candidate = radial<0.80 or (wheel_surface and radial<outer_limit)
-                if candidate:
-                    for corner in range(3):
-                        var edge: Vector3 = transformed[indices[triangle+corner]]-contour.center
-                        var corner_limit := 1.15 if edge.y<0.0 else 1.08
-                        if Vector2(edge.y/contour.radii.x,edge.z/contour.radii.y).length()>corner_limit:
-                            candidate = false
-                            break
-            if candidate and absf(midpoint.x)>size.x*0.31 and signf(midpoint.x)==signf(centers[wheel].x):
-                group = wheel+1
+        var assigned := false
+        for wheel in _visual_wheel_candidates(a,b,c,contours,size.x):
+            var contour: Dictionary = contours[wheel]
+            var offset: Vector3 = midpoint-contour.center
+            var radial := Vector2(offset.y/contour.radii.x,offset.z/contour.radii.y).length()
+            # Preserve bright center caps, but leave light outer fenders fixed.
+            if not wheel_surface and radial>=0.50:
+                continue
+            if _inside_visual_wheel(a,contour,size.x) and _inside_visual_wheel(b,contour,size.x) and _inside_visual_wheel(c,contour,size.x):
+                groups[wheel+1].append_array([indices[triangle],indices[triangle+1],indices[triangle+2]])
+                assigned=true
                 break
-        groups[group].append_array([indices[triangle],indices[triangle+1],indices[triangle+2]])
+            # A whole-face midpoint mask can include vertices far outside the
+            # tire and rotate bodywork. Split the face and interpolate UVs and
+            # normals so the original static surface remains intact.
+            var vertices_of_face: Array = []
+            for corner in range(3): vertices_of_face.append(_visual_vertex(indices[triangle+corner],transformed,normals,uv,normal_basis))
+            var partition := _clip_visual_wheel(vertices_of_face,contour,size.x)
+            if partition.is_empty(): continue
+            _triangulate_visual(partition.inside,clipped[wheel+1])
+            for polygon in partition.outside: _triangulate_visual(polygon,clipped[0])
+            assigned=true
+            break
+        if not assigned: groups[0].append_array([indices[triangle],indices[triangle+1],indices[triangle+2]])
     for group in range(5):
         if groups[group].is_empty() and clipped[group].is_empty():
             source.free()
             return {}
-    for wheel in range(4):
-        if not configured.is_empty(): continue
-        var wheel_box := AABB(transformed[groups[wheel+1][0]],Vector3.ZERO)
-        for vertex in groups[wheel+1]:
-            wheel_box = wheel_box.expand(transformed[vertex])
-        # Derive the visual pivot from the supplied wheel geometry. Approximate
-        # catalog wheelbase is a search region, not a reason to make a tire wobble.
-        centers[wheel] = wheel_box.get_center()
     var meshes: Array[ArrayMesh] = []
     var counts: Array[int] = []
     for group in range(5):
@@ -356,6 +361,6 @@ static func build(profile: Dictionary) -> Dictionary:
         meshes.append(surface.commit())
         counts.append(int((groups[group].size()+clipped[group].size())/3))
     source.free()
-    var result := {"meshes":meshes,"centers":centers,"triangle_counts":counts,"source_triangles":int(indices.size()/3),"render_triangles":counts.reduce(func(total,value): return total+value,0),"size":size,"material_mode":"baked_lit" if baked_source else "source","wheel_segmentation":segmentation,"contours":contours}
+    var result := {"meshes":meshes,"centers":centers,"wheel_scale_yz":Vector2(scale.y,scale.z),"triangle_counts":counts,"source_triangles":int(indices.size()/3),"render_triangles":counts.reduce(func(total,value): return total+value,0),"size":size,"material_mode":"baked_lit" if baked_source else "source","wheel_segmentation":segmentation,"contours":contours}
     cache[cache_key] = result
     return result

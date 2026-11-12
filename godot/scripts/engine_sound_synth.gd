@@ -20,6 +20,8 @@ var limiting := false
 var crank_phase := 0.0
 var firing_phase := 0.0
 var turbo_phase := 0.0
+var relief_level := 0.0
+var _relief_decay := 0.0
 var limiter_phase := 0.0
 var combustion_events := 0
 var cue: Dictionary = {}
@@ -59,6 +61,8 @@ func configure(selected_profile, rate: float = 44100.0, seed_value: int = 13) ->
     crank_phase = 0.0
     firing_phase = 0.0
     turbo_phase = 0.0
+    relief_level = 0.0
+    _relief_decay = exp(-1.0/(0.16*sample_rate))
     limiter_phase = 0.0
     combustion_events = 0
     cue.clear()
@@ -119,7 +123,10 @@ func _table(tables: Array[PackedFloat32Array], phase: float, frequency: float) -
 
 func set_state(engine_rpm: float, throttle: float, is_running: bool, fuel_cut: bool, pressure: float = 0.0, friction_kw: float = 0.0) -> void:
     target_rpm = clampf(engine_rpm,0.0,50000.0) if is_finite(engine_rpm) else 0.0
-    target_load = clampf(throttle,0.0,1.0) if is_finite(throttle) else 0.0
+    var next_load := clampf(throttle,0.0,1.0) if is_finite(throttle) else 0.0
+    if profile.turbo>0.0 and target_load>0.55 and next_load<0.25 and boost>0.12 and is_running:
+        relief_level = maxf(relief_level,boost*minf(profile.turbo*3.0,1.0))
+    target_load = next_load
     target_running = 1.0 if is_running else 0.0
     limiting = fuel_cut
     boost = clampf(pressure,0.0,1.0) if is_finite(pressure) else 0.0
@@ -167,9 +174,11 @@ func sample() -> float:
     var air: float = high_noise*profile.induction*load*load*running
     var turbo_hz := minf(1800.0+5000.0*sqrt(boost)+rpm*0.08,sample_rate*0.40)
     turbo_phase = fposmod(turbo_phase+turbo_hz/sample_rate,1.0)
-    var turbo_tone: float = (sin(turbo_phase*TAU)*0.018+high_noise*0.025)*boost*minf(profile.turbo*3.0,1.0)*running
+    var turbo_tone: float = (sin(turbo_phase*TAU)*0.060+high_noise*0.045)*boost*minf(profile.turbo*3.0,1.0)*running
+    var relief := high_noise*relief_level*0.11*running
+    relief_level *= _relief_decay
     var friction := high_noise*sqrt(clutch_loss_kw/300.0)*0.018
-    var value: float = _exhaust_low*1.35+rumble*0.22+_intake_low*0.25+mechanical+air+turbo_tone+friction
+    var value: float = _exhaust_low*1.35+rumble*0.22+_intake_low*0.25+mechanical+air+turbo_tone+relief+friction
     value += crank*0.018*rev_fraction*running
     if cue_remaining>0.0:
         cue_phase = fposmod(cue_phase+float(cue.get("frequency",800.0))/sample_rate,1.0)

@@ -5,8 +5,13 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.28"
-README = """GT4 EVOLUTION — PROTOTIPO 0.28 / CALENTAMIENTO Y FULL HD
+VERSION = "0.29"
+README = """GT4 EVOLUTION — PROTOTIPO 0.29 / RUEDAS, PISTA Y PREPARACIÓN
+
+Novedades: ruedas corregidas, asfalto detallado, concesionario con vista 3D y
+turbo de calle disponible en TUNING. Para correr con mejoras seleccioná
+GARAJE → DUELO ¼ / PREPARADO; FÁBRICA conserva el vehículo original.
+El sonido de turbo es síntesis y el kit usa parámetros estimados.
 
 WINDOWS: extraé TODO el ZIP y abrí GT4Evolution.exe o JUGAR.cmd.
 La ventana inicia a 1920×1080; podés redimensionarla. La interfaz es vectorial,
@@ -114,7 +119,7 @@ Música: trece temas aportados con autorización expresa de redistribución.
 AJUSTES permite elegir tema, anterior/siguiente, aleatorio y volumen.
 La música se desvanece en pista y retoma en los menús. No está cubierta por MIT.
 
-Ver juego/RELEASE-0.28.md en el ZIP Proyecto y documentacion/ en Windows para el
+Ver juego/RELEASE-0.29.md en el ZIP Proyecto y documentacion/ en Windows para el
 alcance exacto y resultados de validación. El entorno valida Linux y el mismo PCK;
 Windows y mando físico requieren prueba en esos equipos. Si no inicia, ejecutá
 DIAGNOSTICO.cmd y compartí juego.log. Licencias incluidas. No se distribuyen

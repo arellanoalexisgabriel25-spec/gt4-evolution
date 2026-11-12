@@ -72,6 +72,7 @@ func run() -> void:
         check(built.wheel_segmentation=="configured_clip","Each new model uses a tire envelope independent of body paint color")
         var configured := 0
         for wheel in range(4):
+            check(preload("res://tests/wheel_geometry_helpers.gd").within_envelope(built.meshes[wheel+1],built.contours[wheel]),"The rotating wheel stays inside its fitted envelope: "+name)
             if built.contours[wheel].get("configured",false) and not built.contours[wheel].fitted: configured += 1
             check(built.centers[wheel].is_finite() and absf(built.centers[wheel].z)>float(profile.wheelbase)*0.25,"Wheel pivots remain on the actual front or rear axle region")
         check(configured==4,"All four visual wheel envelopes are explicit estimates, never passed off as automatic physical measurements: "+name)

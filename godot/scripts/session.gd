@@ -2,7 +2,7 @@ extends Node
 
 const Economy = preload("res://scripts/economy.gd")
 const Career = preload("res://scripts/career.gd")
-const VERSION := "0.28"
+const VERSION := "0.29"
 const ControlSettings = preload("res://scripts/control_settings.gd")
 const Catalog = preload("res://scripts/car_catalog.gd")
 const DragClasses = preload("res://scripts/drag_class_rules.gd")
@@ -68,12 +68,12 @@ func start_driving(car_id: int, mode: String = "practice") -> bool:
     return true
 
 func start_drag(car_id: int, format: String = "practice", profile: String = "technical", class_id: String = "", opponent_model: String = "") -> bool:
-    if not opponent_model.is_empty() and (format!="duel" or not Catalog.has_definition(opponent_model)):
+    if not opponent_model.is_empty() and (format not in ["duel","prepared_duel"] or not Catalog.has_definition(opponent_model)):
         return false
     # A reference time band is a game choice, never official admission.
     if not class_id.is_empty() and (format!="duel" or class_id=="L1" or DragClasses.class_by_id(class_id).is_empty()):
         return false
-    if format not in ["practice","duel"] or profile not in ["technical","aggressive","conservative"] or not entry_ticket.is_empty() or career.has_pending_track_entry() or not choose_vehicle(car_id):
+    if format not in ["practice","duel","prepared_duel"] or profile not in ["technical","aggressive","conservative"] or not entry_ticket.is_empty() or career.has_pending_track_entry() or not choose_vehicle(car_id):
         return false
     driving_mode = "drag"
     drag_format = format

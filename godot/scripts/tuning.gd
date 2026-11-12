@@ -4,6 +4,7 @@ const Money = preload("res://scripts/money.gd")
 
 # Small, game-balanced tuning catalog. Does not modify GT4's original physics.
 const PARTS := [
+    {"id":"turbo", "name":"Kit turbo de calle", "price":3200, "gain":8.0, "category":"motor"},
     {"id":"ecu", "name":"ECU deportiva", "price":1200, "gain":5.0, "category":"motor"},
     {"id":"escape", "name":"Escape deportivo", "price":800, "gain":2.5, "category":"motor"},
     {"id":"suspension", "name":"Suspensión regulable", "price":1100, "gain":4.0, "category":"suspension"},
@@ -35,6 +36,8 @@ func engine_wear_multiplier(car: Dictionary) -> float:
         multiplier += 0.22
     if has_part(car, "escape"):
         multiplier += 0.08
+    if has_part(car, "turbo"):
+        multiplier += 0.20
     return multiplier
 
 func can_install(game, car_id: int, part_id: String) -> String:
@@ -46,6 +49,8 @@ func can_install(game, car_id: int, part_id: String) -> String:
         return "El vehículo debe pertenecer al jugador."
     if has_part(car, part_id):
         return "Esta mejora ya está instalada."
+    if part_id=="turbo" and load("res://scripts/drag_vehicle_config.gd").from_vehicle(car,true).turbo_fraction>0.0:
+        return "El motor ya tiene turbo de fábrica."
     var component: String = part["category"]
     if float(car["health"].get(component, 0.0)) < 40.0:
         return "Repará primero el componente %s." % component

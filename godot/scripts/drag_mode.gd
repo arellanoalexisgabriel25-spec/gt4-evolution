@@ -39,6 +39,7 @@ var pause_menu
 var last_pad := -1
 var controller_lost := false
 var is_duel := false
+var factory_duel := false
 var class_data: Dictionary = {}
 var opponent
 var opponent_run = Run.new()
@@ -55,7 +56,13 @@ func _ready() -> void:
     GameSession.menu_music.set_menu_active(false)
     var vehicle: Dictionary = GameSession.game.find_car(GameSession.selected_vehicle)
     enabled = GameSession.driving_mode == "drag" and garage.begin(GameSession.game,GameSession.career,GameSession.selected_vehicle)
-    is_duel = GameSession.drag_format=="duel"
+    is_duel = GameSession.drag_format in ["duel","prepared_duel"]
+    factory_duel = GameSession.drag_format=="duel"
+    if is_duel and not factory_duel:
+        var parts: Array = vehicle.get("upgrades",[]).duplicate()
+        parts.sort()
+        var setup := ",".join(parts)+":"+str(vehicle.get("tire_compound","street"))
+        garage.record_profile += "_prep_"+setup.sha256_text().substr(0,12)
     class_data = Classes.class_by_id(GameSession.drag_class_id) if is_duel else {}
     opponent_name = {"technical":"Nico Vega","aggressive":"Claire Moreau","conservative":"Akira Sato"}.get(GameSession.drag_rival_profile,"Nico Vega")
     strip = Strip.new()
@@ -67,7 +74,7 @@ func _ready() -> void:
     car.position = Vector3(Strip.LANE_X,0.75,-WARMUP_POSITION)
     car.collision_layer = 2
     car.collision_mask = 3 if is_duel else 1
-    car.powertrain.config = Config.from_vehicle(vehicle,is_duel)
+    car.powertrain.config = Config.from_vehicle(vehicle,factory_duel)
     if not is_duel:
         car.powertrain.config.abs_assist = GameSession.controls.abs_assist
         car.powertrain.traction_control = GameSession.controls.traction_control
@@ -335,7 +342,7 @@ func _physics_process(delta: float) -> void:
         _duel_result()
     if run.phase == "finished" and not handled_finish:
         if garage.settle(car.powertrain.wear,car.damage):
-            if is_duel:
+            if factory_duel:
                 personal_best = GameSession.career.stock_drag_records.consider_for_profile(GameSession.selected_vehicle,run.report(),garage.record_profile)
             else:
                 personal_best = garage.record_finish(run.report())
@@ -344,7 +351,7 @@ func _physics_process(delta: float) -> void:
     _refresh_hud()
 
 func _refresh_hud() -> void:
-    var best: Dictionary = (GameSession.career.stock_drag_records if is_duel else GameSession.career.drag_records).best_for_profile(GameSession.selected_vehicle,garage.record_profile)
+    var best: Dictionary = (GameSession.career.stock_drag_records if factory_duel else GameSession.career.drag_records).best_for_profile(GameSession.selected_vehicle,garage.record_profile)
     hud.refresh({"raw_controls":_sampled_controls,"applied_controls":_applied_controls,"readiness_issue":_readiness_issue(_sampled_controls) if procedure.phase=="staging" else "","launch_hint":_launch_hint(_sampled_controls),"procedure_phase":procedure.phase,"procedure_remaining":procedure.remaining,"procedure_message":procedure.status(),"procedure_ready":procedure.player_ready and procedure.rival_ready,"model":car.powertrain,"run":run,"settings":GameSession.controls,"name":car.model_name,"position":-car.position.z,"best":best,"staged":_staged(),"can_arm":procedure.phase=="countdown" and _last_player_ready,"message":message,"paused":paused,"personal_best":personal_best,"wear_start":attempt_wear_start,"impacts":car.damage.impacts,"damage":car.damage.cumulative,"duel":is_duel,"opponent_name":opponent_name,"opponent_model":opponent.model_name if is_duel else "","opponent_run":opponent_run,"opponent_gap":opponent.position.z-car.position.z if is_duel else 0.0,"duel_result":duel_result,"zero_to_hundred":car.zero_to_hundred,"class_data":class_data,"ground":car.ground_state})
 
 func _shift(direction: int) -> void:

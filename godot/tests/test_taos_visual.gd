@@ -46,6 +46,8 @@ func run() -> void:
         quit(1)
         return
     check(built.source_triangles==39998 and built.meshes.size()==5 and built.triangle_counts.min()>0,"The runtime derivative contains a body and all four nonempty wheel groups")
+    for wheel in range(4):
+        check(preload("res://tests/wheel_geometry_helpers.gd").within_envelope(built.meshes[wheel+1],built.contours[wheel]),"Exhibition wheel geometry remains inside its envelope")
     check(built.wheel_segmentation=="configured_clip","Explicit estimated tire envelopes keep paint color out of wheel segmentation")
     var total_area := 0.0
     for mesh in built.meshes:
